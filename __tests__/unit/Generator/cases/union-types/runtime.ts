@@ -6,6 +6,9 @@ export default function (query: UnionTypesQuery): void {
     return
   }
   const first = items[0]
+  if (!first) {
+    return
+  }
 
   if (first.__typename === 'NodeArticle') {
     console.log(first.body)

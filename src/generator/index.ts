@@ -62,6 +62,7 @@ import {
   type IRNode,
   type IRNodeFragmentSpread,
   type IRNodeObject,
+  type IRNodeTypename,
 } from '../helpers/ir'
 import { getRootType } from '../helpers/schema'
 import { GeneratorOutput } from '../classes/GeneratorOutput'
@@ -840,7 +841,8 @@ export class Generator {
               throw new FieldNotFoundError(sel.name.value, objectType.name)
             }
             const fieldIR = this.buildFieldIRFromFieldDef(fieldDef, sel)
-            fields[alias] = mergeIR(fields[alias], fieldIR)
+            const current = fields[alias]
+            fields[alias] = current ? mergeIR(current, fieldIR) : fieldIR
           } else if (sel.kind === Kind.FRAGMENT_SPREAD) {
             const fragName = sel.name.value
             const fragDef = this.getFragmentNode(fragName)
@@ -934,7 +936,10 @@ export class Generator {
                 throw new FieldNotFoundError(fieldName, abstractType.name)
               }
               const fieldIR = this.buildFieldIRFromFieldDef(fieldDef, sel)
-              baseFields[aliasName] = mergeIR(baseFields[aliasName], fieldIR)
+              const current = baseFields[aliasName]
+              baseFields[aliasName] = current
+                ? mergeIR(current, fieldIR)
+                : fieldIR
             }
           } else if (sel.kind === Kind.INLINE_FRAGMENT) {
             const typeConditionName = sel.typeCondition?.name.value
@@ -1039,40 +1044,48 @@ export class Generator {
           .map((v) => v.name)
         const remainingCount = possibleTypes.length - typesWithFragments.size
 
-        for (const pt of possibleTypes) {
-          // Start with a copy of interface-level fields
+        const hasTypename = hasTypenameField(baseFields)
+
+        let unionIrNode: IRNodeTypename | null = null
+
+        for (const objectType of possibleTypes) {
+          // Clone the base fields.
           const mergedFields = { ...baseFields }
 
-          // If user had an inline fragment for pt.name, merge those fields
-          const subtypeFields = objectTypeMap.get(pt.name)
+          // If user had an inline fragment for the type, merge those fields.
+          const subtypeFields = objectTypeMap.get(objectType.name)
           if (subtypeFields) {
             mergeObjectIR(mergedFields, subtypeFields)
           }
 
-          if (hasTypenameField(baseFields)) {
+          if (hasTypename) {
             if (
-              typesWithFragments.has(pt.name) ||
+              typesWithFragments.has(objectType.name) ||
               !this.options.output.mergeTypenames
             ) {
-              // This type has inline fragments, use object type
+              // If this type has fragments, its __typename should be the name of the object type.
               mergedFields[TYPENAME] = IR.TYPENAME(
-                this.getOrCreateObjectTypeName(pt),
+                this.getOrCreateObjectTypeName(objectType),
               )
             } else if (typesWithFragments.size > 0) {
-              // This is a fallback type (no inline fragments), and some types have fragments.
-              // We can use Exclude<Interface, TypesWithFragments> to
-              const excludedTypes = Array.from(typesWithFragments).map((name) =>
-                this.getOrCreateObjectTypeName(name),
-              )
-
               // Only use the Exclude<> for __typename when we have enough remaining types.
               // Else we would be creating an exclude argument that is longer than the actual
               // remaining types.
-              if (remainingCount > 3) {
-                mergedFields[TYPENAME] = IR.TYPENAME(
+              // Also cache the created node so we don't call it for every type iteration.
+              if (unionIrNode === null && remainingCount > 3) {
+                // This is a fallback type (no inline fragments), and some types have fragments.
+                // We can use Exclude<Interface, TypesWithFragments> to
+                const excludedTypes = Array.from(typesWithFragments).map(
+                  (name) => this.getOrCreateObjectTypeName(name),
+                )
+                unionIrNode = IR.TYPENAME(
                   excludedTypes,
                   this.getOrCreateUnionTypenameType(abstractType),
                 )
+              }
+
+              if (unionIrNode) {
+                mergedFields[TYPENAME] = unionIrNode
               } else {
                 mergedFields[TYPENAME] = IR.TYPENAME(typesWithoutFragments)
               }
@@ -1081,7 +1094,7 @@ export class Generator {
 
           branches.push(
             IR.OBJECT({
-              graphQLTypeName: pt.name,
+              graphQLTypeName: objectType.name,
               fields: mergedFields,
               nullable: true,
             }),
@@ -1097,7 +1110,7 @@ export class Generator {
           })
         } else if (branches.length === 1) {
           // Just one branch: We can return it directly.
-          return branches[0]
+          return branches[0]!
         }
 
         return IR.UNION({
@@ -1164,7 +1177,7 @@ export class Generator {
 
       // Add fields from fragments
       for (const spread of spreads) {
-        const node = fragmentFieldMaps[spread.fragmentTypeName][fieldName]
+        const node = fragmentFieldMaps[spread.fragmentTypeName]?.[fieldName]
         if (node) {
           nodes.push(node)
         }
@@ -1176,10 +1189,10 @@ export class Generator {
       }
 
       // We unify them
-      let merged = nodes[0]
+      let merged = nodes[0]!
       let conflictFound = false
       for (let i = 1; i < nodes.length; i++) {
-        const next = nodes[i]
+        const next = nodes[i]!
         // If mergeIR(...) yields a 'UNION' or if the shapes differ, we consider that a conflict
         const m = mergeIR(merged, next)
         // If m is a union or differs from merged => conflict
@@ -1211,11 +1224,13 @@ export class Generator {
     // Add fragments with Omit for conflicting fields
     for (const spread of spreads) {
       const fragmentFields = fragmentFieldMaps[spread.fragmentTypeName]
-      const allFragmentFieldNames = Object.keys(fragmentFields)
+      const allFragmentFieldNames = fragmentFields
+        ? Object.keys(fragmentFields)
+        : []
 
       // If there's a conflict field that the fragment actually defines, use Omit
       const conflictsForThisFrag = [...conflictFields.keys()].filter((fld) => {
-        return fragmentFields[fld] !== undefined
+        return fragmentFields && fragmentFields[fld] !== undefined
       })
 
       // Skip fragment entirely if all of its fields are conflicting
@@ -1245,7 +1260,7 @@ export class Generator {
       return this.options.output.emptyObject
     } else if (intersectionParts.length === 1) {
       // Just one intersection.
-      return intersectionParts[0]
+      return intersectionParts[0]!
     }
 
     // Create a union.
@@ -1359,7 +1374,7 @@ export class Generator {
     let output = '{'
 
     for (let i = 0; i < fieldNames.length; i++) {
-      const fieldName = fieldNames[i]
+      const fieldName = fieldNames[i]!
       const ir = fields.get(fieldName)!
       const tsType = this.IRToCode(ir)
       const propertySuffix =
@@ -1488,7 +1503,7 @@ export class Generator {
     const docs = toInputDocuments(arg)
 
     for (let i = 0; i < docs.length; i++) {
-      const doc = docs[i]
+      const doc = docs[i]!
       if (this.inputDocuments.has(doc.filePath)) {
         throw new DuplicateInputDocumentError(doc.filePath)
       }
@@ -1528,7 +1543,7 @@ export class Generator {
     const docs = toInputDocuments(arg)
 
     for (let i = 0; i < docs.length; i++) {
-      const doc = docs[i]
+      const doc = docs[i]!
       if (!this.inputDocuments.has(doc.filePath)) {
         throw new LogicError(
           'Attempted to update a document that does not exist: ' + doc.filePath,

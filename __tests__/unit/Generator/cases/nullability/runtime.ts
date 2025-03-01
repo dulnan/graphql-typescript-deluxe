@@ -5,6 +5,9 @@ export function testQuery(query: NullabilityQuery): void {
   console.log(query.nullableArray.at(0).id)
 
   const item = query.fullyNonNullableArray[0]
+  if (!item) {
+    return
+  }
   console.log(item.id)
 
   const possiblyNull = query.nonNullableArray[0]

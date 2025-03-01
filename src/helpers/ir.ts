@@ -1,4 +1,5 @@
 import { TYPENAME } from '../constants'
+import { LogicError } from '../errors'
 
 export type IRNodeScalar = {
   kind: 'SCALAR'
@@ -131,7 +132,8 @@ export function mergeFragmentSpread(
   spread: IRNodeFragmentSpread,
 ): Record<string, IRNode> {
   const key = `__fragment_${spread.fragmentTypeName}`
-  fields[key] = mergeIR(fields[key], spread)
+  const existing = fields[key]
+  fields[key] = existing ? mergeIR(existing, spread) : spread
   return fields
 }
 
@@ -183,11 +185,16 @@ export function unifyUnionBranches(
 }
 
 /**
- * Merge a new IR node into an existing field IR. If there's a mismatch,
+ * Merge a new IR node into an existing IR. If there's a mismatch,
  * we produce a union. Otherwise we unify them.
+ *
+ * @param oldIR - The old IR.
+ * @param newIR - The new IR.
+ *
+ * @returns The merged IR.
  */
-export function mergeIR(oldIR: IRNode | undefined, newIR: IRNode): IRNode {
-  if (!oldIR) return newIR
+export function mergeIR(oldIR: IRNode, newIR: IRNode): IRNode {
+  // If they differ, always create an union.
   if (oldIR.kind !== newIR.kind) {
     return IR.UNION({
       types: flattenUnion([oldIR, newIR]),
@@ -195,9 +202,8 @@ export function mergeIR(oldIR: IRNode | undefined, newIR: IRNode): IRNode {
     })
   }
 
-  // Then in the `UNION` vs. `UNION` case:
+  // Two unions: Merge both.
   if (oldIR.kind === 'UNION' && newIR.kind === 'UNION') {
-    // Instead of naive concatenation, unify:
     const unifiedTypes = unifyUnionBranches(oldIR.types, newIR.types)
     return IR.UNION({
       types: unifiedTypes,
@@ -205,7 +211,6 @@ export function mergeIR(oldIR: IRNode | undefined, newIR: IRNode): IRNode {
     })
   }
 
-  // same kind => unify
   switch (oldIR.kind) {
     case 'SCALAR': {
       const bothScalar = newIR.kind === 'SCALAR'
@@ -316,7 +321,8 @@ export function mergeObjectIR(
   source: Record<string, IRNode>,
 ): Record<string, IRNode> {
   for (const [key, val] of Object.entries(source)) {
-    target[key] = mergeIR(target[key], val)
+    const targetIR = target[key]
+    target[key] = targetIR ? mergeIR(targetIR, val) : val
   }
   return target
 }
@@ -366,8 +372,8 @@ export function isIdenticalIR(a: IRNode, b: IRNode): boolean {
       if (aKeys.length !== bKeys.length) return false
       for (let i = 0; i < aKeys.length; i++) {
         const k = aKeys[i]
-        if (k !== bKeys[i]) return false
-        if (!isIdenticalIR(a.fields[k], b.fields[k])) return false
+        if (!k || k !== bKeys[i]) return false
+        if (!isIdenticalIR(a.fields[k]!, b.fields[k]!)) return false
       }
       return true
     }
@@ -382,7 +388,7 @@ export function isIdenticalIR(a: IRNode, b: IRNode): boolean {
       if (a.nullable !== b.nullable) return false
       if (a.types.length !== b.types.length) return false
       for (let i = 0; i < a.types.length; i++) {
-        if (!isIdenticalIR(a.types[i], b.types[i])) return false
+        if (!isIdenticalIR(a.types[i]!, b.types[i]!)) return false
       }
       return true
     }
@@ -403,9 +409,15 @@ export function unifyObjectsDifferingOnlyInTypename(
   // 3) Everything else is the same (if your signature logic is correct)
   // 4) Mark `nonNull: true` if any object is nonNull (OR them together)
 
-  if (objects.length === 1) return objects[0]
+  if (objects.length === 1) {
+    return objects[0]!
+  } else if (objects.length === 0) {
+    throw new LogicError(
+      'Need at least one object in unifyObjectsDifferingOnlyInTypename.',
+    )
+  }
 
-  const base = { ...objects[0] }
+  const base = { ...objects[0]! }
   const mergedFields = { ...base.fields }
 
   let anyNullable = base.nullable
@@ -430,7 +442,7 @@ export function unifyObjectsDifferingOnlyInTypename(
   return IR.OBJECT({
     ...base,
     fields: mergedFields,
-    nullable: anyNullable,
+    nullable: !!anyNullable,
   })
 }
 
@@ -480,8 +492,6 @@ export function buildNodeKeyWithoutTypename(ir: IRNode): string {
 export function mergeUnionBranchesThatDifferOnlyInTypename(
   branches: IRNode[],
 ): IRNode[] {
-  // Non-OBJECT nodes remain as-is for now. We only unify OBJECT<->OBJECT.
-  // We'll separate them out:
   const objectBranches: IRNodeObject[] = []
   const otherBranches: IRNode[] = []
 
@@ -496,7 +506,7 @@ export function mergeUnionBranchesThatDifferOnlyInTypename(
   // Group OBJECT branches by “shapeSignature” ignoring the literal __typename.
   // shapeSignature is basically a stable string that describes all fields except
   // for the literal part of __typename. For example, if __typename is `'Foo' | 'Bar'`,
-  // we temporarily treat that as a placeholder or ignore it in the signature.
+  // we treat that as a placeholder.
   const groups = new Map<string, IRNodeObject[]>()
 
   for (const obj of objectBranches) {
@@ -511,7 +521,7 @@ export function mergeUnionBranchesThatDifferOnlyInTypename(
   const mergedObjects: IRNodeObject[] = []
   for (const objs of groups.values()) {
     if (objs.length === 1) {
-      mergedObjects.push(objs[0])
+      mergedObjects.push(objs[0]!)
       continue
     }
 
@@ -549,7 +559,6 @@ export function postProcessIR(ir: IRNode): IRNode {
     }
 
     case 'ARRAY': {
-      // Recurse into the element type
       return {
         ...ir,
         ofType: postProcessIR(ir.ofType),
@@ -559,15 +568,15 @@ export function postProcessIR(ir: IRNode): IRNode {
     case 'UNION': {
       // First recurse into each branch
       const processedBranches = ir.types.map((t) => postProcessIR(t))
-      // Then unify any that only differ by __typename
-      const merged =
-        mergeUnionBranchesThatDifferOnlyInTypename(processedBranches)
       return {
         ...ir,
-        types: merged,
+        types: mergeUnionBranchesThatDifferOnlyInTypename(processedBranches),
       }
     }
   }
+
+  // @ts-expect-error Should never end up here.
+  throw new LogicError('Unknown IR type: ' + ir.kind)
 }
 
 export function markNonNull<T extends IRNode>(ir: T): T {

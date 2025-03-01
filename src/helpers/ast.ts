@@ -29,7 +29,7 @@ export function hasConditionalDirective(node: FieldNode): boolean {
   }
 
   for (let i = 0; i < node.directives.length; i++) {
-    const name = node.directives[i].name.value
+    const name = node.directives[i]!.name.value
     if (name === 'skip' || name === 'include') {
       return true
     }
@@ -50,7 +50,7 @@ export function selectionSetToKey(set?: SelectionSetNode): string {
   const keys: string[] = []
 
   for (let i = 0; i < set.selections.length; i++) {
-    const selection = set.selections[i]
+    const selection = set.selections[i]!
     let selKey =
       selection.directives?.map((v) => v.name.value).join('-') ||
       'no-directives'
@@ -100,9 +100,11 @@ export function mergeSameFieldSelections(
   // 2) For each group of Fields with the same alias, unify their sub‐selection
   const mergedFieldNodes: FieldNode[] = []
   for (const fieldNodes of fieldMap.values()) {
-    if (fieldNodes.length === 1) {
+    if (!fieldNodes.length) {
+      continue
+    } else if (fieldNodes.length === 1) {
       // nothing to merge
-      mergedFieldNodes.push(fieldNodes[0])
+      mergedFieldNodes.push(fieldNodes[0]!)
       continue
     }
 
@@ -125,7 +127,7 @@ export function mergeSameFieldSelections(
     }
 
     // Make a single field node with the union of sub‐selections
-    const first = fieldNodes[0]
+    const first = fieldNodes[0]!
     const newField: FieldNode = {
       ...first,
       // if they differ in name, strictly that's a conflict, but in practice

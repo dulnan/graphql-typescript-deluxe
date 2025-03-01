@@ -18,6 +18,9 @@ export default function (query: NestedQuery): void {
       return
     }
     const first = categories[0]
+    if (!first) {
+      return
+    }
     console.log(first.label)
 
     const related = first.related
