@@ -1,19 +1,6 @@
-export class DocumentError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'DocumentError'
-    Object.setPrototypeOf(this, DocumentError.prototype)
-  }
-}
-
-export class SelectionError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'SelectionError'
-    Object.setPrototypeOf(this, SelectionError.prototype)
-  }
-}
-
+/**
+ * Thrown when an abstract or object type is referenced that does not exist.
+ */
 export class TypeNotFoundError extends Error {
   constructor(type: string) {
     super('Type not found: ' + type)
@@ -22,6 +9,9 @@ export class TypeNotFoundError extends Error {
   }
 }
 
+/**
+ * Thrown when a fragment is referenced that does not exist.
+ */
 export class FragmentNotFoundError extends Error {
   constructor(name: string) {
     super('Fragment not found: ' + name)
@@ -30,6 +20,9 @@ export class FragmentNotFoundError extends Error {
   }
 }
 
+/**
+ * Thrown when a field does not exist.
+ */
 export class FieldNotFoundError extends Error {
   constructor(field: string, type: string) {
     super(`Field "${field} not found on type "${type}"`)
@@ -38,6 +31,9 @@ export class FieldNotFoundError extends Error {
   }
 }
 
+/**
+ * Thrown when an unexpected root type is encountered.
+ */
 export class MissingRootTypeError extends Error {
   constructor(type: string) {
     super('Missing root type: ' + type)
@@ -46,6 +42,10 @@ export class MissingRootTypeError extends Error {
   }
 }
 
+/**
+ * Thrown when the generator itself encountered a logic error.
+ * Likely a bug in the generator.
+ */
 export class LogicError extends Error {
   constructor(message: string) {
     super(message)
@@ -54,10 +54,13 @@ export class LogicError extends Error {
   }
 }
 
-export class DuplicateInputDocument extends Error {
+/**
+ * Thrown when attempting to add an input document that already exists.
+ */
+export class DuplicateInputDocumentError extends Error {
   constructor(filePath: string) {
     super(`The input document already exists: ${filePath}`)
-    this.name = 'DuplicateInputDocument'
-    Object.setPrototypeOf(this, DuplicateInputDocument.prototype)
+    this.name = 'DuplicateInputDocumentError'
+    Object.setPrototypeOf(this, DuplicateInputDocumentError.prototype)
   }
 }

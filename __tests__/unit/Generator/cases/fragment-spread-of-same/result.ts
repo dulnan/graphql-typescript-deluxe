@@ -30,7 +30,7 @@ export type EntityFragment = {
  *   # Returns Entity interface
  *   getRandomEntity {
  *     ...entity
- *     # Concrete type implementing Entity
+ *     # Object type implementing Entity
  *     ... on NodePage {
  *       title
  *     }

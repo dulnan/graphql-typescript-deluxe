@@ -11,7 +11,7 @@ export type IRNodeTypename = {
   nullable: boolean
 
   /**
-   * The possible concrete types.
+   * The possible object types.
    */
   types: string[]
 
@@ -66,13 +66,12 @@ export type IRNodeFragmentSpread = {
   fragmentTypeName: string
 
   /**
-   * The schema type condition of the fragment. Could be an abstract or concrete type.
+   * The schema type condition of the fragment. Could be an abstract or object type.
    */
   fragmentTypeCondition: string
 
   /**
    * The type of the field in which the fragment is spread.
-   * Could be a concrete type, interface, union, etc.
    */
   parentType: string
 }

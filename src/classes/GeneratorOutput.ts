@@ -4,7 +4,7 @@ import type { GeneratedCode, GeneratedCodeType } from '../types/index'
 
 const DEFAULT_SORTING: GeneratedCodeType[] = [
   'enum',
-  'concrete-typename',
+  'typename-object',
   'typename-union',
   'fragment',
   'operation',
@@ -48,7 +48,7 @@ export class GeneratorOutput {
       )
       .map((group) => {
         const type = group[0] as GeneratedCodeType
-        const join = type === 'concrete-typename' ? '\n' : '\n\n'
+        const join = type === 'typename-object' ? '\n' : '\n\n'
         const comment = [
           '// ' + '-'.repeat(80),
           '// ' + getCodeTypeLabel(type),

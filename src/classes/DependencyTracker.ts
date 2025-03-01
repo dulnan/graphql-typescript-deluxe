@@ -1,10 +1,11 @@
+import { NO_FILE_PATH } from '../constants'
 import { LogicError } from '../errors'
 import type { GeneratedCodeType } from '../types'
 
 const KEY_SEPARATOR = '#####'
 
 export class DependencyTracker {
-  private currentFilePath = 'no-file'
+  private currentFilePath = NO_FILE_PATH
   private stack: Set<string>[] = []
 
   add(type: GeneratedCodeType, name: string): void {

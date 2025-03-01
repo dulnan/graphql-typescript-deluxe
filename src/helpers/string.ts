@@ -1,3 +1,4 @@
+import { NO_FILE_PATH } from '../constants'
 import type { TypeContext } from '../types'
 
 export function escapeStringForComment(input: string): string {
@@ -43,7 +44,7 @@ export function makeTypeDoc(context: TypeContext): string {
   if (context.type?.description) {
     lines.push(context.type.description)
   }
-  if (filePath && filePath !== 'no-file-path') {
+  if (filePath && filePath !== NO_FILE_PATH) {
     lines.push(`@see {@link ${filePath}}`, '')
   }
   if (context.definition?.loc) {

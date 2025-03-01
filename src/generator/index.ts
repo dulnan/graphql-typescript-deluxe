@@ -43,13 +43,13 @@ import type {
 } from '../types'
 import { toInputDocuments } from '../helpers/generator'
 import {
-  DuplicateInputDocument,
+  DuplicateInputDocumentError,
   FieldNotFoundError,
   FragmentNotFoundError,
   LogicError,
   MissingRootTypeError,
   TypeNotFoundError,
-} from '../errors/index'
+} from '../errors'
 import {
   IR,
   hasTypenameField,
@@ -67,8 +67,7 @@ import { getRootType } from '../helpers/schema'
 import { GeneratorOutput } from '../classes/GeneratorOutput'
 import { DependencyTracker } from '../classes/DependencyTracker'
 import type { DeepRequired } from '../helpers/type'
-
-const TYPENAME = '__typename'
+import { NO_FILE_PATH, TYPENAME } from '../constants'
 
 export class Generator {
   /**
@@ -125,6 +124,12 @@ export class Generator {
    */
   private dependencyTracker: DependencyTracker | null = null
 
+  /**
+   * Constructs a new Generator instance.
+   *
+   * @param schema - The GraphQL schema.
+   * @param options - The options.
+   */
   constructor(schema: GraphQLSchema, options?: GeneratorOptions) {
     this.schema = schema
     this.options = buildOptions(options) as DeepRequired<GeneratorOptions>
@@ -159,9 +164,11 @@ export class Generator {
    * Logs the given arguments to the console when debug mode is enabled.
    */
   private logDebug(...args: any[]): void {
-    if (this.options.debugMode) {
-      console.log(...args)
+    if (!this.options.debugMode) {
+      return
     }
+
+    console.log(...args)
   }
 
   /**
@@ -396,9 +403,7 @@ export class Generator {
       if (type.kind === Kind.LIST_TYPE) {
         const element = this.createInputTS(type.type)
         return `Array<${element}>${maybeNull}`
-      }
-
-      if (type.kind === Kind.NAMED_TYPE) {
+      } else if (type.kind === Kind.NAMED_TYPE) {
         const namedType = this.schema.getType(type.name.value)
         if (!namedType) {
           throw new TypeNotFoundError(type.name.value)
@@ -491,7 +496,7 @@ export class Generator {
       this.fragmentIRs.set(item.node.name.value, {
         ir,
         dependencies,
-        filePath: this.dependencyTracker?.getCurrentFile() || 'no-file',
+        filePath: this.dependencyTracker?.getCurrentFile() || NO_FILE_PATH,
       })
       const code = makeExport(
         typeName,
@@ -599,23 +604,32 @@ export class Generator {
   }
 
   // ===========================================================================
-  // Concrete Type and Abstract Type Unions
+  // Object Type and Abstract Type Unions
   // ===========================================================================
 
   /**
-   * Creates the string literal type for a concrete type.
+   * Creates the string literal type for a object type.
    *
    * @param arg - The name of a type or the type itself.
    *
    * @returns The name of the generated TS type.
    */
-  private getOrCreateConcreteTypeName(arg: string | GraphQLObjectType): string {
+  private getOrCreateObjectTypeName(arg: string | GraphQLObjectType): string {
     const name = typeof arg === 'string' ? arg : arg.name
-    return this.generateCodeOnce('concrete-typename', name, () => {
-      const type = this.schema.getType(name)
+    return this.generateCodeOnce('typename-object', name, () => {
+      const type = typeof arg === 'string' ? this.schema.getType(name) : arg
+
       if (!type) {
         throw new TypeNotFoundError(name)
       }
+
+      if (!isObjectType(type)) {
+        throw new LogicError(
+          'Attempted to create object type string literal for non-object type: ' +
+            name,
+        )
+      }
+
       return {
         code: `type ${name} = '${name}';`,
         typeName: name,
@@ -639,7 +653,7 @@ export class Generator {
       const union =
         implementingTypes
           .map((v) => {
-            return this.getOrCreateConcreteTypeName(v)
+            return this.getOrCreateObjectTypeName(v)
           })
           .join(' | ') || 'never'
 
@@ -751,30 +765,30 @@ export class Generator {
   }
 
   /**
-   * Build the IR of the selection set of a concrete type.
+   * Build the IR of the selection set of an object type.
    *
-   * @param concreteType - The object type.
+   * @param objectType - The object type.
    * @param selectionSet - The selection set node.
    *
    * @returns The IR for the selections.
    */
   private buildObjectSelectionSet(
-    concreteType: GraphQLObjectType,
+    objectType: GraphQLObjectType,
     selectionSet: SelectionSetNode,
   ): IRNode {
     return this.withCache(
       'buildObjectSelectionSet',
-      concreteType.name + selectionSetToKey(selectionSet),
+      objectType.name + selectionSetToKey(selectionSet),
       () => {
-        const objFields = concreteType.getFields()
+        const objFields = objectType.getFields()
         const fields: Record<string, IRNode> = {}
         for (const sel of selectionSet.selections) {
           if (sel.kind === Kind.FIELD) {
             if (sel.name.value === TYPENAME) {
-              // The user explicitly requests __typename for this concrete object type
+              // The user explicitly requests __typename for this object type
               // => we know exactly what that string is
               fields[TYPENAME] = IR.TYPENAME(
-                this.getOrCreateConcreteTypeName(concreteType),
+                this.getOrCreateObjectTypeName(objectType),
               )
               // We continue here so we skip calling buildFieldIR for __typename
               // (which might return the abstract union type)
@@ -784,7 +798,7 @@ export class Generator {
             const alias = sel.alias?.value || sel.name.value
             const fieldDef = objFields[sel.name.value]
             if (!fieldDef) {
-              throw new FieldNotFoundError(sel.name.value, concreteType.name)
+              throw new FieldNotFoundError(sel.name.value, objectType.name)
             }
             const fieldIR = this.buildFieldIRFromFieldDef(fieldDef, sel)
             fields[alias] = mergeIR(fields[alias], fieldIR)
@@ -795,8 +809,8 @@ export class Generator {
             // If the fragment's typeCondition is the same or an interface the object implements, merge it
             const condName = fragDef.typeCondition.name.value
             if (
-              condName === concreteType.name ||
-              this.objectImplements(concreteType, condName)
+              condName === objectType.name ||
+              this.objectImplements(objectType, condName)
             ) {
               const fragTypeName = this.options.buildFragmentTypeName(fragDef)
               mergeFragmentSpread(
@@ -804,7 +818,7 @@ export class Generator {
                 IR.FRAGMENT_SPREAD({
                   name: fragName,
                   fragmentTypeName: fragTypeName,
-                  parentType: concreteType.name,
+                  parentType: objectType.name,
                   fragmentTypeCondition: condName,
                   nullable: false,
                 }),
@@ -816,12 +830,12 @@ export class Generator {
         // Always __typename field if option is set.
         if (this.options.output.nonOptionalTypename && !fields[TYPENAME]) {
           fields[TYPENAME] = IR.TYPENAME(
-            this.getOrCreateConcreteTypeName(concreteType),
+            this.getOrCreateObjectTypeName(objectType),
           )
         }
 
         return IR.OBJECT({
-          graphQLTypeName: concreteType.name,
+          graphQLTypeName: objectType.name,
           fields,
           nullable: true,
         })
@@ -848,8 +862,8 @@ export class Generator {
         // Fields requested on interface/union level.
         const baseFields: Record<string, IRNode> = {}
 
-        // Stores inline fragment fields for each concrete subtype.
-        // Key is name of concrete type, value is an object of fields => node.
+        // Stores inline fragment fields for each object  subtype.
+        // Key is name of object type, value is an object of fields => node.
         const subtypeMap = new Map<string, Record<string, IRNode>>()
 
         // Possible types that implement the interface/union.
@@ -894,7 +908,7 @@ export class Generator {
               throw new LogicError('Inline fragment has no type condition.')
             }
 
-            // then merge it into every concrete T that implements condName
+            // then merge it into every object type T that implements condName
             const subType = this.schema.getType(condName)
             if (!subType) {
               throw new TypeNotFoundError(condName)
@@ -902,7 +916,7 @@ export class Generator {
 
             const ir = this.buildSelectionSet(subType, sel.selectionSet)
 
-            // For each concrete T that implements condName, merge IR
+            // For each object type T that implements condName, merge IR
             for (const T of possibleTypes) {
               if (T.name === condName || this.objectImplements(T, condName)) {
                 if (ir.kind === 'OBJECT') {
@@ -1000,15 +1014,15 @@ export class Generator {
               typesWithFragments.has(pt.name) ||
               !this.options.output.mergeTypenames
             ) {
-              // This type has inline fragments, use concrete type
+              // This type has inline fragments, use object type
               mergedFields[TYPENAME] = IR.TYPENAME(
-                this.getOrCreateConcreteTypeName(pt),
+                this.getOrCreateObjectTypeName(pt),
               )
             } else if (typesWithFragments.size > 0) {
               // This is a fallback type (no inline fragments), and some types have fragments.
               // We can use Exclude<Interface, TypesWithFragments> to
               const excludedTypes = Array.from(typesWithFragments).map((name) =>
-                this.getOrCreateConcreteTypeName(name),
+                this.getOrCreateObjectTypeName(name),
               )
 
               // Only use the Exclude<> for __typename when we have enough remaining types.
@@ -1459,7 +1473,7 @@ export class Generator {
     for (let i = 0; i < docs.length; i++) {
       const doc = docs[i]
       if (this.inputDocuments.has(doc.filePath)) {
-        throw new DuplicateInputDocument(doc.filePath)
+        throw new DuplicateInputDocumentError(doc.filePath)
       }
       this.inputDocuments.set(doc.filePath, doc)
     }
