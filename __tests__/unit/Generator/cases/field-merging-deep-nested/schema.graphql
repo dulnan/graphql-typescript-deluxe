@@ -1,0 +1,59 @@
+interface Url {
+  path: String
+}
+
+type Query {
+  route(path: String!): Url
+}
+
+interface EntityUrl {
+  entity: Entity
+  metatags: [Metatag!]!
+  path: String!
+  routeName: String!
+}
+
+interface Entity {
+  id: String!
+}
+
+type NodePage implements Entity {
+  id: String!
+  title: String!
+}
+
+type DefaultEntityUrl implements EntityUrl & InternalUrl & Url {
+  entity: Entity
+  internalPath: String!
+  metatags: [Metatag!]!
+  path: String!
+  routeName: String!
+}
+
+interface InternalUrl {
+  metatags: [Metatag!]!
+  path: String!
+  routeName: String!
+}
+
+type DefaultInternalUrl implements InternalUrl & Url {
+  internalPath: String!
+  metatags: [Metatag!]!
+  path: String!
+  routeName: String!
+}
+
+type DefaultUrl implements Url {
+  path: String
+}
+
+type Metatag {
+  attributes: [MetatagAttribute!]!
+  id: String!
+  tag: String!
+}
+
+type MetatagAttribute {
+  key: String!
+  value: String!
+}

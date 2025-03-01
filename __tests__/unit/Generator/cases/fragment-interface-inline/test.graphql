@@ -1,0 +1,8 @@
+query fragmentInterface {
+  getRandomEntity {
+    ... on Entity {
+      id
+      entityType
+    }
+  }
+}

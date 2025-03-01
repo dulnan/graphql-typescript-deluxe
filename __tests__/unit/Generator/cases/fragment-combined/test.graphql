@@ -1,0 +1,17 @@
+query test {
+  getRandomEntity {
+    entityType
+
+    ... on Entity {
+      id
+    }
+
+    ... on Node {
+      title
+    }
+
+    ... on NodePage {
+      body
+    }
+  }
+}

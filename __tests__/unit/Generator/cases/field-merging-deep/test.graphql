@@ -1,0 +1,27 @@
+query fieldMergingDeep {
+  getMenu {
+    name
+    links {
+      ...menuLinkTreeElement
+      subtree {
+        ...menuLinkTreeElement
+        subtree {
+          ...menuLinkTreeElement
+          subtree {
+            ...menuLinkTreeElement
+            subtree {
+              ...menuLinkTreeElement
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+fragment menuLinkTreeElement on MenuLinkTreeElement {
+  link {
+    label
+    url
+  }
+}

@@ -1,0 +1,12 @@
+query defaultValues(
+  # The text.
+  $text: String
+  # The bundle.
+  $bundle: String
+  # The required bundle.
+  $bundleRequired: String!
+) {
+  searchContent(text: $text, bundle: $bundle, bundleRequired: $bundleRequired) {
+    title
+  }
+}

@@ -1,0 +1,28 @@
+query fieldMergingDeepNested {
+  route(path: "Foobar") {
+    __typename
+    ... on DefaultEntityUrl {
+      entity {
+        __typename
+        id
+        ... on NodePage {
+          title
+        }
+
+        ... on NodeArticle {
+          body
+        }
+      }
+    }
+  }
+}
+
+fragment route on Query {
+  route(path: "Foobar") {
+    ... on DefaultEntityUrl {
+      entity {
+        id
+      }
+    }
+  }
+}

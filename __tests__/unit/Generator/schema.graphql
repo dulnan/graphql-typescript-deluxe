@@ -1,0 +1,411 @@
+enum EntityType {
+  """
+  A node.
+  """
+  NODE
+
+  """
+  A media.
+  """
+  MEDIA
+}
+
+interface Entity {
+  """
+  The ID.
+  """
+  id: String!
+
+  """
+  The EntityType enum.
+  """
+  entityType: EntityType!
+}
+
+"""
+A user.
+"""
+type User implements Entity {
+  """
+  The ID.
+  """
+  id: String!
+
+  """
+  The EntityType enum.
+  """
+  entityType: EntityType!
+
+  """
+  The email address of the user.
+  """
+  email: String
+
+  """
+  The name of the user.
+  """
+  name: String
+}
+
+"""
+A domain.
+"""
+type Domain implements Entity {
+  """
+  The ID.
+  """
+  id: String!
+
+  """
+  The EntityType enum.
+  """
+  entityType: EntityType!
+
+  """
+  The hostname, e.g. example.com
+  """
+  hostname: String
+
+  """
+  The label for the domain.
+  """
+  label: String!
+}
+
+"""
+A comment by an external user.
+"""
+type Comment implements Entity {
+  """
+  The ID of the node.
+  """
+  id: String!
+
+  """
+  The EntityType enum.
+  """
+  entityType: EntityType!
+
+  """
+  The author of the comment.
+  """
+  author: Author!
+
+  """
+  The comment subject.
+  """
+  subject: String!
+
+  """
+  The comment.
+  """
+  comment: String!
+}
+
+interface Node implements Entity {
+  """
+  The ID of the node.
+  """
+  id: String!
+
+  """
+  The EntityType enum.
+  """
+  entityType: EntityType!
+
+  """
+  The title of the node.
+  """
+  title: String!
+}
+
+interface Media implements Entity {
+  """
+  The ID of the media.
+  """
+  id: String!
+
+  """
+  The EntityType enum.
+  """
+  entityType: EntityType!
+
+  """
+  The media provider.
+  """
+  provider: String
+}
+
+type MediaImage implements Entity & Media {
+  """
+  The ID of the media image.
+  """
+  id: String!
+
+  """
+  The EntityType enum.
+  """
+  entityType: EntityType!
+
+  """
+  The media provider.
+  """
+  provider: String
+
+  """
+  The image URL.
+  """
+  image: String
+}
+
+type MediaVideo implements Entity & Media {
+  """
+  The ID of the media video.
+  """
+  id: String!
+
+  """
+  The EntityType enum.
+  """
+  entityType: EntityType!
+
+  """
+  The media provider (e.g. 'youtube').
+  """
+  provider: String
+
+  """
+  The URL of the video (external).
+  """
+  videoUrl: String
+}
+
+type NodePage implements Entity & Node {
+  """
+  The ID of the page.
+  """
+  id: String!
+
+  """
+  The EntityType enum.
+  """
+  entityType: EntityType!
+
+  """
+  The title of the page.
+  """
+  title: String!
+
+  """
+  The body text.
+  """
+  body: String
+
+  """
+  Legacy title (do not use).
+  """
+  deprecatedTitle: String @deprecated(reason: "Use `title`.")
+}
+
+"""
+A blog post.
+"""
+type NodeArticle implements Entity & Node {
+  """
+  The ID of the article.
+  """
+  id: String!
+
+  """
+  The EntityType enum.
+  """
+  entityType: EntityType!
+
+  """
+  The title of the article.
+  """
+  title: String!
+
+  """
+  The body text of the article.
+  """
+  body: String
+
+  """
+  The tags.
+  """
+  tags: [String]
+
+  """
+  Categories of this article.
+  """
+  categories: [Category!]
+
+  """
+  The author of the article.
+  """
+  author: Author!
+}
+
+type Author {
+  """
+  Name of the author.
+  """
+  name: String!
+
+  """
+  Email address of the author.
+  """
+  email: String
+}
+
+type Category {
+  """
+  The label.
+  """
+  label: String!
+
+  """
+  The URL for the category overview page.
+  """
+  url: String
+
+  """
+  Related entities.
+  """
+  related: [Entity!]
+}
+
+"""
+A possble search result item.
+"""
+union SearchResult = MediaVideo | NodeArticle
+
+"""
+Means of contact.
+"""
+enum ContactMethod {
+  """
+  Contact via phone.
+  """
+  PHONE
+
+  """
+  Contact via email.
+  """
+  MAIL
+}
+
+"""
+A valid address.
+"""
+input Address {
+  """
+  The street, including number.
+  """
+  street: String!
+
+  """
+  The ZIP code.
+  """
+  zipCode: String!
+
+  """
+  The locality.
+  """
+  locality: String!
+}
+
+input SubmitContactForm {
+  firstName: String!
+  lastName: String!
+  contactMethod: ContactMethod = "PHONE"
+  address: Address!
+}
+
+type MenuLink {
+  label: String!
+  url: String!
+}
+
+type MenuLinkTreeElement {
+  link: MenuLink!
+  subtree: [MenuLinkTreeElement!]!
+}
+
+type Menu {
+  name: String!
+  links: [MenuLinkTreeElement!]!
+}
+
+type Query {
+  """
+  Get an entity by ID.
+  """
+  entityById(entityType: EntityType!, id: ID!): Entity
+
+  """
+  Get the homepage.
+  """
+  getHomepage: NodePage
+
+  """
+  Get random entity.
+  """
+  getRandomEntity: Entity
+
+  """
+  Always get an entity.
+  """
+  getNonNullEntity: Entity!
+
+  """
+  A very complex and long description. // Contains JS style syntax.
+  /* A full comment. */
+  Another line.
+  */ Another comment but broken /*
+  *//*/*/*/*/*/**////*/**/*/*/*//*/*/*/*/**/*/*/*/*/*/***/ */ */ */* */
+  """
+  isAvailable: Boolean
+
+  """
+  Perform a search.
+  """
+  search(text: String): [SearchResult!]
+
+  """
+  With default values.
+  """
+  searchContent(
+    text: String
+    bundle: String = "page"
+    bundleRequired: String!
+  ): [Node]
+
+  """
+  Load a menu.
+  """
+  getMenu(name: String): Menu
+
+  """
+  Get a fully nullable array.
+  """
+  nullableArray: [Entity]
+
+  """
+  Get a non-nullable array with nullable items.
+  """
+  nonNullableArray: [Entity]!
+
+  """
+  Get a non-nullable array with non-nullable items.
+  """
+  fullyNonNullableArray: [Entity!]!
+}
+
+type Mutation {
+  """
+  Submit a form.
+  """
+  submitForm(input: SubmitContactForm!, dryRun: Boolean): Boolean!
+}

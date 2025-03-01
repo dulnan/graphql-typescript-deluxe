@@ -1,0 +1,5 @@
+# Generates a type for the enum when used in a fragment.
+
+fragment fragmentWithEnum on NodePage {
+  entityType
+}

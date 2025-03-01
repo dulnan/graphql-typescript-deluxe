@@ -1,0 +1,50 @@
+query test {
+  # Returns Entity interface
+  getRandomEntity {
+    ...entity
+  }
+}
+
+# Is an interface
+fragment entity on Entity {
+  id
+  ...comment
+  ...domain
+  ...user
+  ...mediaImage
+  ...mediaVideo
+  ...nodePage
+  ...nodeArticle
+}
+
+fragment comment on Comment {
+  author {
+    name
+  }
+}
+
+fragment domain on Domain {
+  label
+}
+
+fragment user on User {
+  name
+}
+
+fragment mediaImage on MediaImage {
+  image
+}
+
+fragment mediaVideo on MediaVideo {
+  videoUrl
+}
+
+fragment nodePage on NodePage {
+  body
+}
+
+fragment nodeArticle on NodeArticle {
+  categories {
+    label
+  }
+}

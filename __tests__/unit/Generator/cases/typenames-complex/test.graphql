@@ -1,0 +1,8 @@
+query typenamesComplex {
+  one: getRandomEntity {
+    __typename
+    ... on NodePage {
+      body_alias: body
+    }
+  }
+}

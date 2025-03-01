@@ -1,0 +1,35 @@
+query fieldMergingNestedComplex {
+  entityById(id: "1", entityType: NODE) {
+    __typename
+    ...nodeArticleOne
+    ...nodeArticleTwo
+  }
+}
+
+fragment nodeArticleOne on NodeArticle {
+  categories {
+    related {
+      ... on NodePage {
+        body
+        title
+      }
+    }
+  }
+}
+
+fragment nodeArticleTwo on NodeArticle {
+  categories {
+    url
+    # type: [Entity]
+    related {
+      ...related
+      ... on NodePage {
+        title
+      }
+    }
+  }
+}
+
+fragment related on Entity {
+  id
+}

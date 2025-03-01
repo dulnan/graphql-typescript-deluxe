@@ -1,0 +1,10 @@
+query inlineFields {
+  getRandomEntity {
+    id
+    __typename
+    ... on NodePage {
+      body
+      deprecatedTitle
+    }
+  }
+}

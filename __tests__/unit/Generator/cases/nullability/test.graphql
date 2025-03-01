@@ -1,0 +1,23 @@
+query nullability {
+  nullableArray {
+    id
+  }
+  nonNullableArray {
+    id
+  }
+  fullyNonNullableArray {
+    id
+  }
+}
+
+fragment nullability on Query {
+  nullableArray {
+    id
+  }
+  nonNullableArray {
+    id
+  }
+  fullyNonNullableArray {
+    id
+  }
+}

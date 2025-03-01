@@ -1,0 +1,33 @@
+query typenameMerging {
+  withTypename: getRandomEntity {
+    __typename
+    id
+    ... on NodePage {
+      body
+    }
+
+    ... on NodeArticle {
+      title
+    }
+
+    ...nodeArticle
+  }
+
+  withoutTypename: getRandomEntity {
+    id
+    ... on NodePage {
+      body
+    }
+
+    ... on NodeArticle {
+      title
+    }
+
+    ...nodeArticle
+  }
+}
+
+fragment nodeArticle on NodeArticle {
+  __typename
+  tags
+}

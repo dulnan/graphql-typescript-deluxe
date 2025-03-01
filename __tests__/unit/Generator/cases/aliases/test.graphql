@@ -1,0 +1,13 @@
+query inlineFields {
+  alias_getRandomEntity: getRandomEntity {
+    alias_id: id
+    ...nodePage
+    ... on NodePage {
+      alias_body: body
+    }
+  }
+}
+
+fragment nodePage on NodePage {
+  alias_title: title
+}

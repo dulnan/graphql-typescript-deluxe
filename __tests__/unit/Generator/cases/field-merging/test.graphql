@@ -1,0 +1,20 @@
+query fieldMerging {
+  ...fieldMergingOne
+  ...fieldMergingTwo
+
+  getHomepage {
+    id
+  }
+}
+
+fragment fieldMergingOne on Query {
+  getHomepage {
+    title
+  }
+}
+
+fragment fieldMergingTwo on Query {
+  getHomepage {
+    body
+  }
+}

@@ -1,0 +1,6 @@
+# Foobar
+query inputTypes($entityType: EntityType!, $id: ID!) {
+  entityById(id: $id, entityType: $entityType) {
+    id
+  }
+}

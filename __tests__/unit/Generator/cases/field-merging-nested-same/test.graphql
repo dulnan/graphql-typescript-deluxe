@@ -1,0 +1,22 @@
+query fieldMergingNested {
+  entityById(id: "1", entityType: NODE) {
+    ...nodeArticleOne
+    ...nodeArticleTwo
+  }
+}
+
+fragment nodeArticleOne on NodeArticle {
+  title
+  categories {
+    url
+    label
+  }
+}
+
+fragment nodeArticleTwo on NodeArticle {
+  tags
+  categories {
+    url
+    label
+  }
+}

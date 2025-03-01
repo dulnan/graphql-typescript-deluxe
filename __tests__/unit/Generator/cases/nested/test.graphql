@@ -1,0 +1,32 @@
+query nested {
+  # getRandomEntity: Entity
+  getRandomEntity {
+    # id: String!
+    id
+    ...nodePage
+    # type NodeArticle implements Entity & Node
+    ... on NodeArticle {
+      # body: String
+      body
+      # categories: [Category!]
+      categories {
+        # label: String!
+        label
+        # related: [Entity!]
+        related {
+          id
+          __typename
+          ... on NodeArticle {
+            body
+            title
+          }
+        }
+      }
+    }
+  }
+}
+
+# type NodePage implements Entity & Node
+fragment nodePage on NodePage {
+  title
+}

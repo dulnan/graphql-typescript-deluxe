@@ -1,0 +1,37 @@
+query spreadsOnInterface {
+  getPage {
+    ...nodePage
+  }
+}
+
+fragment nodePage on NodePage {
+  blocks {
+    ...blockItem
+    props {
+      ...allBlocks
+    }
+  }
+}
+fragment blockItem on Block {
+  id
+}
+
+fragment allBlocks on Block {
+  ...blockText
+  ...blockImage
+  ...blockContainer
+}
+
+fragment blockText on BlockText {
+  text
+}
+
+fragment blockImage on BlockImage {
+  imageUrl
+}
+
+fragment blockContainer on BlockContainer {
+  blocks {
+    id
+  }
+}

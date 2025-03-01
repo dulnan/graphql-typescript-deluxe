@@ -1,0 +1,15 @@
+query test {
+  # Returns Entity interface
+  getRandomEntity {
+    ...entity
+    # Concrete type implementing Entity
+    ... on NodePage {
+      title
+    }
+  }
+}
+
+# Is an interface
+fragment entity on Entity {
+  id
+}

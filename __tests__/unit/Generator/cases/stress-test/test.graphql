@@ -1,0 +1,19 @@
+query stressTest {
+  entityById(id: "1", entityType: NODE) {
+    ...categoryRelatedNode
+    ... on NodeArticle {
+      categories {
+        label
+      }
+    }
+  }
+}
+
+fragment categoryRelatedNode on Node {
+  title
+  ... on NodeArticle {
+    categories {
+      url
+    }
+  }
+}

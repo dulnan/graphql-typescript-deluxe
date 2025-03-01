@@ -1,0 +1,51 @@
+query fieldMergingDeepNested {
+  ...route
+
+  route(path: "Foobar") {
+    __typename
+    ... on EntityUrl {
+      entity {
+        ... on NodePage {
+          title
+        }
+      }
+    }
+  }
+}
+
+fragment route on Query {
+  route(path: "Foobar") {
+    ...routeInternal
+    ...routeEntity
+  }
+}
+
+fragment routeInternal on InternalUrl {
+  metatags {
+    ...metatag
+  }
+  routeName
+}
+
+fragment routeEntity on EntityUrl {
+  metatags {
+    ...metatag
+  }
+  entity {
+    id
+  }
+  routeName
+}
+
+fragment metatag on Metatag {
+  id
+  tag
+  attributes {
+    ...metatagAttribute
+  }
+}
+
+fragment metatagAttribute on MetatagAttribute {
+  key
+  value
+}

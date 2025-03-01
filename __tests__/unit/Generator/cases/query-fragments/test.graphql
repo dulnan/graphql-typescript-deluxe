@@ -1,0 +1,24 @@
+query queryFragments {
+  getRandomEntity {
+    id
+  }
+  ...queryOne
+  ...queryTwo
+}
+
+fragment queryOne on Query {
+  getRandomEntity {
+    ... on NodePage {
+      title
+    }
+  }
+}
+
+fragment queryTwo on Query {
+  getRandomEntity {
+    __typename
+    ... on NodeArticle {
+      body
+    }
+  }
+}

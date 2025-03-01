@@ -1,0 +1,11 @@
+query fragmentInterface {
+  withFragment: getNonNullEntity {
+    ... on Entity {
+      id
+    }
+  }
+
+  withoutFragment: getNonNullEntity {
+    id
+  }
+}

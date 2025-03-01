@@ -1,0 +1,21 @@
+query fragmentUnion {
+  getNonNullEntity {
+    __typename
+    ...node
+    ...media
+
+    ... on NodePage {
+      body
+    }
+  }
+}
+
+# An interface.
+fragment node on Node {
+  title
+}
+
+# Also an interface.
+fragment media on Media {
+  provider
+}

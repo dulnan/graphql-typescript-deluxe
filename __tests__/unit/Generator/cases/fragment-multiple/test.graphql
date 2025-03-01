@@ -1,0 +1,34 @@
+query fragmentInterface {
+  getRandomEntity {
+    ...entity
+    ...nodePage
+    ...nodeArticle
+    ...mediaImage
+  }
+}
+
+fragment entity on Entity {
+  id
+  entityType
+}
+
+fragment nodePage on NodePage {
+  body
+}
+
+fragment nodeArticle on NodeArticle {
+  categories {
+    ...category
+  }
+
+  tags
+}
+
+fragment category on Category {
+  url
+  label
+}
+
+fragment mediaImage on MediaImage {
+  image
+}

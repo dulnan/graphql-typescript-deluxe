@@ -1,0 +1,9 @@
+mutation inputTypesPartial(
+  $firstName: String!
+  $lastName: String!
+  $address: Address!
+) {
+  submitForm(
+    input: { firstName: $firstName, lastName: $lastName, address: $address }
+  )
+}

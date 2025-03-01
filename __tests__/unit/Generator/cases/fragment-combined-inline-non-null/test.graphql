@@ -1,0 +1,23 @@
+query fragmentInterface {
+  getNonNullEntity {
+    entityType
+    ... on Entity {
+      id
+    }
+
+    ... on Node {
+      title
+    }
+
+    ... on NodePage {
+      title
+      body
+    }
+
+    ...nodeArticle
+  }
+}
+
+fragment nodeArticle on NodeArticle {
+  tags
+}

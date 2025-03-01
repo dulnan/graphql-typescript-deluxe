@@ -1,0 +1,17 @@
+query unionTypes {
+  search {
+    __typename
+
+    ... on Node {
+      title
+    }
+
+    ... on NodeArticle {
+      body
+    }
+
+    ... on MediaVideo {
+      videoUrl
+    }
+  }
+}

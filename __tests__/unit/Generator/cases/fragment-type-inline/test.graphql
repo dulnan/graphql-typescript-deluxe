@@ -1,0 +1,18 @@
+query test {
+  getRandomEntity {
+    ... on Node {
+      title
+    }
+
+    ... on NodePage {
+      id
+      body
+    }
+
+    ... on NodeArticle {
+      categories {
+        label
+      }
+    }
+  }
+}

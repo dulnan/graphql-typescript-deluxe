@@ -1,0 +1,3 @@
+mutation inputTypes($input: SubmitContactForm!, $dryRun: Boolean = false) {
+  submitForm(input: $input, dryRun: $dryRun)
+}

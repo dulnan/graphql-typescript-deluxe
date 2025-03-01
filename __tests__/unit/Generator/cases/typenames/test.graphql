@@ -1,0 +1,13 @@
+query inlineFields {
+  foobar: getRandomEntity {
+    __typename
+    ... on NodePage {
+      body_alias: body
+    }
+  }
+
+  singleObject: getRandomEntity {
+    __typename
+    id
+  }
+}

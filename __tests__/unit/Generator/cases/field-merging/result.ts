@@ -1,0 +1,80 @@
+// --------------------------------------------------------------------------------
+// Fragments
+// --------------------------------------------------------------------------------
+
+/**
+ * @see {@link ./test.graphql}
+ *
+ * @example
+ * ```graphql
+ * fragment fieldMergingOne on Query {
+ *   getHomepage {
+ *     title
+ *   }
+ * }
+ * ```
+ */
+export type FieldMergingOneFragment = {
+  /** Get the homepage. */
+  getHomepage?: {
+    /** The title of the page. */
+    title: string
+  }
+}
+
+/**
+ * @see {@link ./test.graphql}
+ *
+ * @example
+ * ```graphql
+ * fragment fieldMergingTwo on Query {
+ *   getHomepage {
+ *     body
+ *   }
+ * }
+ * ```
+ */
+export type FieldMergingTwoFragment = {
+  /** Get the homepage. */
+  getHomepage?: {
+    /** The body text. */
+    body?: string
+  }
+}
+
+// --------------------------------------------------------------------------------
+// Operations
+// --------------------------------------------------------------------------------
+
+/**
+ * @see {@link ./test.graphql}
+ *
+ * @example
+ * ```graphql
+ * query fieldMerging {
+ *   ...fieldMergingOne
+ *   ...fieldMergingTwo
+ *
+ *   getHomepage {
+ *     id
+ *   }
+ * }
+ * ```
+ */
+export type FieldMergingQuery = {
+  /** Get the homepage. */
+  getHomepage?: {
+    /** The body text. */
+    body?: string
+    /** The ID of the page. */
+    id: string
+    /** The title of the page. */
+    title: string
+  }
+}
+
+/**
+ * @see {@link ./test.graphql}
+ *
+ */
+export type FieldMergingQueryVariables = object

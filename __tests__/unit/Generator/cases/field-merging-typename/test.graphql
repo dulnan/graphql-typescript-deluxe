@@ -1,0 +1,21 @@
+query fieldMergingTypename {
+  ...route
+
+  route(path: "Foobar") {
+    foobar: path
+    __typename
+    ... on EntityUrl {
+      routeName
+    }
+  }
+}
+
+fragment route on Query {
+  route(path: "Foobar") {
+    foobar: path
+    __typename
+    ... on InternalUrl {
+      path
+    }
+  }
+}

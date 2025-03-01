@@ -1,0 +1,26 @@
+query directivesSkip(
+  $skipAuthor: Boolean = false
+  $skipCategories: Boolean = true
+) {
+  getRandomEntity {
+    ... on NodeArticle {
+      authorOptional: author @skip(if: $skipAuthor) {
+        name
+        email
+      }
+
+      authorRequired: author {
+        name
+        email
+      }
+
+      categoriesSkip: categories @skip(if: $skipCategories) {
+        label
+      }
+
+      categories {
+        label
+      }
+    }
+  }
+}

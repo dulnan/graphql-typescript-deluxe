@@ -1,0 +1,54 @@
+{
+  "name": "graphql-typescript-deluxe",
+  "version": "0.0.1",
+  "description": "Fast TypeScript GraphQL types generator",
+  "type": "module",
+  "engines": {
+    "node": ">= 22.11 < 23"
+  },
+  "devDependencies": {
+    "@eslint/js": "~9.20",
+    "@graphql-codegen/core": "^4.0.2",
+    "@graphql-codegen/typescript-operations": "^4.5.0",
+    "@graphql-tools/apollo-engine-loader": "^8.0.16",
+    "@graphql-tools/load": "^8.0.14",
+    "@types/eslint__js": "~8.42",
+    "@types/node": "~22",
+    "@typescript-eslint/parser": "~8.24",
+    "@vitest/coverage-v8": "~3.0",
+    "@vitest/eslint-plugin": "~1.1",
+    "eslint": "~9.20",
+    "eslint-config-prettier": "~10.0",
+    "globals": "~15.15",
+    "prettier": "~3.5",
+    "rimraf": "~6.0",
+    "ts-api-utils": "~2.0",
+    "typescript": "~5.7",
+    "typescript-eslint": "~8.24",
+    "vitest": "~3.0"
+  },
+  "scripts": {
+    "start": "node build/src/main.js",
+    "clean": "rimraf coverage build tmp",
+    "prebuild": "npm run lint",
+    "build": "tsc -p tsconfig.json",
+    "build:watch": "tsc -w -p tsconfig.json",
+    "build:release": "npm run clean && tsc -p tsconfig.release.json",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix",
+    "test": "vitest run unit --config __tests__/vitest.config.ts",
+    "test:coverage": "vitest run unit --config __tests__/vitest.config.ts --coverage.enabled --coverage.all",
+    "prettier": "prettier --write .",
+    "prettier:check": "prettier --check .",
+    "test:watch": "WATCH_MODE=true vitest unit --config __tests__/vitest.config.ts"
+  },
+  "author": "Jan Hug <me@dulnan.net>",
+  "license": "MIT",
+  "dependencies": {
+    "graphql": "^16.10.0",
+    "tslib": "~2.8"
+  },
+  "volta": {
+    "node": "22.12.0"
+  }
+}

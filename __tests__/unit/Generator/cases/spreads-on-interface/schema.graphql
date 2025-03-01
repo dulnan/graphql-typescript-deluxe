@@ -1,0 +1,35 @@
+type NodePage {
+  blocks: [Block]
+}
+
+interface Block {
+  id: String!
+  props: Block!
+}
+
+type BlockText implements Block {
+  id: String!
+  text: String
+  props: Block!
+}
+
+type BlockImage implements Block {
+  id: String!
+  imageUrl: String
+  props: Block!
+}
+
+type BlockHorizontalLine implements Block {
+  id: String!
+  props: Block!
+}
+
+type BlockContainer implements Block {
+  id: String!
+  blocks: [Block]
+  props: Block!
+}
+
+type Query {
+  getPage: NodePage
+}

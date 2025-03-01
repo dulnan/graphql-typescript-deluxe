@@ -1,0 +1,43 @@
+type Query {
+  route(path: String!): Url
+}
+
+interface Url {
+  path: String
+}
+
+interface EntityUrl {
+  entity: Entity
+  path: String!
+}
+
+type DefaultEntityUrl implements EntityUrl & Url {
+  entity: Entity
+  internalPath: String!
+  path: String!
+  routeName: String!
+}
+
+type DefaultUrl implements Url {
+  path: String
+}
+
+interface Entity {
+  id: String!
+}
+
+type NodePage implements Entity {
+  id: String!
+  title: String!
+}
+
+type NodeArticle implements Entity {
+  id: String!
+  title: String!
+  body: String!
+}
+
+type Image implements Entity {
+  id: String!
+  imageUrl: String
+}
