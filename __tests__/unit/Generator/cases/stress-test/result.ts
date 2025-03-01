@@ -62,6 +62,7 @@ export type StressTestQuery = {
         title: string
       }
     | {
+        /** Categories of this article. */
         categories?: Array<{
           /** The label. */
           label: string

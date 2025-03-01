@@ -57,7 +57,7 @@ import {
   markNonNull,
   mergeFragmentSpread,
   mergeIR,
-  mergeObjectIR,
+  mergeObjectFields,
   postProcessIR,
   type IRNode,
   type IRNodeFragmentSpread,
@@ -792,7 +792,7 @@ export class Generator {
         let merged: Record<string, IRNode> = {}
         for (const branch of ir.types) {
           if (branch.kind === 'OBJECT') {
-            merged = mergeObjectIR(merged, branch.fields)
+            merged = mergeObjectFields(merged, branch.fields)
           }
           // If it's something else like SCALAR or FRAGMENT_SPREAD, skip or handle as needed
         }
@@ -962,7 +962,7 @@ export class Generator {
                 this.objectImplements(type, typeConditionName)
               ) {
                 if (ir.kind === 'OBJECT') {
-                  const merged = mergeObjectIR(
+                  const merged = mergeObjectFields(
                     objectTypeMap.get(type.name) || {},
                     ir.fields,
                   )
@@ -973,7 +973,7 @@ export class Generator {
                       branch.kind === 'OBJECT' &&
                       branch.graphQLTypeName === type.name
                     ) {
-                      const merged = mergeObjectIR(
+                      const merged = mergeObjectFields(
                         objectTypeMap.get(type.name) || {},
                         branch.fields,
                       )
@@ -1019,7 +1019,7 @@ export class Generator {
               if (ir.kind === 'UNION') {
                 for (const branch of ir.types) {
                   if (branch.kind === 'OBJECT') {
-                    const merged = mergeObjectIR(
+                    const merged = mergeObjectFields(
                       objectTypeMap.get(branch.graphQLTypeName) || {},
                       branch.fields,
                     )
@@ -1027,7 +1027,7 @@ export class Generator {
                   }
                 }
               } else if (ir.kind === 'OBJECT') {
-                const merged = mergeObjectIR(
+                const merged = mergeObjectFields(
                   objectTypeMap.get(ir.graphQLTypeName) || {},
                   ir.fields,
                 )
@@ -1043,9 +1043,7 @@ export class Generator {
           .filter((v) => !typesWithFragments.has(v.name))
           .map((v) => v.name)
         const remainingCount = possibleTypes.length - typesWithFragments.size
-
         const hasTypename = hasTypenameField(baseFields)
-
         let unionIrNode: IRNodeTypename | null = null
 
         for (const objectType of possibleTypes) {
@@ -1055,7 +1053,7 @@ export class Generator {
           // If user had an inline fragment for the type, merge those fields.
           const subtypeFields = objectTypeMap.get(objectType.name)
           if (subtypeFields) {
-            mergeObjectIR(mergedFields, subtypeFields)
+            mergeObjectFields(mergedFields, subtypeFields)
           }
 
           if (hasTypename) {

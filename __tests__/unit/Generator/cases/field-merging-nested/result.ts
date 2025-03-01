@@ -123,12 +123,15 @@ export type FieldMergingNestedQuery = {
     | object
     | (Omit<NodeArticleOneFragment, 'categories'> &
         Omit<NodeArticleTwoFragment, 'categories'> & {
+          /** Categories of this article. */
           categories?: Array<{
             /** The label. */
             label: string
+            /** Related entities. */
             related?: Array<{
               /** The EntityType enum. */
               entityType: EntityType
+              /** The ID. */
               id: string
             }>
             /** The URL for the category overview page. */

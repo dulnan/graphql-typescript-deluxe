@@ -141,47 +141,119 @@ export function unifyUnionBranches(
   aBranches: IRNode[],
   bBranches: IRNode[],
 ): IRNode[] {
-  // Build a map of object branches for quick lookup by name
+  // A map of object branches.
+  const aMap = new Map<string, IRNodeObject>()
   // Also collect all “non-object” branches (FRAGMENT_SPREAD, SCALAR, etc.)
-  const aMap = new Map<string, IRNode>()
-  const aOthers: IRNode[] = []
+  const out: IRNode[] = []
 
   for (const branch of aBranches) {
     if (branch.kind === 'OBJECT') {
+      // @TODO: We probably can't end up in here with multiple branches for the
+      // same object type, but maybe it should still be handled.
+      // Currently we just override it which could be a source of bugs.
       aMap.set(branch.graphQLTypeName, branch)
     } else {
-      aOthers.push(branch)
+      out.push(branch)
     }
   }
 
-  const out: IRNode[] = []
-  // Merge each b-branch
   for (const branch of bBranches) {
     if (branch.kind === 'OBJECT') {
       const existing = aMap.get(branch.graphQLTypeName)
       if (existing) {
-        // Both unions have an OBJECT for the same type => unify them
+        // Both unions have an OBJECT for the same type => unify them.
         const merged = mergeIR(existing, branch)
         out.push(merged)
-        aMap.delete(branch.graphQLTypeName) // we used it up
+        aMap.delete(branch.graphQLTypeName)
       } else {
-        // no match => just add it
         out.push(branch)
       }
     } else {
-      // e.g. SCALAR, FRAGMENT_SPREAD, etc.
       out.push(branch)
     }
   }
 
   // Add in any leftover branches that were in aMap but no match in b
-  for (const leftover of aMap.values()) {
-    out.push(leftover)
-  }
-  // Also add the leftover aOthers
-  out.push(...aOthers)
-
+  out.push(...aMap.values())
   return out
+}
+
+function mergeScalar(oldIR: IRNodeScalar, newIR: IRNodeScalar): IRNodeScalar {
+  if (oldIR.tsType === newIR.tsType) {
+    return IR.SCALAR({
+      tsType: oldIR.tsType,
+      nullable: oldIR.nullable && newIR.nullable,
+      description: newIR.description || newIR.description,
+    })
+  }
+
+  // Different scalar types: Create a literal union.
+  return IR.SCALAR({
+    tsType: `${oldIR.tsType} | ${newIR.tsType}`,
+    nullable: oldIR.nullable || newIR.nullable,
+    description: newIR.description || oldIR.description,
+  })
+}
+
+function mergeTypenameNodes(
+  oldIR: IRNodeTypename,
+  newIR: IRNodeTypename,
+): IRNodeTypename {
+  // Merge types while removing duplicates.
+  const mergedTypes = [...new Set([...oldIR.types, ...newIR.types])]
+
+  const result = IR.TYPENAME(mergedTypes)
+  result.nullable = oldIR.nullable || newIR.nullable
+  return result
+}
+
+function mergeObjectNodes(
+  oldIR: IRNodeObject,
+  newIR: IRNodeObject,
+): IRNodeObject {
+  // Merge fields
+  const mergedFields = mergeObjectFields({ ...oldIR.fields }, newIR.fields)
+  return IR.OBJECT({
+    graphQLTypeName: oldIR.graphQLTypeName,
+    fields: mergedFields,
+    nullable: oldIR.nullable || newIR.nullable,
+    description: newIR.description || oldIR.description,
+  })
+}
+
+function mergeArrayNodes(oldIR: IRNodeArray, newIR: IRNodeArray): IRNodeArray {
+  const mergedElem = mergeIR(oldIR.ofType, newIR.ofType)
+  return IR.ARRAY({
+    ofType: mergedElem,
+    nullable: oldIR.nullable || newIR.nullable,
+    nullableElement: oldIR.nullableElement || newIR.nullableElement,
+    description: newIR.description || oldIR.description,
+  })
+}
+
+function mergeUnionNodes(oldIR: IRNodeUnion, newIR: IRNodeUnion): IRNodeUnion {
+  const unifiedTypes = unifyUnionBranches(oldIR.types, newIR.types)
+  return IR.UNION({
+    types: unifiedTypes,
+    nullable: oldIR.nullable || newIR.nullable,
+    description: newIR.description || oldIR.description,
+  })
+}
+
+function mergeFragmentSpreadNodes(
+  oldIR: IRNodeFragmentSpread,
+  newIR: IRNodeFragmentSpread,
+): IRNodeFragmentSpread | IRNodeUnion {
+  // If same fragment => keep one
+  if (oldIR.fragmentTypeName === newIR.fragmentTypeName) {
+    return oldIR
+  }
+  // else union
+  return IR.UNION({
+    types: [oldIR, newIR],
+    nullable: true,
+    description: newIR.description || oldIR.description,
+  })
 }
 
 /**
@@ -194,129 +266,35 @@ export function unifyUnionBranches(
  * @returns The merged IR.
  */
 export function mergeIR(oldIR: IRNode, newIR: IRNode): IRNode {
-  // If they differ, always create an union.
-  if (oldIR.kind !== newIR.kind) {
-    return IR.UNION({
-      types: flattenUnion([oldIR, newIR]),
-      nullable: !!(oldIR.nullable || newIR.nullable),
-    })
+  if (oldIR.kind === 'SCALAR' && newIR.kind === 'SCALAR') {
+    return mergeScalar(oldIR, newIR)
+  } else if (oldIR.kind === 'TYPENAME' && newIR.kind === 'TYPENAME') {
+    return mergeTypenameNodes(oldIR, newIR)
+  } else if (oldIR.kind === 'OBJECT' && newIR.kind === 'OBJECT') {
+    return mergeObjectNodes(oldIR, newIR)
+  } else if (oldIR.kind === 'ARRAY' && newIR.kind === 'ARRAY') {
+    return mergeArrayNodes(oldIR, newIR)
+  } else if (oldIR.kind === 'UNION' && newIR.kind === 'UNION') {
+    return mergeUnionNodes(oldIR, newIR)
+  } else if (
+    oldIR.kind === 'FRAGMENT_SPREAD' &&
+    newIR.kind === 'FRAGMENT_SPREAD'
+  ) {
+    return mergeFragmentSpreadNodes(oldIR, newIR)
   }
 
-  // Two unions: Merge both.
-  if (oldIR.kind === 'UNION' && newIR.kind === 'UNION') {
-    const unifiedTypes = unifyUnionBranches(oldIR.types, newIR.types)
-    return IR.UNION({
-      types: unifiedTypes,
-      nullable: oldIR.nullable || newIR.nullable,
-    })
-  }
-
-  switch (oldIR.kind) {
-    case 'SCALAR': {
-      const bothScalar = newIR.kind === 'SCALAR'
-      if (!bothScalar) {
-        return IR.UNION({
-          types: flattenUnion([oldIR, newIR]),
-          nullable: oldIR.nullable || newIR.nullable,
-        })
-      }
-      if (oldIR.tsType === newIR.tsType) {
-        return IR.SCALAR({
-          tsType: oldIR.tsType,
-          nullable: oldIR.nullable && newIR.nullable,
-        })
-      }
-      // Different scalar types => union of them
-      return IR.SCALAR({
-        tsType: `${oldIR.tsType} | ${newIR.tsType}`,
-        nullable: oldIR.nullable || newIR.nullable,
-      })
-    }
-    case 'TYPENAME': {
-      if (newIR.kind !== 'TYPENAME') {
-        return IR.UNION({
-          types: [oldIR, newIR],
-          nullable: oldIR.nullable || newIR.nullable,
-        })
-      }
-
-      // Merge types arrays, ensuring uniqueness
-      const mergedTypes = [...new Set([...oldIR.types, ...newIR.types])]
-
-      // Use the TS.TYPENAME factory, then override nullable
-      const result = IR.TYPENAME(mergedTypes)
-      result.nullable = oldIR.nullable || newIR.nullable
-      return result
-    }
-    case 'OBJECT': {
-      if (newIR.kind !== 'OBJECT') {
-        return IR.UNION({
-          types: [oldIR, newIR],
-          nullable: oldIR.nullable || newIR.nullable,
-        })
-      }
-      // Merge fields
-      const mergedFields = mergeObjectIR({ ...oldIR.fields }, newIR.fields)
-      return IR.OBJECT({
-        graphQLTypeName:
-          oldIR.graphQLTypeName === newIR.graphQLTypeName
-            ? oldIR.graphQLTypeName
-            : oldIR.graphQLTypeName,
-        fields: mergedFields,
-        nullable: oldIR.nullable || newIR.nullable,
-      })
-    }
-    case 'ARRAY': {
-      if (newIR.kind !== 'ARRAY') {
-        return IR.UNION({
-          types: [oldIR, newIR],
-          nullable: oldIR.nullable || newIR.nullable,
-        })
-      }
-      // unify elements
-      const mergedElem = mergeIR(oldIR.ofType, newIR.ofType)
-      return IR.ARRAY({
-        ofType: mergedElem,
-        nullable: oldIR.nullable || newIR.nullable,
-        nullableElement: oldIR.nullableElement || newIR.nullableElement,
-      })
-    }
-    case 'UNION': {
-      if (newIR.kind !== 'UNION') {
-        return IR.UNION({
-          types: [...oldIR.types, newIR],
-          nullable: oldIR.nullable || newIR.nullable,
-        })
-      }
-      return IR.UNION({
-        types: [...oldIR.types, ...newIR.types],
-        nullable: oldIR.nullable || newIR.nullable,
-      })
-    }
-    case 'FRAGMENT_SPREAD': {
-      if (newIR.kind !== 'FRAGMENT_SPREAD') {
-        return IR.UNION({
-          types: [oldIR, newIR],
-          nullable: true,
-        })
-      }
-      // If same fragment => keep one
-      if (oldIR.fragmentTypeName === newIR.fragmentTypeName) {
-        return oldIR
-      }
-      // else union
-      return IR.UNION({
-        types: [oldIR, newIR],
-        nullable: true,
-      })
-    }
-  }
+  // Fallback: Create a union.
+  return IR.UNION({
+    types: flattenUnion([oldIR, newIR]),
+    nullable: !!(oldIR.nullable || newIR.nullable),
+    description: newIR.description || oldIR.description,
+  })
 }
 
 /**
  * Merge all fields from source into target (object IR).
  */
-export function mergeObjectIR(
+export function mergeObjectFields(
   target: Record<string, IRNode>,
   source: Record<string, IRNode>,
 ): Record<string, IRNode> {
@@ -342,61 +320,90 @@ export function flattenUnion(nodes: IRNode[]): IRNode[] {
   return out
 }
 
+function areScalarsIdentical(a: IRNodeScalar, b: IRNodeScalar): boolean {
+  return a.tsType === b.tsType && a.nullable === b.nullable
+}
+
+function areTypenamesIdentical(a: IRNodeTypename, b: IRNodeTypename): boolean {
+  return (
+    a.types.join('-') === b.types.join('-') &&
+    a.excludeType === b.excludeType &&
+    a.nullable === b.nullable
+  )
+}
+
+function areObjectsIdentical(a: IRNodeObject, b: IRNodeObject): boolean {
+  if (a.graphQLTypeName !== b.graphQLTypeName) {
+    return false
+  }
+
+  if (a.nullable !== b.nullable) {
+    return false
+  }
+
+  const aKeys = Object.keys(a.fields).sort()
+  const bKeys = Object.keys(b.fields).sort()
+  if (aKeys.length !== bKeys.length) return false
+
+  for (let i = 0; i < aKeys.length; i++) {
+    const k = aKeys[i]
+    if (!k || k !== bKeys[i]) return false
+    if (!isIdenticalIR(a.fields[k]!, b.fields[k]!)) return false
+  }
+
+  return true
+}
+
+function areArraysIdentical(a: IRNodeArray, b: IRNodeArray): boolean {
+  if (a.nullable !== b.nullable) return false
+  if (a.nullableElement !== b.nullableElement) return false
+  return isIdenticalIR(a.ofType, b.ofType)
+}
+
+function areUnionsIdentical(a: IRNodeUnion, b: IRNodeUnion): boolean {
+  if (a.nullable !== b.nullable) return false
+  if (a.types.length !== b.types.length) return false
+  for (let i = 0; i < a.types.length; i++) {
+    if (!isIdenticalIR(a.types[i]!, b.types[i]!)) return false
+  }
+  return true
+}
+
+function areFragmentSpreadsIdentical(
+  a: IRNodeFragmentSpread,
+  b: IRNodeFragmentSpread,
+): boolean {
+  return a.fragmentTypeName === b.fragmentTypeName
+}
+
 /**
- * Very naive check if two IR nodes are structurally identical.
+ * Check if two nodes are identical.
+ *
+ * @param a - First node.
+ * @param b - Second node.
+ *
+ * @returns True if both nodes are identical.
  */
 export function isIdenticalIR(a: IRNode, b: IRNode): boolean {
-  if (a.kind !== b.kind) return false
-  switch (a.kind) {
-    case 'SCALAR': {
-      return (
-        b.kind === 'SCALAR' &&
-        a.tsType === b.tsType &&
-        a.nullable === b.nullable
-      )
-    }
-    case 'TYPENAME': {
-      return (
-        b.kind === 'TYPENAME' &&
-        a.types.join('-') === b.types.join('-') &&
-        a.excludeType === b.excludeType &&
-        a.nullable === b.nullable
-      )
-    }
-    case 'OBJECT': {
-      if (b.kind !== 'OBJECT') return false
-      if (a.graphQLTypeName !== b.graphQLTypeName) return false
-      if (a.nullable !== b.nullable) return false
-      const aKeys = Object.keys(a.fields).sort()
-      const bKeys = Object.keys(b.fields).sort()
-      if (aKeys.length !== bKeys.length) return false
-      for (let i = 0; i < aKeys.length; i++) {
-        const k = aKeys[i]
-        if (!k || k !== bKeys[i]) return false
-        if (!isIdenticalIR(a.fields[k]!, b.fields[k]!)) return false
-      }
-      return true
-    }
-    case 'ARRAY': {
-      if (b.kind !== 'ARRAY') return false
-      if (a.nullable !== b.nullable) return false
-      if (a.nullableElement !== b.nullableElement) return false
-      return isIdenticalIR(a.ofType, b.ofType)
-    }
-    case 'UNION': {
-      if (b.kind !== 'UNION') return false
-      if (a.nullable !== b.nullable) return false
-      if (a.types.length !== b.types.length) return false
-      for (let i = 0; i < a.types.length; i++) {
-        if (!isIdenticalIR(a.types[i]!, b.types[i]!)) return false
-      }
-      return true
-    }
-    case 'FRAGMENT_SPREAD': {
-      if (b.kind !== 'FRAGMENT_SPREAD') return false
-      return a.fragmentTypeName === b.fragmentTypeName
-    }
+  if (a.nullable !== b.nullable) {
+    return false
   }
+
+  if (a.kind === 'SCALAR' && b.kind === 'SCALAR') {
+    return areScalarsIdentical(a, b)
+  } else if (a.kind === 'TYPENAME' && b.kind === 'TYPENAME') {
+    return areTypenamesIdentical(a, b)
+  } else if (a.kind === 'OBJECT' && b.kind === 'OBJECT') {
+    return areObjectsIdentical(a, b)
+  } else if (a.kind === 'ARRAY' && b.kind === 'ARRAY') {
+    return areArraysIdentical(a, b)
+  } else if (a.kind === 'UNION' && b.kind === 'UNION') {
+    return areUnionsIdentical(a, b)
+  } else if (a.kind === 'FRAGMENT_SPREAD' && b.kind === 'FRAGMENT_SPREAD') {
+    return areFragmentSpreadsIdentical(a, b)
+  }
+
+  return false
 }
 
 export function unifyObjectsDifferingOnlyInTypename(
@@ -536,8 +543,12 @@ export function mergeUnionBranchesThatDifferOnlyInTypename(
 }
 
 /**
- * Recursively merges union branches that differ ONLY by their __typename literal.
+ * Flattens the IR structure, removing duplicate branches.
  * Returns a new IR node (or the same node if nothing changed).
+ *
+ * @param ir - The node to process.
+ *
+ * @returns The processed, new node or the passed in node if unprocessed.
  */
 export function postProcessIR(ir: IRNode): IRNode {
   switch (ir.kind) {
@@ -547,11 +558,11 @@ export function postProcessIR(ir: IRNode): IRNode {
       return ir
 
     case 'OBJECT': {
-      // Recurse into each field
       const newFields: Record<string, IRNode> = {}
       for (const [fieldName, fieldIR] of Object.entries(ir.fields)) {
         newFields[fieldName] = postProcessIR(fieldIR)
       }
+
       return {
         ...ir,
         fields: newFields,

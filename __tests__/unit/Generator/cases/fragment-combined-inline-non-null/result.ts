@@ -91,6 +91,7 @@ export type FragmentInterfaceQuery = {
         entityType: EntityType
         /** The ID. */
         id: string
+        /** The title of the page. */
         title: string
       }
     | ({

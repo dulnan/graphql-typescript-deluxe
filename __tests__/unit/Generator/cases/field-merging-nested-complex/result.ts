@@ -149,7 +149,9 @@ export type FieldMergingNestedComplexQuery = {
     | ({
         __typename: NodeArticle
       } & {
+        /** Categories of this article. */
         categories?: Array<{
+          /** Related entities. */
           related?: Array<
             | {
                 /** The ID. */
@@ -160,6 +162,7 @@ export type FieldMergingNestedComplexQuery = {
                 body?: string
                 /** The ID. */
                 id: string
+                /** The title of the page. */
                 title: string
               }
           >
