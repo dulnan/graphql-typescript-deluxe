@@ -4,10 +4,11 @@ import { Generator } from '../../../src/generator/index.js'
 import { loadSchemaSync } from '@graphql-tools/load'
 import { parse } from 'graphql'
 import { format } from './../../../helpers/format.js'
+import type { GeneratorInput } from '../../../src/types'
 
 const schema = loadSchemaSync(schemaContent, { loaders: [] })
 
-function toDocument(content: string, filePath: string) {
+function toDocument(content: string, filePath: string): GeneratorInput {
   const documentNode = parse(content, {
     noLocation: false,
   })

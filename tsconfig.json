@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
     "target": "es2022",
-    "module": "node16",
+    "module": "preserve",
     "lib": ["ES2022", "DOM"],
-    "moduleResolution": "node16",
+    "moduleResolution": "Node",
     "rootDir": ".",
     "outDir": "build",
     "allowSyntheticDefaultImports": true,
@@ -19,7 +19,7 @@
     "noImplicitThis": false,
     "strict": true,
     "strictNullChecks": true,
-    "verbatimModuleSyntax": true
-  },
-  "include": ["src", "__tests__"]
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true
+  }
 }

@@ -1,4 +1,4 @@
-import type { FieldMergingNestedQuery } from './result.js'
+import type { FieldMergingNestedQuery } from './result'
 
 export function custom(v: FieldMergingNestedQuery): void {
   const entity = v.entityById

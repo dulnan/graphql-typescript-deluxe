@@ -3,7 +3,7 @@ import schemaContent from './schema.graphql?raw'
 import { Generator } from '../../../src/generator/index.js'
 import { loadSchemaSync } from '@graphql-tools/load'
 import { parse } from 'graphql'
-import type { GeneratedCode } from '../../../src/types/index.js'
+import type { GeneratedCode, GeneratorInput } from '../../../src/types/index.js'
 
 const schema = loadSchemaSync(schemaContent, { loaders: [] })
 
@@ -18,7 +18,7 @@ function resultWithoutCode(items: GeneratedCode[]): any[] {
   })
 }
 
-function toDocument(content: string, filePath: string) {
+function toDocument(content: string, filePath: string): GeneratorInput {
   const documentNode = parse(content, {
     noLocation: false,
   })

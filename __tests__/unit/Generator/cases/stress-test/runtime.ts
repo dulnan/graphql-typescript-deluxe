@@ -1,6 +1,6 @@
-import type { StressTestQuery } from './result.js'
+import type { StressTestQuery } from './result'
 
-export default function (v: StressTestQuery) {
+export default function (v: StressTestQuery): void {
   const entity = v.entityById
   if (!entity) {
     return

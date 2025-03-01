@@ -29,7 +29,7 @@ const config: TypeScriptDocumentsPluginConfig = {
 export async function generateCodegen(
   schemaContent: string,
   documents: string,
-) {
+): Promise<string> {
   const schemaAst = await loadSchema(schemaContent, { loaders: [] })
   const schema = parse(schemaContent)
   return codegen({

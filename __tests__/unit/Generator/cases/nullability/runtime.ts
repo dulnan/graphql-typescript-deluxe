@@ -1,6 +1,6 @@
-import type { NullabilityQuery } from './result.js'
+import type { NullabilityQuery } from './result'
 
-export function testQuery(query: NullabilityQuery) {
+export function testQuery(query: NullabilityQuery): void {
   // @ts-expect-error Both array and array item is nullable.
   console.log(query.nullableArray.at(0).id)
 

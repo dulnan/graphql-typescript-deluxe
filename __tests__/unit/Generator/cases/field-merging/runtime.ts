@@ -1,6 +1,6 @@
-import type { FieldMergingQuery } from './result.js'
+import type { FieldMergingQuery } from './result'
 
-export default function (v: FieldMergingQuery) {
+export default function (v: FieldMergingQuery): void {
   if (!v) {
     return
   }

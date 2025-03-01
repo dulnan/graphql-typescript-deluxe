@@ -1,4 +1,4 @@
-import type { NestedQuery } from './result.js'
+import type { NestedQuery } from './result'
 
 export default function (query: NestedQuery): void {
   const entity = query.getRandomEntity

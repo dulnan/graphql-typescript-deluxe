@@ -1,4 +1,4 @@
-import type { DirectivesIncludeQuery } from './result.js'
+import type { DirectivesIncludeQuery } from './result'
 
 export default function (query: DirectivesIncludeQuery): void {
   const entity = query.getRandomEntity

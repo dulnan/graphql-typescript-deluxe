@@ -2,7 +2,7 @@ import {
   type FragmentWithEnumFragment,
   EntityType,
   type EntityType as EntityTypeType,
-} from './result.js'
+} from './result'
 
 function assertSameType(type: EntityTypeType): void {
   console.log(type)

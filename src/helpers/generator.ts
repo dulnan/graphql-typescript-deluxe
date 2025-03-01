@@ -2,7 +2,7 @@ import type {
   GeneratedCodeType,
   GeneratorInputArg,
   GeneratorInput,
-} from '../types/index.js'
+} from '../types'
 import { parse } from 'graphql'
 
 export function toInputDocuments(input: GeneratorInputArg): GeneratorInput[] {

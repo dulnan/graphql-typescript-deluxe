@@ -1,6 +1,6 @@
-import type { FieldMergingNestedComplexQuery } from './result.js'
+import type { FieldMergingNestedComplexQuery } from './result'
 
-export default function (query: FieldMergingNestedComplexQuery) {
+export default function (query: FieldMergingNestedComplexQuery): void {
   const entity = query.entityById
 
   if (!entity) {

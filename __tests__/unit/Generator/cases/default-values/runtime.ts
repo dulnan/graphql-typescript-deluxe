@@ -1,4 +1,4 @@
-import type { DefaultValuesQueryVariables } from './result.js'
+import type { DefaultValuesQueryVariables } from './result'
 
 export const withRequired: DefaultValuesQueryVariables = {
   bundleRequired: 'Foobar',

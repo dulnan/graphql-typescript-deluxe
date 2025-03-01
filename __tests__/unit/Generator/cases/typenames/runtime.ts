@@ -1,6 +1,6 @@
-import type { InlineFieldsQuery } from './result.js'
+import type { InlineFieldsQuery } from './result'
 
-export default function (query: InlineFieldsQuery) {
+export default function (query: InlineFieldsQuery): void {
   const foo = query.foobar
   if (!foo) {
     return

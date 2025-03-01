@@ -1,4 +1,4 @@
-import type { InputTypesQueryVariables } from './result.js'
+import type { InputTypesQueryVariables } from './result'
 
 const variables: InputTypesQueryVariables = {
   id: 2,

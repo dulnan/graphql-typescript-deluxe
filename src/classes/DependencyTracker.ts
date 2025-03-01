@@ -1,5 +1,5 @@
-import { LogicError } from '../errors/index.js'
-import type { GeneratedCodeType } from '../types/index.js'
+import { LogicError } from '../errors'
+import type { GeneratedCodeType } from '../types'
 
 const KEY_SEPARATOR = '#####'
 
@@ -11,7 +11,7 @@ export class DependencyTracker {
     this.addToCurrent(DependencyTracker.toKey(type, name))
   }
 
-  static toKey(type: string, key: string) {
+  static toKey(type: string, key: string): string {
     return type + KEY_SEPARATOR + key
   }
 

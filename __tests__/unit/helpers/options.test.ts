@@ -109,8 +109,8 @@ describe('Generator Options', () => {
     })
 
     it('should merge provided options with defaults', () => {
-      const customBuildOperationTypeName = () => 'Custom'
-      const customBuildScalarType = () => 'any'
+      const customBuildOperationTypeName = (): string => 'Custom'
+      const customBuildScalarType = (): string => 'any'
       const options = buildOptions({
         debugMode: true,
         useCache: false,

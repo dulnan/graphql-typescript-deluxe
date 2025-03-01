@@ -1,4 +1,4 @@
-import type { FieldMergingDeepNestedQuery } from './result.js'
+import type { FieldMergingDeepNestedQuery } from './result'
 
 export default function (query: FieldMergingDeepNestedQuery): void {
   const route = query.route

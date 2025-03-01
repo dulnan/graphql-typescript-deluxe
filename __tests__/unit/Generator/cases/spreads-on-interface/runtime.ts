@@ -1,4 +1,4 @@
-import type { SpreadsOnInterfaceQuery } from './result.js'
+import type { SpreadsOnInterfaceQuery } from './result'
 
 export default function (query: SpreadsOnInterfaceQuery): void {
   const page = query.getPage

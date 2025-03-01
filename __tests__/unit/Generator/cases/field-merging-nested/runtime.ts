@@ -2,7 +2,7 @@ import type {
   FieldMergingNestedQuery,
   NodeArticleOneFragment,
   NodeArticleTwoFragment,
-} from './result.js'
+} from './result'
 
 type Intersected = NodeArticleOneFragment & NodeArticleTwoFragment
 
@@ -17,7 +17,7 @@ export function testIntersection(node: Intersected): void {
   console.log(category.url)
 }
 
-export function custom(v: FieldMergingNestedQuery) {
+export function custom(v: FieldMergingNestedQuery): void {
   const entity = v.entityById
   if (!entity) {
     return

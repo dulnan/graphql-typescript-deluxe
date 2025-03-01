@@ -1,4 +1,4 @@
-import type { FieldMergingTypenameQuery } from './result.js'
+import type { FieldMergingTypenameQuery } from './result'
 
 export default function (query: FieldMergingTypenameQuery): void {
   const route = query.route

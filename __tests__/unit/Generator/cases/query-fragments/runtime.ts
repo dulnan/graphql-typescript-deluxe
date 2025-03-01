@@ -1,4 +1,4 @@
-import type { QueryFragmentsQuery } from './result.js'
+import type { QueryFragmentsQuery } from './result'
 
 export default function (query: QueryFragmentsQuery): void {
   const entity = query.getRandomEntity

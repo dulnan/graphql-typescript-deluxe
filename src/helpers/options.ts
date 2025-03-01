@@ -5,9 +5,9 @@ import type {
   FragmentDefinitionNode,
   GraphQLNamedType,
 } from 'graphql'
-import type { GeneratorOptions } from '../types/options.js'
-import { makeComment, toPascalCase } from './string.js'
-import type { DeepRequired } from './type.js'
+import type { GeneratorOptions } from '../types/options'
+import { makeComment, toPascalCase } from './string'
+import type { DeepRequired } from './type'
 
 export function buildOperationTypeName(
   operationName: string,

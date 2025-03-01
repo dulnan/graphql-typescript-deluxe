@@ -9,7 +9,7 @@ import tseslint from 'typescript-eslint'
 // You should change it to your needs following the documentation.
 export default tseslint.config(
   {
-    ignores: ['**/build/**', '**/tmp/**', '**/coverage/**', '**/output/**'],
+    ignores: ['**/dist/**', '**/tmp/**', '**/coverage/**', '**/output/**'],
   },
   eslint.configs.recommended,
   eslintConfigPrettier,
@@ -50,7 +50,7 @@ export default tseslint.config(
     },
 
     rules: {
-      ...vitest.configs.recommended.rules,
+      ...vitest.configs?.recommended.rules,
     },
 
     settings: {
@@ -61,7 +61,7 @@ export default tseslint.config(
 
     languageOptions: {
       globals: {
-        ...vitest.environments.env.globals,
+        ...vitest.environments?.env.globals,
       },
     },
   },

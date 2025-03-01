@@ -1,6 +1,6 @@
-import type { UnionTypesQuery } from './result.js'
+import type { UnionTypesQuery } from './result'
 
-export default function (query: UnionTypesQuery) {
+export default function (query: UnionTypesQuery): void {
   const items = query.search
   if (!items) {
     return

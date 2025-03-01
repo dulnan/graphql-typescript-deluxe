@@ -1,6 +1,6 @@
-import type { TypenameMergingQuery } from './result.js'
+import type { TypenameMergingQuery } from './result'
 
-export default function (query: TypenameMergingQuery) {
+export default function (query: TypenameMergingQuery): void {
   const withTypename = query.withTypename
   if (!withTypename) {
     return

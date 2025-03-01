@@ -1,6 +1,6 @@
-import type { TestQuery } from './result.js'
+import type { TestQuery } from './result'
 
-export function testType(query: TestQuery) {
+export function testType(query: TestQuery): void {
   if (!query.getRandomEntity) {
     return
   }

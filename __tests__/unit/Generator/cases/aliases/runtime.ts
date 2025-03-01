@@ -1,6 +1,6 @@
-import type { InlineFieldsQuery } from './result.js'
+import type { InlineFieldsQuery } from './result'
 
-export default function (query: InlineFieldsQuery) {
+export default function (query: InlineFieldsQuery): void {
   // Available on Entity
   console.log(query.alias_getRandomEntity)
   if (!query.alias_getRandomEntity) {

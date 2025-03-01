@@ -1,6 +1,6 @@
-import type { FieldMergingDeepQuery } from './result.js'
+import type { FieldMergingDeepQuery } from './result'
 
-export default function (v: FieldMergingDeepQuery) {
+export default function (v: FieldMergingDeepQuery): void {
   const menu = v.getMenu
   if (!menu) {
     return

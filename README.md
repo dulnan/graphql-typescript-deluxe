@@ -17,6 +17,7 @@ To just generate types use the static `generateOnce` method:
 ```typescript
 import { Generator } from 'graphql-typescript-generator'
 import { parse } from 'graphql'
+import { loadSchemaSync } from '@graphql-tools/load'
 
 const SCHEMA = `
 type Query {
@@ -31,7 +32,8 @@ query myQuery {
 `
 
 // Contains the compiled TS types as a string.
-const result = await Generator.generate(SCHEMA, DOC)
+const schema = loadSchemaSync(SCHEMA, { loaders: [] })
+const result = await Generator.generateOnce(schema, DOC)
 ```
 
 ### Stateful

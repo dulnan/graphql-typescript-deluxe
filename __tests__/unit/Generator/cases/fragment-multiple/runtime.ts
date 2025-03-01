@@ -1,4 +1,4 @@
-import type { FragmentInterfaceQuery, NodeArticleFragment } from './result.js'
+import type { FragmentInterfaceQuery, NodeArticleFragment } from './result'
 
 export default function (query: FragmentInterfaceQuery): void {
   const entity = query.getRandomEntity

@@ -1,6 +1,6 @@
-import { getCodeTypeLabel } from '../helpers/generator.js'
-import { notNullish } from '../helpers/type.js'
-import type { GeneratedCode, GeneratedCodeType } from '../types/index.js'
+import { getCodeTypeLabel } from '../helpers/generator'
+import { notNullish } from '../helpers/type'
+import type { GeneratedCode, GeneratedCodeType } from '../types/index'
 
 const DEFAULT_SORTING: GeneratedCodeType[] = [
   'enum',

@@ -1,6 +1,6 @@
-import type { TestQuery } from './result.js'
+import type { TestQuery } from './result'
 
-export default function (v: TestQuery) {
+export default function (v: TestQuery): void {
   const entity = v?.getRandomEntity
   if (!entity) {
     return

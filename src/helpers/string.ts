@@ -1,4 +1,4 @@
-import type { TypeContext } from '../types/index.js'
+import type { TypeContext } from '../types'
 
 export function escapeStringForComment(input: string): string {
   return input.replace(/\*\//g, '*\\/')

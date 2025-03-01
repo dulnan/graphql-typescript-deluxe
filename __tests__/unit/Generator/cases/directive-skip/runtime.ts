@@ -1,4 +1,4 @@
-import type { DirectivesSkipQuery } from './result.js'
+import type { DirectivesSkipQuery } from './result'
 
 export default function (query: DirectivesSkipQuery): void {
   const entity = query.getRandomEntity

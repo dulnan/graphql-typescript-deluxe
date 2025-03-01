@@ -1,4 +1,3 @@
-import { loadSchema } from '@graphql-tools/load'
 import {
   Kind,
   isEnumType,
@@ -31,18 +30,18 @@ import {
   inlineRootQueryFragmentsAndMerge,
   selectionSetToKey,
   unwrapNonNull,
-} from '../helpers/ast.js'
-import type { GeneratorOptions } from '../types/options.js'
-import { buildOptions } from '../helpers/options.js'
-import { makeComment, makeExport, makeTypeDoc } from '../helpers/string.js'
+} from '../helpers/ast'
+import type { GeneratorOptions } from '../types/options'
+import { buildOptions } from '../helpers/options'
+import { makeComment, makeExport, makeTypeDoc } from '../helpers/string'
 import type {
   GeneratedCode,
   GeneratedCodeType,
   GeneratorInputArg,
   GeneratorInput,
   TypeContext,
-} from '../types/index.js'
-import { toInputDocuments } from '../helpers/generator.js'
+} from '../types'
+import { toInputDocuments } from '../helpers/generator'
 import {
   DuplicateInputDocument,
   FieldNotFoundError,
@@ -50,7 +49,7 @@ import {
   LogicError,
   MissingRootTypeError,
   TypeNotFoundError,
-} from '../errors/index.js'
+} from '../errors/index'
 import {
   IR,
   hasTypenameField,
@@ -63,11 +62,11 @@ import {
   type IRNode,
   type IRNodeFragmentSpread,
   type IRNodeObject,
-} from '../helpers/ir.js'
-import { getRootType } from '../helpers/schema.js'
-import { GeneratorOutput } from '../classes/GeneratorOutput.js'
-import { DependencyTracker } from '../classes/DependencyTracker.js'
-import type { DeepRequired } from '../helpers/type.js'
+} from '../helpers/ir'
+import { getRootType } from '../helpers/schema'
+import { GeneratorOutput } from '../classes/GeneratorOutput'
+import { DependencyTracker } from '../classes/DependencyTracker'
+import type { DeepRequired } from '../helpers/type'
 
 const TYPENAME = '__typename'
 
@@ -137,21 +136,16 @@ export class Generator {
   /**
    * Generate the types for the given documents.
    *
-   * @param schemaOrRaw - The schema object or the schema file.
+   * @param schema - The schema object.
    * @param documentOrRaw - The document node or the document file.
    * @param options - The generator options.
    */
-  static async generateOnce(
-    schemaOrRaw: string | GraphQLSchema,
+  static generateOnce(
+    schema: GraphQLSchema,
     input: GeneratorInputArg,
     options?: GeneratorOptions,
-  ): Promise<string> {
-    const schema =
-      typeof schemaOrRaw === 'string'
-        ? await loadSchema(schemaOrRaw, { loaders: [] })
-        : schemaOrRaw
+  ): string {
     const docs = toInputDocuments(input)
-
     const generator = new Generator(schema, options)
     generator.add(docs)
     return generator.build().getAll()
