@@ -90,6 +90,7 @@ describe('Generator Options', () => {
         debugMode: false,
         useCache: false,
         dependencyTracking: true,
+        generateOperationsMap: false,
         buildOperationTypeName,
         buildOperationVariablesTypeName,
         buildFragmentTypeName,
@@ -115,6 +116,7 @@ describe('Generator Options', () => {
         debugMode: true,
         useCache: false,
         dependencyTracking: false,
+        generateOperationsMap: true,
         buildOperationTypeName: customBuildOperationTypeName,
         buildScalarType: customBuildScalarType,
         output: {
@@ -131,6 +133,7 @@ describe('Generator Options', () => {
         debugMode: true,
         useCache: false,
         dependencyTracking: false,
+        generateOperationsMap: true,
         buildOperationTypeName: customBuildOperationTypeName,
         buildOperationVariablesTypeName,
         buildFragmentTypeName,

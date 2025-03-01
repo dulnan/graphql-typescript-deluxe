@@ -116,6 +116,13 @@ export type GeneratorOptions = {
   output?: GeneratorOptionsOutput
 
   /**
+   * Generate a map of all operations.
+   *
+   * @default false
+   */
+  generateOperationsMap?: boolean
+
+  /**
    * Enable caching.
    *
    * Depending on the size and complexity of the operations and fragments this

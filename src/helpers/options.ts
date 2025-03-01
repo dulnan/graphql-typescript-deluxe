@@ -85,6 +85,8 @@ export function buildOptions(
   return {
     debugMode: !!options?.debugMode,
     useCache: options?.useCache ?? false,
+    dependencyTracking: options?.dependencyTracking ?? true,
+    generateOperationsMap: options?.generateOperationsMap ?? false,
     buildOperationTypeName:
       options?.buildOperationTypeName ?? buildOperationTypeName,
     buildOperationVariablesTypeName:
@@ -95,7 +97,6 @@ export function buildOptions(
     buildEnumTypeName: options?.buildEnumTypeName ?? buildEnumTypeName,
     buildEnumCode: options?.buildEnumCode ?? buildEnumCode,
     buildInputTypeName: options?.buildInputTypeName ?? buildInputTypeName,
-    dependencyTracking: options?.dependencyTracking ?? true,
     buildScalarType: options?.buildScalarType ?? buildScalarType,
 
     output: {

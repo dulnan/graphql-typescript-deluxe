@@ -49,7 +49,9 @@
     "prettier": "prettier --check .",
     "prettier:fix": "prettier --write .",
     "typecheck": "tsc",
-    "test:watch": "WATCH_MODE=true vitest unit --config __tests__/vitest.config.ts"
+    "test:watch": "WATCH_MODE=true vitest unit --config __tests__/vitest.config.ts",
+    "benchmark": "node ./benchmark/index.cjs",
+    "benchmark:profiling": "export PROFILE=true && npx 0x ./benchmark/index.cjs"
   },
   "author": "Jan Hug <me@dulnan.net>",
   "license": "MIT",

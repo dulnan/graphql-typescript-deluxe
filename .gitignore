@@ -28,6 +28,8 @@ dist/
 # Misc
 .DS_Store
 # output
-output
-!output/result-custom.ts
+benchmark/output
 *result-codegen.ts
+benchmark/graphql
+
+**.0x
