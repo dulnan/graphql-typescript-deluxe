@@ -903,40 +903,35 @@ export class Generator {
         // Possible types that implement the interface/union.
         const possibleTypes = this.schema.getPossibleTypes(abstractType)
 
-        // Gather all field selections on interface/union level.
-        for (const sel of selectionSet.selections) {
-          if (sel.kind !== Kind.FIELD) {
-            continue
-          }
-
-          const fieldName = sel.name.value
-          const aliasName = sel.alias?.value || fieldName
-          if (fieldName === TYPENAME) {
-            baseFields[aliasName] = IR.TYPENAME(
-              this.getOrCreateUnionTypenameType(abstractType),
-            )
-          }
-          // If it's an interface, we can also gather interface-level fields directly
-          else if (isInterfaceType(abstractType)) {
-            const fieldDef = abstractType.getFields()[fieldName]
-            if (!fieldDef) {
-              throw new FieldNotFoundError(fieldName, abstractType.name)
-            }
-            const fieldIR = this.buildFieldIRFromFieldDef(fieldDef, sel)
-            baseFields[aliasName] = mergeIR(baseFields[aliasName], fieldIR)
-          }
-        }
-
         // Always __typename field if option is set.
-        if (this.options.output.nonOptionalTypename && !baseFields[TYPENAME]) {
+        if (this.options.output.nonOptionalTypename) {
           baseFields[TYPENAME] = IR.TYPENAME(
             this.getOrCreateUnionTypenameType(abstractType),
           )
         }
 
-        // Process inline fragments and fragment spreads.
+        // Gather all field selections on interface/union level.
         for (const sel of selectionSet.selections) {
-          if (sel.kind === Kind.INLINE_FRAGMENT) {
+          if (sel.kind === Kind.FIELD) {
+            const fieldName = sel.name.value
+            const aliasName = sel.alias?.value || fieldName
+            if (fieldName === TYPENAME) {
+              if (!baseFields[TYPENAME]) {
+                baseFields[aliasName] = IR.TYPENAME(
+                  this.getOrCreateUnionTypenameType(abstractType),
+                )
+              }
+            }
+            // If it's an interface, we can also gather interface-level fields directly
+            else if (isInterfaceType(abstractType)) {
+              const fieldDef = abstractType.getFields()[fieldName]
+              if (!fieldDef) {
+                throw new FieldNotFoundError(fieldName, abstractType.name)
+              }
+              const fieldIR = this.buildFieldIRFromFieldDef(fieldDef, sel)
+              baseFields[aliasName] = mergeIR(baseFields[aliasName], fieldIR)
+            }
+          } else if (sel.kind === Kind.INLINE_FRAGMENT) {
             const typeConditionName = sel.typeCondition?.name.value
             if (!typeConditionName) {
               throw new LogicError('Inline fragment has no type condition.')

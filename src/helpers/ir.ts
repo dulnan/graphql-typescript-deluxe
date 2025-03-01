@@ -1,3 +1,5 @@
+import { TYPENAME } from '../constants'
+
 export type IRNodeScalar = {
   kind: 'SCALAR'
   description?: string | null
@@ -580,5 +582,5 @@ export function markNonNull<T extends IRNode>(ir: T): T {
  * If we have a field named __typename in the given fields, return true
  */
 export function hasTypenameField(fields: Record<string, IRNode>): boolean {
-  return Object.keys(fields).some((k) => k === '__typename')
+  return fields[TYPENAME] !== undefined
 }
