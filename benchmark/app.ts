@@ -13,6 +13,18 @@ const graphqlFolder = fileURLToPath(new URL('./graphql', import.meta.url))
 
 const outputFolder = fileURLToPath(new URL('./output', import.meta.url))
 
+const formatMemoryUsage = (data: number) =>
+  `${Math.round((data / 1024 / 1024) * 100) / 100} MB`
+
+function outputMemoryUsage(data: NodeJS.MemoryUsage) {
+  return {
+    rss: `${formatMemoryUsage(data.rss)} -> Resident Set Size - total memory allocated for the process execution`,
+    heapTotal: `${formatMemoryUsage(data.heapTotal)} -> total size of the allocated heap`,
+    heapUsed: `${formatMemoryUsage(data.heapUsed)} -> actual memory used during the execution`,
+    external: `${formatMemoryUsage(data.external)} -> V8 external memory`,
+  }
+}
+
 function readFile(filePath: string): Promise<string> {
   return fs
     .readFile(path.resolve(graphqlFolder, filePath))
@@ -64,9 +76,13 @@ async function runWithDuration(
 ) {
   console.log('-'.repeat(80))
   console.log('Starting ' + fileName)
+  const usageStart = process.memoryUsage()
+  console.log(outputMemoryUsage(usageStart))
   const start = performance.now()
   const result = await cb()
   const end = performance.now()
+  const usageEnd = process.memoryUsage()
+  console.log(outputMemoryUsage(usageEnd))
   console.log('Duration: ' + Math.round((end - start) * 1000) / 1000 + 'ms')
   console.log('-'.repeat(80))
   if (isProfiling) {
@@ -110,7 +126,7 @@ async function main(): Promise<void> {
 
   const generator = new Generator(schema, {
     debugMode: true,
-    useCache: true,
+    useCache: false,
     dependencyTracking: true,
     output: {
       mergeTypenames: true,

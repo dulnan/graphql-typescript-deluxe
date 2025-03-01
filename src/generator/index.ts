@@ -208,17 +208,18 @@ export class Generator {
    */
   private withCache<T>(prefix: string, key: string, fn: () => T): T {
     if (!this.options.useCache) {
-      this.incrementDebugCount('Cache Hits: ' + prefix)
+      this.incrementDebugCount('Cache HIT: ' + prefix)
       return fn()
     }
     const cacheKey = `${prefix}_${key}`
     const fromCache = this.cache.get(cacheKey)
     if (fromCache) {
       this.incrementDebugCount('Cache Hits Total')
-      this.incrementDebugCount('Cache Miss: ' + prefix)
+      this.incrementDebugCount('Cache HIT: ' + prefix)
       this.dependencyTracker?.merge(fromCache)
       return fromCache.result
     }
+    this.incrementDebugCount('Cache MISS: ' + prefix)
     this.dependencyTracker?.start()
     const result = fn()
     const dependencies = this.dependencyTracker?.end() || []
@@ -438,20 +439,28 @@ export class Generator {
   private createInputTS(typeNode: TypeNode): string {
     return this.withCache('createInputTS', getTypeNodeKey(typeNode), () => {
       const { type, isNonNull } = unwrapNonNull(typeNode)
-      const maybeNull = isNonNull ? '' : ' | null'
+
+      let output = 'any'
+
       if (type.kind === Kind.LIST_TYPE) {
         const element = this.createInputTS(type.type)
-        return `Array<${element}>${maybeNull}`
+        output =
+          this.options.output.arrayShape === 'Array'
+            ? `Array<${element}>`
+            : `${element}[]`
       } else if (type.kind === Kind.NAMED_TYPE) {
         const namedType = this.schema.getType(type.name.value)
         if (!namedType) {
           throw new TypeNotFoundError(type.name.value)
         }
-        const node = this.buildOutputTypeIR(namedType)
-        node.nullable = !isNonNull
-        return this.IRToCode(node)
+        output = this.IRToCode(this.buildOutputTypeIR(namedType))
       }
-      return `any${maybeNull}`
+
+      if (!isNonNull) {
+        output += ' | null'
+      }
+
+      return output
     })
   }
 
@@ -537,10 +546,7 @@ export class Generator {
         dependencies,
         filePath: this.dependencyTracker?.getCurrentFile() || NO_FILE_PATH,
       })
-      const code = makeExport(
-        typeName,
-        this.IRToCode(ir, { skipTopLevelNull: true }),
-      )
+      const code = makeExport(typeName, this.IRToCode(ir))
 
       return {
         code,
@@ -595,7 +601,6 @@ export class Generator {
           typeName,
           this.IRToCode(
             postProcessIR(this.buildSelectionSet(rootType, selectionSet)),
-            { skipTopLevelNull: true },
           ),
         ),
         context: { input, definition: operation },
@@ -916,7 +921,7 @@ export class Generator {
             const fieldName = sel.name.value
             const aliasName = sel.alias?.value || fieldName
             if (fieldName === TYPENAME) {
-              if (!baseFields[TYPENAME]) {
+              if (!hasTypenameField(baseFields)) {
                 baseFields[aliasName] = IR.TYPENAME(
                   this.getOrCreateUnionTypenameType(abstractType),
                 )
@@ -1200,9 +1205,7 @@ export class Generator {
 
     // Add direct fields as an object if there are any non-conflicting fields
     if (nonConflictingDirectFields.size > 0) {
-      intersectionParts.push(
-        this.fieldMapToCode(nonConflictingDirectFields, true),
-      )
+      intersectionParts.push(this.fieldMapToCode(nonConflictingDirectFields))
     }
 
     // Add fragments with Omit for conflicting fields
@@ -1234,7 +1237,7 @@ export class Generator {
 
     // Add merged conflict fields as a separate object into the intersection.
     if (conflictFields.size > 0) {
-      intersectionParts.push(this.fieldMapToCode(conflictFields, true))
+      intersectionParts.push(this.fieldMapToCode(conflictFields))
     }
 
     if (intersectionParts.length === 0) {
@@ -1341,27 +1344,24 @@ export class Generator {
   /**
    * Generate the code for the given field map.
    *
-   * @param map - The field map.
+   * @param fields - The field map.
    *
    * @return The generated code.
    */
-  private fieldMapToCode(
-    map: Map<string, IRNode>,
-    skipTopLevelNull: boolean,
-  ): string {
-    if (!map.size) {
+  private fieldMapToCode(fields: Map<string, IRNode>): string {
+    if (!fields.size) {
       return this.options.output.emptyObject
     }
     this.incrementDebugCount('fieldMapToCode')
 
-    const fieldNames = [...map.keys()].sort()
+    const fieldNames = [...fields.keys()].sort()
 
     let output = '{'
 
     for (let i = 0; i < fieldNames.length; i++) {
       const fieldName = fieldNames[i]
-      const ir = map.get(fieldName)!
-      const tsType = this.IRToCode(ir, { skipTopLevelNull })
+      const ir = fields.get(fieldName)!
+      const tsType = this.IRToCode(ir)
       const propertySuffix =
         ir.nullable && this.options.output.nullableField === 'optional'
           ? '?:'
@@ -1385,24 +1385,14 @@ export class Generator {
    * Convert an IR node to valid TypeScript code.
    *
    * @param ir - The IR node.
-   * @param options - The options.
-   * @param options.skipTopLevelNull - Skip generating `| null`.
    *
    * @return The TS code of the node.
    */
-  private IRToCode(
-    ir: IRNode,
-    options: { skipTopLevelNull?: boolean } = {},
-  ): string {
+  private IRToCode(ir: IRNode): string {
     this.incrementDebugCount('IRToCode')
-    const skipTopLevelNull = options.skipTopLevelNull
     switch (ir.kind) {
       case 'SCALAR': {
-        const base = ir.tsType
-        if (!skipTopLevelNull && ir.nullable) {
-          return `${base} | null`
-        }
-        return base
+        return ir.tsType
       }
 
       case 'TYPENAME': {
@@ -1415,15 +1405,11 @@ export class Generator {
       }
 
       case 'OBJECT': {
-        const objStr = this.objectNodeToCode(ir)
-        if (ir.nullable && !skipTopLevelNull) {
-          return `${objStr} | null`
-        }
-        return objStr
+        return this.objectNodeToCode(ir)
       }
 
       case 'ARRAY': {
-        const elemTS = this.IRToCode(ir.ofType, { skipTopLevelNull: true })
+        const elemTS = this.IRToCode(ir.ofType)
         const finalElem = ir.nullableElement ? `${elemTS} | null` : elemTS
         return this.options.output.arrayShape === 'Array'
           ? `Array<${finalElem}>`
@@ -1431,14 +1417,8 @@ export class Generator {
       }
 
       case 'UNION': {
-        const parts = ir.types.map((t) =>
-          this.IRToCode(t, { skipTopLevelNull: true }),
-        )
-        const unionStr = `(${parts.join(' | ')})`
-        if (!skipTopLevelNull && ir.nullable) {
-          return unionStr + ' | null'
-        }
-        return unionStr
+        const parts = ir.types.map((t) => this.IRToCode(t))
+        return `(${parts.join(' | ')})`
       }
 
       case 'FRAGMENT_SPREAD': {
@@ -1473,7 +1453,7 @@ export class Generator {
 
     // When there are no fragment spreads, we can just build the object.
     if (!fragmentSpreads.length) {
-      return this.fieldMapToCode(otherFields, true)
+      return this.fieldMapToCode(otherFields)
     }
 
     return this.mergeFragmentSpreads(otherFields, fragmentSpreads)
