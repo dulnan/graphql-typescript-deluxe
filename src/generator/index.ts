@@ -112,7 +112,17 @@ export class Generator {
   /**
    * A cache for schema related lookups.
    */
-  private schemaCache: Map<string, string | boolean> = new Map()
+  private schemaCache: Map<string, string | boolean | string[]> = new Map()
+
+  /**
+   * Pre-computed ABSTRACT_CONCRETE implemenations.
+   */
+  private schemaImplementation: Set<string> = new Set()
+
+  /**
+   * Pre-computed possible types for abstract types.
+   */
+  private schemaPossibleTypes: Map<string, string[]> = new Map()
 
   /**
    * The IRs of all fragments.
@@ -144,6 +154,7 @@ export class Generator {
     if (this.options.dependencyTracking) {
       this.dependencyTracker = new DependencyTracker()
     }
+    this.buildSchemaCache()
   }
 
   /**
@@ -243,7 +254,7 @@ export class Generator {
    *
    * @returns The return value from the callback.
    */
-  private withSchemaCache<T extends string | boolean>(
+  withSchemaCache<T extends string | boolean | string[]>(
     prefix: string,
     key: string,
     fn: () => T,
@@ -343,6 +354,26 @@ export class Generator {
   // ===========================================================================
 
   /**
+   * Build the schema cache for quick look up.
+   */
+  private buildSchemaCache(): void {
+    const typeMap = this.schema.getTypeMap()
+
+    for (const type of Object.values(typeMap)) {
+      if (isAbstractType(type)) {
+        const possibleTypes = this.schema.getPossibleTypes(type)
+        for (const objectType of possibleTypes) {
+          this.schemaImplementation.add(
+            `implements:${type.name}---${objectType.name}`,
+          )
+        }
+        const names = possibleTypes.map((v) => v.name)
+        this.schemaPossibleTypes.set(type.name, names)
+      }
+    }
+  }
+
+  /**
    * Find the fragment node for the given name.
    *
    * @param name - The name of the fragment.
@@ -363,22 +394,26 @@ export class Generator {
   /**
    * Checks whether the given object type implements the given abstract type name.
    *
-   * @param type - The object type.
+   * @param type - The name of the object type.
    * @param abstractName - The name of the abstract type.
    *
    * @returns True if the type implements the abstract type.
    */
-  private objectImplements(
-    type: GraphQLObjectType,
-    abstractName: string,
-  ): boolean {
-    return this.withSchemaCache(
-      'objectImplements',
-      type.name + abstractName,
-      () => {
-        return type.getInterfaces().some((i) => i.name === abstractName)
-      },
+  private objectImplements(objectName: string, abstractName: string): boolean {
+    return this.schemaImplementation.has(
+      `implements:${abstractName}---${objectName}`,
     )
+  }
+
+  /**
+   * Get the names of possible object types for the abstract type.
+   *
+   * @param abstractName - The name of the abstract type.
+   *
+   * @returns All object types that implement / are part of the union.
+   */
+  private getPossibleObjectTypeNames(abstractName: string): string[] {
+    return this.schemaPossibleTypes.get(abstractName) || []
   }
 
   /**
@@ -853,7 +888,7 @@ export class Generator {
             const condName = fragDef.typeCondition.name.value
             if (
               condName === objectType.name ||
-              this.objectImplements(objectType, condName)
+              this.objectImplements(objectType.name, condName)
             ) {
               const fragTypeName = this.options.buildFragmentTypeName(fragDef)
               mergeFragmentSpread(
@@ -923,7 +958,7 @@ export class Generator {
         const objectTypeMap = new Map<string, Record<string, IRNode>>()
 
         // Possible types that implement the interface/union.
-        const possibleTypes = this.schema.getPossibleTypes(abstractType)
+        const possibleTypes = this.getPossibleObjectTypeNames(abstractType.name)
         const totalPossibleTypes = possibleTypes.length
 
         // Fields requested on interface/union level.
@@ -1111,11 +1146,12 @@ export class Generator {
             const ir = this.buildSelectionSet(objectType, sel.selectionSet)
 
             // For each object type that implements typeConditionName, merge its IR.
-            for (const type of possibleTypes) {
+            for (const typeName of possibleTypes) {
               if (
-                type.name === typeConditionName ||
-                this.objectImplements(type, typeConditionName)
+                typeName === typeConditionName ||
+                this.objectImplements(typeName, typeConditionName)
               ) {
+                const type = this.schema.getType(typeName)!
                 if (ir.kind === 'OBJECT') {
                   const merged = mergeObjectFields(
                     objectTypeMap.get(type.name) || {},
@@ -1194,31 +1230,31 @@ export class Generator {
 
         const branches: IRNode[] = []
         const typesWithFragments = new Set(objectTypeMap.keys())
-        const typesWithoutFragments = possibleTypes
-          .filter((v) => !typesWithFragments.has(v.name))
-          .map((v) => v.name)
+        const typesWithoutFragments = possibleTypes.filter(
+          (v) => !typesWithFragments.has(v),
+        )
         const remainingCount = possibleTypes.length - typesWithFragments.size
         const hasTypename = hasTypenameField(baseFields)
         let unionIrNode: IRNodeTypename | null = null
 
-        for (const objectType of possibleTypes) {
+        for (const objectTypeName of possibleTypes) {
           // Clone the base fields.
           const mergedFields = { ...baseFields }
 
           // If user had an inline fragment for the type, merge those fields.
-          const subtypeFields = objectTypeMap.get(objectType.name)
+          const subtypeFields = objectTypeMap.get(objectTypeName)
           if (subtypeFields) {
             mergeObjectFields(mergedFields, subtypeFields)
           }
 
           if (hasTypename) {
             if (
-              typesWithFragments.has(objectType.name) ||
+              typesWithFragments.has(objectTypeName) ||
               !this.options.output.mergeTypenames
             ) {
               // If this type has fragments, its __typename should be the name of the object type.
               mergedFields[TYPENAME] = IR.TYPENAME(
-                this.getOrCreateObjectTypeName(objectType),
+                this.getOrCreateObjectTypeName(objectTypeName),
               )
             } else if (typesWithFragments.size > 0) {
               // Only use the Exclude<> for __typename when we have enough remaining types.
@@ -1247,7 +1283,7 @@ export class Generator {
 
           branches.push(
             IR.OBJECT({
-              graphQLTypeName: objectType.name,
+              graphQLTypeName: objectTypeName,
               fields: mergedFields,
               nullable: true,
             }),
@@ -1689,6 +1725,8 @@ export class Generator {
     this.cache.clear()
     this.fragmentIRs.clear()
     this.schemaCache.clear()
+    this.schemaImplementation.clear()
+    this.schemaPossibleTypes.clear()
     return this
   }
 

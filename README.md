@@ -119,7 +119,7 @@ language server performance.
 
 To test the performance I've used a quite large project (~ 15k lines of schema,
 with 135 fragments and 173 operations) as reference. On average, this generator
-only takes around **50ms** to produce the string with all TypeScript code.
+only takes around **40ms** to produce the string with all TypeScript code.
 Compared to graphql-codegen, which averages around **6000ms** for me.
 
 ## Output
