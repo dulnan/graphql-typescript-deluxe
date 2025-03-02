@@ -1,12 +1,23 @@
-# graphql-typescript-codegen-fast
+# graphql-typescript-deluxe
 
 This is an **experimental** and **opiniated** code generator for generating
 TypeScript types for GraphQL operations and fragments.
 
 ## Features
 
-- Readability: The generated types are easy to read and understand.
-- Incremental: Update only types for files that changed.
+- Performance: Fast initial execution (at least 100x faster than
+  graphql-codegen)
+- Readability: The generated types are easy to read and understand
+- Stateful: The class keeps track of already generated types, allowing it to
+  update only types that need to be rebuilt
+- TypeDoc: Adds comments for fragments, operations and fields (description from
+  schema)
+
+## Caveats
+
+This is still very much beta and experimental. While there are a lot of tests
+that cover both basic queries and edge cases, I'm sure there are plenty that I
+missed.
 
 ## Usage
 
@@ -112,15 +123,16 @@ operations, running graphql-codegen takes up to 10s, other team members with
 less powerful machines report even higher numbers, sometimes up to one minute.
 
 In addition, I was never truly happy with the output, no matter what options I
-tried. The output also tends to be extremely verbose and large, affecting
-language server performance.
+tried. The output also tends to be extremely verbose and large, affecting LSP
+and IDE performance.
 
 ## Performance
 
 To test the performance I've used a quite large project (~ 15k lines of schema,
 with 135 fragments and 173 operations) as reference. On average, this generator
-only takes around **40ms** to produce the string with all TypeScript code.
-Compared to graphql-codegen, which averages around **6000ms** for me.
+only takes around **35ms** to produce the string with all TypeScript code.
+Compared to graphql-codegen, which averages around **6000ms** for me for the
+same set of operations/fragments.
 
 ## Output
 
@@ -340,7 +352,7 @@ export type GetRandomEntity = {
 
 This prevents generating identical object shapes where only the `__typename`
 changes, which can very quickly bloat the TypeScript code, making it difficult
-to make sense of the types:
+to make sense of the types. The type above is identical to this one:
 
 ```typescript
 export type GetRandomEntity = {
