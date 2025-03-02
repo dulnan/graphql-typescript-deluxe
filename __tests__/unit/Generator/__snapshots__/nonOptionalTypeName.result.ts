@@ -97,9 +97,7 @@ export type FoobarQuery = {
       }
   /** Get random entity. */
   user?:
-    | ({
-        __typename: User
-      } & UserFragment)
+    | UserFragment
     | {
         __typename: Exclude<Entity, User>
       }

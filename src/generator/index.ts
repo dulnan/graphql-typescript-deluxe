@@ -1108,6 +1108,9 @@ export class Generator {
 
     // ====================================================================
     // Full gathering of all possible combinations.
+    //
+    // This creates a branch for every possible type to create a union node
+    // of all possible object shapes.
     // ====================================================================
 
     // Gather all field selections on interface/union level.
@@ -1118,21 +1121,21 @@ export class Generator {
           throw new LogicError('Inline fragment has no type condition.')
         }
 
-        const objectType = this.schema.getType(typeConditionName)
-        if (!objectType) {
+        const spreadType = this.schema.getType(typeConditionName)
+        if (!spreadType) {
           throw new TypeNotFoundError(typeConditionName)
         }
 
         // Build the IR node for the selection for this object type.
-        const ir = this.buildSelectionSet(objectType, sel.selectionSet)
+        const ir = this.buildSelectionSet(spreadType, sel.selectionSet)
 
         // For each object type that implements typeConditionName, merge its IR.
-        for (const typeName of possibleTypes) {
+        for (const possibleTypeName of possibleTypes) {
           if (
-            typeName === typeConditionName ||
-            this.objectImplements(typeName, typeConditionName)
+            possibleTypeName === typeConditionName ||
+            this.objectImplements(possibleTypeName, typeConditionName)
           ) {
-            const type = this.schema.getType(typeName)!
+            const type = this.schema.getType(possibleTypeName)!
             if (ir.kind === 'OBJECT') {
               const merged = mergeObjectFields(
                 objectTypeMap.get(type.name) || {},
@@ -1152,33 +1155,29 @@ export class Generator {
                   objectTypeMap.set(type.name, merged)
                 }
               }
-            } else if (ir.kind === 'FRAGMENT_SPREAD') {
-              const existing = objectTypeMap.get(type.name) || {}
-              mergeFragmentSpread(existing, ir)
-              objectTypeMap.set(type.name, existing)
             }
           }
         }
       } else if (sel.kind === Kind.FRAGMENT_SPREAD) {
         const fragName = sel.name.value
-        const fragDef = this.getFragmentNode(fragName)
+        const fragment = this.getFragmentNode(fragName)
 
-        const typeConditionName = fragDef.typeCondition.name.value
+        const typeConditionName = fragment.typeCondition.name.value
         const typeConditionType = this.schema.getType(typeConditionName)
         if (!typeConditionType) {
           throw new TypeNotFoundError(typeConditionName)
         }
 
         if (isObjectType(typeConditionType)) {
-          const fragTypeName = this.options.buildFragmentTypeName(fragDef)
+          const fragTypeName = this.options.buildFragmentTypeName(fragment)
           const existing = objectTypeMap.get(typeConditionType.name) || {}
           mergeFragmentSpread(
             existing,
             IR.FRAGMENT_SPREAD({
-              name: fragDef.name.value,
+              name: fragment.name.value,
               fragmentTypeName: fragTypeName,
               parentType: abstractType.name,
-              fragmentTypeCondition: fragDef.typeCondition.name.value,
+              fragmentTypeCondition: fragment.typeCondition.name.value,
               nullable: false,
             }),
           )
@@ -1186,9 +1185,16 @@ export class Generator {
         } else if (isAbstractType(typeConditionType)) {
           const ir = this.buildSelectionSet(
             typeConditionType,
-            fragDef.selectionSet,
+            fragment.selectionSet,
           )
-          if (ir.kind === 'UNION') {
+
+          if (ir.kind === 'OBJECT') {
+            const merged = mergeObjectFields(
+              objectTypeMap.get(ir.graphQLTypeName) || {},
+              ir.fields,
+            )
+            objectTypeMap.set(ir.graphQLTypeName, merged)
+          } else if (ir.kind === 'UNION') {
             for (const branch of ir.types) {
               if (branch.kind === 'OBJECT') {
                 const merged = mergeObjectFields(
@@ -1198,12 +1204,6 @@ export class Generator {
                 objectTypeMap.set(branch.graphQLTypeName, merged)
               }
             }
-          } else if (ir.kind === 'OBJECT') {
-            const merged = mergeObjectFields(
-              objectTypeMap.get(ir.graphQLTypeName) || {},
-              ir.fields,
-            )
-            objectTypeMap.set(ir.graphQLTypeName, merged)
           }
         }
       }
@@ -1312,9 +1312,12 @@ export class Generator {
       return ''
     }
 
-    if (!fields.size) {
+    const hasOnlyTypename = fields.has(TYPENAME) && fields.size === 1
+
+    if (!fields.size || (hasOnlyTypename && spreads.length === 1)) {
       return spreads.map((v) => v.fragmentTypeName).join(' & ')
     }
+
     this.incrementDebugCount('mergeFragmentSpreads')
 
     // Map of all fields keyed by name of fragment.
@@ -1372,7 +1375,11 @@ export class Generator {
         merged = m
       }
 
-      if (conflictFound && !conflictFields.has(fieldName)) {
+      if (
+        conflictFound &&
+        !conflictFields.has(fieldName) &&
+        fieldName !== TYPENAME
+      ) {
         conflictFields.set(fieldName, merged)
       }
     }

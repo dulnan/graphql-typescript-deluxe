@@ -132,7 +132,7 @@ async function main(): Promise<void> {
     dependencyTracking: true,
     output: {
       mergeTypenames: true,
-      nonOptionalTypename: false,
+      nonOptionalTypename: true,
       typeComment: true,
     },
   })
