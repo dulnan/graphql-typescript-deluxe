@@ -20,6 +20,7 @@ import {
   type GraphQLSchema,
   type GraphQLType,
   type GraphQLUnionType,
+  type InlineFragmentNode,
   type OperationDefinitionNode,
   type SelectionSetNode,
   type TypeNode,
@@ -906,15 +907,27 @@ export class Generator {
           ? abstractType.getFields()
           : {}
 
-        // Fields requested on interface/union level.
-        const baseFields: Record<string, IRNode> = {}
-
         // Stores inline fragment fields for each implementing object type.
         // Key is name of object type, value is an object of fields => node.
         const objectTypeMap = new Map<string, Record<string, IRNode>>()
 
         // Possible types that implement the interface/union.
         const possibleTypes = this.schema.getPossibleTypes(abstractType)
+
+        // Fields requested on interface/union level.
+        const baseFields: Record<string, IRNode> = {}
+        const fragmentsByConcreteType: Record<
+          string,
+          FragmentDefinitionNode[]
+        > = {}
+        const fragmentsForAbstract: FragmentDefinitionNode[] = []
+
+        const inlineFragmentsByConcreteType: Record<
+          string,
+          InlineFragmentNode[]
+        > = {}
+
+        const inlineFragmentsForAbstract: InlineFragmentNode[] = []
 
         // Always __typename field if option is set.
         if (this.options.output.nonOptionalTypename) {
@@ -923,16 +936,6 @@ export class Generator {
           )
         }
 
-        // const fragmentsByConcreteType: Record<
-        //   string,
-        //   FragmentDefinitionNode[]
-        // > = {}
-        // const inlineFragmentsByConcreteType: Record<string>
-
-        // for (const sel of selections) {
-        // }
-
-        // Gather all field selections on interface/union level.
         for (const sel of selections) {
           if (sel.kind === Kind.FIELD) {
             const fieldName = sel.name.value
@@ -957,6 +960,83 @@ export class Generator {
                 : fieldIR
             }
           } else if (sel.kind === Kind.INLINE_FRAGMENT) {
+            if (!sel.typeCondition) {
+              throw new LogicError('Missing type condition in inline fragment.')
+            }
+            const typeConditionName = sel.typeCondition?.name.value
+            if (typeConditionName === abstractType.name) {
+              inlineFragmentsForAbstract.push(sel)
+            } else {
+              if (!inlineFragmentsByConcreteType[typeConditionName]) {
+                inlineFragmentsByConcreteType[typeConditionName] = []
+              }
+              inlineFragmentsByConcreteType[typeConditionName].push(sel)
+            }
+          } else if (sel.kind === Kind.FRAGMENT_SPREAD) {
+            const fragmentName = sel.name.value
+            const fragment = this.getFragmentNode(fragmentName)
+            const typeConditionName = fragment.typeCondition.name.value
+            // A fragment on the abstract type.
+            if (typeConditionName === abstractType.name) {
+              fragmentsForAbstract.push(fragment)
+            } else {
+              if (!fragmentsByConcreteType[typeConditionName]) {
+                fragmentsByConcreteType[typeConditionName] = []
+              }
+              fragmentsByConcreteType[typeConditionName].push(fragment)
+            }
+          }
+        }
+
+        const concreteInlineFragmentTypes = Object.keys(
+          inlineFragmentsByConcreteType,
+        )
+        const concreteFragmentTypes = Object.keys(fragmentsByConcreteType)
+
+        const hasBaseFields = Object.keys(baseFields).length > 0
+        const hasInlineFragmentsForAbstract =
+          inlineFragmentsForAbstract.length > 0
+        const hasFragmentsForAbstract = fragmentsForAbstract.length > 0
+
+        const hasConcreteInlineFragments =
+          concreteInlineFragmentTypes.length > 0
+        const hasConcreteFragments = concreteFragmentTypes.length > 0
+
+        // We don't have any base fields.
+        if (!hasBaseFields) {
+          // We only have fragments for abstract.
+          if (
+            !hasInlineFragmentsForAbstract &&
+            hasFragmentsForAbstract &&
+            !hasConcreteInlineFragments &&
+            !hasConcreteFragments
+          ) {
+            if (fragmentsForAbstract.length === 1) {
+              return IR.SCALAR({
+                tsType: this.generateFragmentType(
+                  fragmentsForAbstract[0]!.name.value,
+                ),
+                nullable: false,
+              })
+            }
+          }
+
+          // We only have concrete fragment spreads.
+          if (
+            !hasInlineFragmentsForAbstract &&
+            !hasFragmentsForAbstract &&
+            !hasConcreteInlineFragments &&
+            hasConcreteFragments
+          ) {
+            // All concrete fragment target the same type.
+            if (concreteFragmentTypes.length === 1) {
+            }
+          }
+        }
+
+        // Gather all field selections on interface/union level.
+        for (const sel of selections) {
+          if (sel.kind === Kind.INLINE_FRAGMENT) {
             const typeConditionName = sel.typeCondition?.name.value
             if (!typeConditionName) {
               throw new LogicError('Inline fragment has no type condition.')

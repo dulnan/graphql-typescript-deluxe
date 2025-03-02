@@ -35,10 +35,7 @@ export type EntityFragment = {
  */
 export type FragmentInterfaceQuery = {
   /** Get random entity. */
-  getRandomEntity: {
-    /** The ID. */
-    id: string
-  }
+  getRandomEntity: EntityFragment
 }
 
 /**

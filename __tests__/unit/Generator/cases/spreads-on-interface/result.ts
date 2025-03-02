@@ -98,11 +98,7 @@ export type BlockTextFragment = {
 export type NodePageFragment = {
   blocks?: Array<{
     id: string
-    props:
-      | BlockTextFragment
-      | BlockImageFragment
-      | object
-      | BlockContainerFragment
+    props: AllBlocksFragment
   } | null>
 }
 

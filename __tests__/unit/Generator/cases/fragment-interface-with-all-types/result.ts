@@ -183,35 +183,7 @@ export type UserFragment = {
  */
 export type TestQuery = {
   /** Get random entity. */
-  getRandomEntity:
-    | ({
-        /** The ID. */
-        id: string
-      } & UserFragment)
-    | ({
-        /** The ID. */
-        id: string
-      } & DomainFragment)
-    | ({
-        /** The ID. */
-        id: string
-      } & CommentFragment)
-    | ({
-        /** The ID. */
-        id: string
-      } & MediaImageFragment)
-    | ({
-        /** The ID. */
-        id: string
-      } & MediaVideoFragment)
-    | ({
-        /** The ID. */
-        id: string
-      } & NodePageFragment)
-    | ({
-        /** The ID. */
-        id: string
-      } & NodeArticleFragment)
+  getRandomEntity: EntityFragment
 }
 
 /**
