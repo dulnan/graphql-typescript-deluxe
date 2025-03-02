@@ -130,11 +130,6 @@ export class Generator {
   > = new Map()
 
   /**
-   * A cache for schema related lookups.
-   */
-  private schemaCache: Map<string, string | boolean | string[]> = new Map()
-
-  /**
    * Pre-computed ABSTRACT_CONCRETE implemenations.
    */
   private schemaImplementation: Set<string> = new Set()
@@ -267,34 +262,6 @@ export class Generator {
       filePath: this.dependencyTracker?.getCurrentFile() || '',
       dependencies,
     })
-    return result
-  }
-
-  /**
-   * Cache schema-related lookups.
-   *
-   * @param prefix - The prefix.
-   * @param key - The cache key.
-   * @param fn - The callback.
-   *
-   * @returns The return value from the callback.
-   */
-  withSchemaCache<T extends string | boolean | string[]>(
-    prefix: string,
-    key: string,
-    fn: () => T,
-  ): T {
-    if (!this.options.useCache) {
-      return fn()
-    }
-    const cacheKey = `${prefix}_${key}`
-    const fromCache = this.schemaCache.get(cacheKey)
-    if (fromCache !== undefined) {
-      this.incrementDebugCount('Schema Cache Hits')
-      return fromCache as T
-    }
-    const result = fn()
-    this.schemaCache.set(cacheKey, result)
     return result
   }
 
@@ -1710,7 +1677,6 @@ export class Generator {
     this.generatedCode.clear()
     this.cache.clear()
     this.fragmentIRs.clear()
-    this.schemaCache.clear()
     this.schemaImplementation.clear()
     this.schemaPossibleTypes.clear()
     return this
