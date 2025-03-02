@@ -1436,6 +1436,11 @@ export class Generator {
         return `(${parts.join(' | ')})`
       }
 
+      case 'INTERSECTION': {
+        const parts = ir.types.map((t) => this.IRToCode(t))
+        return `(${parts.join(' & ')})`
+      }
+
       case 'FRAGMENT_SPREAD': {
         // Merges as an intersection into the parent's object.
         return ir.fragmentTypeName
