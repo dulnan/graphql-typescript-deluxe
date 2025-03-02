@@ -29,7 +29,6 @@ import {
   getTypeNodeKey,
   hasConditionalDirective,
   inlineRootQueryFragmentsAndMerge,
-  selectionSetToKey,
   unwrapNonNull,
 } from '../helpers/ast'
 import type { GeneratorOptions } from '../types/options'
@@ -236,16 +235,21 @@ export class Generator {
    * When called with the same prefix and key it returns the cached result.
    *
    * @param prefix - The prefix.
-   * @param key - The cache key.
+   * @param keyArg - The cache key callback.
    * @param fn - The callback.
    *
    * @returns The return value from the callback.
    */
-  private withCache<T>(prefix: string, key: string, fn: () => T): T {
+  private withCache<T>(
+    prefix: string,
+    keyArg: (() => string) | string,
+    fn: () => T,
+  ): T {
     if (!this.options.useCache) {
       this.incrementDebugCount('Cache HIT: ' + prefix)
       return fn()
     }
+    const key = typeof keyArg === 'string' ? keyArg : keyArg()
     const cacheKey = `${prefix}_${key}`
     const fromCache = this.cache.get(cacheKey)
     if (fromCache) {
@@ -496,31 +500,35 @@ export class Generator {
    * @returns The TS code.
    */
   private createInputTS(typeNode: TypeNode): string {
-    return this.withCache('createInputTS', getTypeNodeKey(typeNode), () => {
-      const { type, isNonNull } = unwrapNonNull(typeNode)
+    return this.withCache(
+      'createInputTS',
+      () => getTypeNodeKey(typeNode),
+      () => {
+        const { type, isNonNull } = unwrapNonNull(typeNode)
 
-      let output = 'any'
+        let output = 'any'
 
-      if (type.kind === Kind.LIST_TYPE) {
-        const element = this.createInputTS(type.type)
-        output =
-          this.options.output.arrayShape === 'Array'
-            ? `Array<${element}>`
-            : `${element}[]`
-      } else if (type.kind === Kind.NAMED_TYPE) {
-        const namedType = this.schema.getType(type.name.value)
-        if (!namedType) {
-          throw new TypeNotFoundError(type.name.value)
+        if (type.kind === Kind.LIST_TYPE) {
+          const element = this.createInputTS(type.type)
+          output =
+            this.options.output.arrayShape === 'Array'
+              ? `Array<${element}>`
+              : `${element}[]`
+        } else if (type.kind === Kind.NAMED_TYPE) {
+          const namedType = this.schema.getType(type.name.value)
+          if (!namedType) {
+            throw new TypeNotFoundError(type.name.value)
+          }
+          output = this.IRToCode(this.buildOutputTypeIR(namedType))
         }
-        output = this.IRToCode(this.buildOutputTypeIR(namedType))
-      }
 
-      if (!isNonNull) {
-        output += ' | null'
-      }
+        if (!isNonNull) {
+          output += ' | null'
+        }
 
-      return output
-    })
+        return output
+      },
+    )
   }
 
   /**
@@ -784,24 +792,18 @@ export class Generator {
     type: GraphQLNamedType,
     selectionSet: SelectionSetNode,
   ): IRNode {
-    return this.withCache(
-      'buildSelectionSet',
-      type.name + selectionSetToKey(selectionSet),
-      () => {
-        if (isObjectType(type)) {
-          return this.buildObjectSelectionSet(type, selectionSet)
-        } else if (isAbstractType(type)) {
-          return this.buildAbstractSelectionSet(type, selectionSet)
-        }
+    if (isObjectType(type)) {
+      return this.buildObjectSelectionSet(type, selectionSet)
+    } else if (isAbstractType(type)) {
+      return this.buildAbstractSelectionSet(type, selectionSet)
+    }
 
-        // We should never actually end up here, as there is no selection set for enums, etc.
-        // However, just in case, let's return a scalar.
-        return IR.SCALAR({
-          tsType: 'any',
-          nullable: false,
-        })
-      },
-    )
+    // We should never actually end up here, as there is no selection set for enums, etc.
+    // However, just in case, let's return a scalar.
+    return IR.SCALAR({
+      tsType: 'any',
+      nullable: false,
+    })
   }
 
   /**
@@ -853,74 +855,66 @@ export class Generator {
     objectType: GraphQLObjectType,
     selectionSet: SelectionSetNode,
   ): IRNode {
-    return this.withCache(
-      'buildObjectSelectionSet',
-      objectType.name + selectionSetToKey(selectionSet),
-      () => {
-        const objFields = objectType.getFields()
-        const fields: Record<string, IRNode> = {}
-        for (const sel of selectionSet.selections) {
-          if (sel.kind === Kind.FIELD) {
-            if (sel.name.value === TYPENAME) {
-              // The user explicitly requests __typename for this object type
-              // => we know exactly what that string is
-              fields[TYPENAME] = IR.TYPENAME(
-                this.getOrCreateObjectTypeName(objectType),
-              )
-              // We continue here so we skip calling buildFieldIR for __typename
-              // (which might return the abstract union type)
-              continue
-            }
-
-            const alias = sel.alias?.value || sel.name.value
-            const fieldDef = objFields[sel.name.value]
-            if (!fieldDef) {
-              throw new FieldNotFoundError(sel.name.value, objectType.name)
-            }
-            const fieldIR = this.buildFieldIRFromFieldDef(fieldDef, sel)
-            const current = fields[alias]
-            fields[alias] = current ? mergeIR(current, fieldIR) : fieldIR
-          } else if (sel.kind === Kind.FRAGMENT_SPREAD) {
-            const fragName = sel.name.value
-            const fragDef = this.getFragmentNode(fragName)
-
-            // If the fragment's typeCondition is the same or an interface the object implements, merge it
-            const condName = fragDef.typeCondition.name.value
-            if (
-              condName === objectType.name ||
-              this.objectImplements(objectType.name, condName)
-            ) {
-              const fragTypeName = this.options.buildFragmentTypeName(fragDef)
-              mergeFragmentSpread(
-                fields,
-                IR.FRAGMENT_SPREAD({
-                  name: fragName,
-                  fragmentTypeName: fragTypeName,
-                  parentType: objectType.name,
-                  fragmentTypeCondition: condName,
-                  nullable: false,
-                }),
-              )
-            }
-          }
-        }
-
-        // Always __typename field if option is set.
-        if (this.options.output.nonOptionalTypename && !fields[TYPENAME]) {
+    const objFields = objectType.getFields()
+    const fields: Record<string, IRNode> = {}
+    for (const sel of selectionSet.selections) {
+      if (sel.kind === Kind.FIELD) {
+        if (sel.name.value === TYPENAME) {
+          // The user explicitly requests __typename for this object type
+          // => we know exactly what that string is
           fields[TYPENAME] = IR.TYPENAME(
             this.getOrCreateObjectTypeName(objectType),
           )
+          // We continue here so we skip calling buildFieldIR for __typename
+          // (which might return the abstract union type)
+          continue
         }
 
-        const result = IR.OBJECT({
-          graphQLTypeName: objectType.name,
-          fields,
-          nullable: true,
-        })
+        const alias = sel.alias?.value || sel.name.value
+        const fieldDef = objFields[sel.name.value]
+        if (!fieldDef) {
+          throw new FieldNotFoundError(sel.name.value, objectType.name)
+        }
+        const fieldIR = this.buildFieldIRFromFieldDef(fieldDef, sel)
+        const current = fields[alias]
+        fields[alias] = current ? mergeIR(current, fieldIR) : fieldIR
+      } else if (sel.kind === Kind.FRAGMENT_SPREAD) {
+        const fragName = sel.name.value
+        const fragDef = this.getFragmentNode(fragName)
 
-        return result
-      },
-    )
+        // If the fragment's typeCondition is the same or an interface the object implements, merge it
+        const condName = fragDef.typeCondition.name.value
+        if (
+          condName === objectType.name ||
+          this.objectImplements(objectType.name, condName)
+        ) {
+          const fragTypeName = this.options.buildFragmentTypeName(fragDef)
+          mergeFragmentSpread(
+            fields,
+            IR.FRAGMENT_SPREAD({
+              name: fragName,
+              fragmentTypeName: fragTypeName,
+              parentType: objectType.name,
+              fragmentTypeCondition: condName,
+              nullable: false,
+            }),
+          )
+        }
+      }
+    }
+
+    // Always __typename field if option is set.
+    if (this.options.output.nonOptionalTypename && !fields[TYPENAME]) {
+      fields[TYPENAME] = IR.TYPENAME(this.getOrCreateObjectTypeName(objectType))
+    }
+
+    const result = IR.OBJECT({
+      graphQLTypeName: objectType.name,
+      fields,
+      nullable: true,
+    })
+
+    return result
   }
 
   /**
@@ -945,371 +939,354 @@ export class Generator {
     abstractType: GraphQLAbstractType,
     selectionSet: SelectionSetNode,
   ): IRNode {
-    return this.withCache(
-      'buildAbstractSelectionSet',
-      abstractType.name + selectionSetToKey(selectionSet),
-      () => {
-        const selections = selectionSet.selections
+    const selections = selectionSet.selections
 
-        const abstractTypeFields = isInterfaceType(abstractType)
-          ? abstractType.getFields()
-          : {}
+    const abstractTypeFields = isInterfaceType(abstractType)
+      ? abstractType.getFields()
+      : {}
 
-        // Stores inline fragment fields for each implementing object type.
-        // Key is name of object type, value is an object of fields => node.
-        const objectTypeMap = new Map<string, Record<string, IRNode>>()
+    // Stores inline fragment fields for each implementing object type.
+    // Key is name of object type, value is an object of fields => node.
+    const objectTypeMap = new Map<string, Record<string, IRNode>>()
 
-        // Possible types that implement the interface/union.
-        const possibleTypes = this.getPossibleObjectTypeNames(abstractType.name)
-        const totalPossibleTypes = possibleTypes.length
+    // Possible types that implement the interface/union.
+    const possibleTypes = this.getPossibleObjectTypeNames(abstractType.name)
+    const totalPossibleTypes = possibleTypes.length
 
-        // Fields requested on interface/union level.
-        const baseFields: Record<string, IRNode> = {}
-        const fragmentsByConcreteType: Record<
-          string,
-          FragmentDefinitionNode[]
-        > = {}
-        const fragmentsForAbstract: FragmentDefinitionNode[] = []
+    // Fields requested on interface/union level.
+    const baseFields: Record<string, IRNode> = {}
+    const fragmentsByConcreteType: Record<string, FragmentDefinitionNode[]> = {}
+    const fragmentsForAbstract: FragmentDefinitionNode[] = []
 
-        const inlineFragmentsByConcreteType: Record<
-          string,
-          InlineFragmentNode[]
-        > = {}
+    const inlineFragmentsByConcreteType: Record<string, InlineFragmentNode[]> =
+      {}
 
-        const inlineFragmentsForAbstract: InlineFragmentNode[] = []
+    const inlineFragmentsForAbstract: InlineFragmentNode[] = []
 
-        // Always __typename field if option is set.
-        if (this.options.output.nonOptionalTypename) {
-          baseFields[TYPENAME] = IR.TYPENAME(
-            this.getOrCreateUnionTypenameType(abstractType),
-          )
-        }
+    // Always __typename field if option is set.
+    if (this.options.output.nonOptionalTypename) {
+      baseFields[TYPENAME] = IR.TYPENAME(
+        this.getOrCreateUnionTypenameType(abstractType),
+      )
+    }
 
-        for (const sel of selections) {
-          if (sel.kind === Kind.FIELD) {
-            const fieldName = sel.name.value
-            const aliasName = sel.alias?.value || fieldName
-            if (fieldName === TYPENAME) {
-              if (!hasTypenameField(baseFields)) {
-                baseFields[aliasName] = IR.TYPENAME(
-                  this.getOrCreateUnionTypenameType(abstractType),
-                )
-              }
-            }
-            // If it's an interface, we can also gather interface-level fields directly
-            else if (isInterfaceType(abstractType)) {
-              const fieldDef = abstractTypeFields[fieldName]
-              if (!fieldDef) {
-                throw new FieldNotFoundError(fieldName, abstractType.name)
-              }
-              const fieldIR = this.buildFieldIRFromFieldDef(fieldDef, sel)
-              const current = baseFields[aliasName]
-              baseFields[aliasName] = current
-                ? mergeIR(current, fieldIR)
-                : fieldIR
-            }
-          } else if (sel.kind === Kind.INLINE_FRAGMENT) {
-            if (!sel.typeCondition) {
-              throw new LogicError('Missing type condition in inline fragment.')
-            }
-            const typeConditionName = sel.typeCondition?.name.value
-            if (typeConditionName === abstractType.name) {
-              inlineFragmentsForAbstract.push(sel)
-            } else {
-              if (!inlineFragmentsByConcreteType[typeConditionName]) {
-                inlineFragmentsByConcreteType[typeConditionName] = []
-              }
-              inlineFragmentsByConcreteType[typeConditionName].push(sel)
-            }
-          } else if (sel.kind === Kind.FRAGMENT_SPREAD) {
-            const fragmentName = sel.name.value
-            const fragment = this.getFragmentNode(fragmentName)
-            const typeConditionName = fragment.typeCondition.name.value
-            // A fragment on the abstract type.
-            if (typeConditionName === abstractType.name) {
-              fragmentsForAbstract.push(fragment)
-            } else {
-              if (!fragmentsByConcreteType[typeConditionName]) {
-                fragmentsByConcreteType[typeConditionName] = []
-              }
-              fragmentsByConcreteType[typeConditionName].push(fragment)
-            }
+    for (const sel of selections) {
+      if (sel.kind === Kind.FIELD) {
+        const fieldName = sel.name.value
+        const aliasName = sel.alias?.value || fieldName
+        if (fieldName === TYPENAME) {
+          if (!hasTypenameField(baseFields)) {
+            baseFields[aliasName] = IR.TYPENAME(
+              this.getOrCreateUnionTypenameType(abstractType),
+            )
           }
         }
+        // If it's an interface, we can also gather interface-level fields directly
+        else if (isInterfaceType(abstractType)) {
+          const fieldDef = abstractTypeFields[fieldName]
+          if (!fieldDef) {
+            throw new FieldNotFoundError(fieldName, abstractType.name)
+          }
+          const fieldIR = this.buildFieldIRFromFieldDef(fieldDef, sel)
+          const current = baseFields[aliasName]
+          baseFields[aliasName] = current ? mergeIR(current, fieldIR) : fieldIR
+        }
+      } else if (sel.kind === Kind.INLINE_FRAGMENT) {
+        if (!sel.typeCondition) {
+          throw new LogicError('Missing type condition in inline fragment.')
+        }
+        const typeConditionName = sel.typeCondition?.name.value
+        if (typeConditionName === abstractType.name) {
+          inlineFragmentsForAbstract.push(sel)
+        } else {
+          if (!inlineFragmentsByConcreteType[typeConditionName]) {
+            inlineFragmentsByConcreteType[typeConditionName] = []
+          }
+          inlineFragmentsByConcreteType[typeConditionName].push(sel)
+        }
+      } else if (sel.kind === Kind.FRAGMENT_SPREAD) {
+        const fragmentName = sel.name.value
+        const fragment = this.getFragmentNode(fragmentName)
+        const typeConditionName = fragment.typeCondition.name.value
+        // A fragment on the abstract type.
+        if (typeConditionName === abstractType.name) {
+          fragmentsForAbstract.push(fragment)
+        } else {
+          if (!fragmentsByConcreteType[typeConditionName]) {
+            fragmentsByConcreteType[typeConditionName] = []
+          }
+          fragmentsByConcreteType[typeConditionName].push(fragment)
+        }
+      }
+    }
 
-        const concreteInlineFragmentTypes = Object.keys(
-          inlineFragmentsByConcreteType,
-        )
-        const concreteFragmentTypes = Object.keys(fragmentsByConcreteType)
+    const concreteInlineFragmentTypes = Object.keys(
+      inlineFragmentsByConcreteType,
+    )
+    const concreteFragmentTypes = Object.keys(fragmentsByConcreteType)
 
-        const hasBaseFields = Object.keys(baseFields).length > 0
-        const hasInlineFragmentsForAbstract =
-          inlineFragmentsForAbstract.length > 0
-        const hasFragmentsForAbstract = fragmentsForAbstract.length > 0
+    const hasBaseFields = Object.keys(baseFields).length > 0
+    const hasInlineFragmentsForAbstract = inlineFragmentsForAbstract.length > 0
+    const hasFragmentsForAbstract = fragmentsForAbstract.length > 0
 
-        const hasConcreteInlineFragments =
-          concreteInlineFragmentTypes.length > 0
-        const hasConcreteFragments = concreteFragmentTypes.length > 0
+    const hasConcreteInlineFragments = concreteInlineFragmentTypes.length > 0
+    const hasConcreteFragments = concreteFragmentTypes.length > 0
 
-        // ====================================================================
-        // Shortcuts for common use cases.
-        //
-        // This section is very verbose, because we try to find common
-        // combinations of selections for which we can return an IR node
-        // directly.
-        // ====================================================================
+    // ====================================================================
+    // Shortcuts for common use cases.
+    //
+    // This section is very verbose, because we try to find common
+    // combinations of selections for which we can return an IR node
+    // directly.
+    // ====================================================================
 
-        // We don't have any base fields.
-        if (!hasBaseFields) {
-          // We only have fragments for abstract.
-          if (
-            !hasInlineFragmentsForAbstract &&
-            hasFragmentsForAbstract &&
-            !hasConcreteInlineFragments &&
-            !hasConcreteFragments
-          ) {
-            if (fragmentsForAbstract.length === 1) {
+    // We don't have any base fields.
+    if (!hasBaseFields) {
+      // We only have fragments for abstract.
+      if (
+        !hasInlineFragmentsForAbstract &&
+        hasFragmentsForAbstract &&
+        !hasConcreteInlineFragments &&
+        !hasConcreteFragments
+      ) {
+        if (fragmentsForAbstract.length === 1) {
+          return IR.SCALAR({
+            tsType: this.generateFragmentType(
+              fragmentsForAbstract[0]!.name.value,
+            ),
+            nullable: false,
+          })
+        }
+      }
+      // We only have concrete fragment spreads.
+      else if (
+        !hasInlineFragmentsForAbstract &&
+        !hasFragmentsForAbstract &&
+        !hasConcreteInlineFragments &&
+        hasConcreteFragments
+      ) {
+        // We only have spreads for a single type.
+        if (concreteFragmentTypes.length === 1) {
+          const typeName = concreteFragmentTypes[0]!
+          const fragments = fragmentsByConcreteType[typeName]!
+
+          // We have just a single fragment.
+          if (fragments.length === 1) {
+            return IR.SCALAR({
+              tsType: this.generateFragmentType(fragments[0]!.name.value),
+              nullable: false,
+            })
+          }
+        } else {
+          // We have exactly one fragment per type.
+          const allTargetDifferent = concreteFragmentTypes.every((typeName) => {
+            const fragments = fragmentsByConcreteType[typeName]!
+            return fragments.length === 1
+          })
+
+          if (allTargetDifferent) {
+            const unionTypes = concreteFragmentTypes.map((typeName) => {
+              const fragment = fragmentsByConcreteType[typeName]![0]!
               return IR.SCALAR({
-                tsType: this.generateFragmentType(
-                  fragmentsForAbstract[0]!.name.value,
-                ),
+                tsType: this.generateFragmentType(fragment.name.value),
                 nullable: false,
               })
+            })
+            const totalTargets = concreteFragmentTypes.length
+
+            if (totalTargets !== totalPossibleTypes) {
+              unionTypes.push(this.emptyObjectScalar())
             }
-          }
-          // We only have concrete fragment spreads.
-          else if (
-            !hasInlineFragmentsForAbstract &&
-            !hasFragmentsForAbstract &&
-            !hasConcreteInlineFragments &&
-            hasConcreteFragments
-          ) {
-            // We only have spreads for a single type.
-            if (concreteFragmentTypes.length === 1) {
-              const typeName = concreteFragmentTypes[0]!
-              const fragments = fragmentsByConcreteType[typeName]!
-
-              // We have just a single fragment.
-              if (fragments.length === 1) {
-                return IR.SCALAR({
-                  tsType: this.generateFragmentType(fragments[0]!.name.value),
-                  nullable: false,
-                })
-              }
-            } else {
-              // We have exactly one fragment per type.
-              const allTargetDifferent = concreteFragmentTypes.every(
-                (typeName) => {
-                  const fragments = fragmentsByConcreteType[typeName]!
-                  return fragments.length === 1
-                },
-              )
-
-              if (allTargetDifferent) {
-                const unionTypes = concreteFragmentTypes.map((typeName) => {
-                  const fragment = fragmentsByConcreteType[typeName]![0]!
-                  return IR.SCALAR({
-                    tsType: this.generateFragmentType(fragment.name.value),
-                    nullable: false,
-                  })
-                })
-                const totalTargets = concreteFragmentTypes.length
-
-                if (totalTargets !== totalPossibleTypes) {
-                  unionTypes.push(this.emptyObjectScalar())
-                }
-                return IR.UNION({
-                  types: unionTypes,
-                  nullable: false,
-                })
-              }
-            }
+            return IR.UNION({
+              types: unionTypes,
+              nullable: false,
+            })
           }
         }
+      }
+    }
 
-        // ====================================================================
-        // Full gathering of all possible combinations.
-        // ====================================================================
+    // ====================================================================
+    // Full gathering of all possible combinations.
+    // ====================================================================
 
-        // Gather all field selections on interface/union level.
-        for (const sel of selections) {
-          if (sel.kind === Kind.INLINE_FRAGMENT) {
-            const typeConditionName = sel.typeCondition?.name.value
-            if (!typeConditionName) {
-              throw new LogicError('Inline fragment has no type condition.')
-            }
+    // Gather all field selections on interface/union level.
+    for (const sel of selections) {
+      if (sel.kind === Kind.INLINE_FRAGMENT) {
+        const typeConditionName = sel.typeCondition?.name.value
+        if (!typeConditionName) {
+          throw new LogicError('Inline fragment has no type condition.')
+        }
 
-            const objectType = this.schema.getType(typeConditionName)
-            if (!objectType) {
-              throw new TypeNotFoundError(typeConditionName)
-            }
+        const objectType = this.schema.getType(typeConditionName)
+        if (!objectType) {
+          throw new TypeNotFoundError(typeConditionName)
+        }
 
-            // Build the IR node for the selection for this object type.
-            const ir = this.buildSelectionSet(objectType, sel.selectionSet)
+        // Build the IR node for the selection for this object type.
+        const ir = this.buildSelectionSet(objectType, sel.selectionSet)
 
-            // For each object type that implements typeConditionName, merge its IR.
-            for (const typeName of possibleTypes) {
-              if (
-                typeName === typeConditionName ||
-                this.objectImplements(typeName, typeConditionName)
-              ) {
-                const type = this.schema.getType(typeName)!
-                if (ir.kind === 'OBJECT') {
+        // For each object type that implements typeConditionName, merge its IR.
+        for (const typeName of possibleTypes) {
+          if (
+            typeName === typeConditionName ||
+            this.objectImplements(typeName, typeConditionName)
+          ) {
+            const type = this.schema.getType(typeName)!
+            if (ir.kind === 'OBJECT') {
+              const merged = mergeObjectFields(
+                objectTypeMap.get(type.name) || {},
+                ir.fields,
+              )
+              objectTypeMap.set(type.name, merged)
+            } else if (ir.kind === 'UNION') {
+              for (const branch of ir.types) {
+                if (
+                  branch.kind === 'OBJECT' &&
+                  branch.graphQLTypeName === type.name
+                ) {
                   const merged = mergeObjectFields(
                     objectTypeMap.get(type.name) || {},
-                    ir.fields,
+                    branch.fields,
                   )
                   objectTypeMap.set(type.name, merged)
-                } else if (ir.kind === 'UNION') {
-                  for (const branch of ir.types) {
-                    if (
-                      branch.kind === 'OBJECT' &&
-                      branch.graphQLTypeName === type.name
-                    ) {
-                      const merged = mergeObjectFields(
-                        objectTypeMap.get(type.name) || {},
-                        branch.fields,
-                      )
-                      objectTypeMap.set(type.name, merged)
-                    }
-                  }
-                } else if (ir.kind === 'FRAGMENT_SPREAD') {
-                  const existing = objectTypeMap.get(type.name) || {}
-                  mergeFragmentSpread(existing, ir)
-                  objectTypeMap.set(type.name, existing)
                 }
               }
-            }
-          } else if (sel.kind === Kind.FRAGMENT_SPREAD) {
-            const fragName = sel.name.value
-            const fragDef = this.getFragmentNode(fragName)
-
-            const typeConditionName = fragDef.typeCondition.name.value
-            const typeConditionType = this.schema.getType(typeConditionName)
-            if (!typeConditionType) {
-              throw new TypeNotFoundError(typeConditionName)
-            }
-
-            if (isObjectType(typeConditionType)) {
-              const fragTypeName = this.options.buildFragmentTypeName(fragDef)
-              const existing = objectTypeMap.get(typeConditionType.name) || {}
-              mergeFragmentSpread(
-                existing,
-                IR.FRAGMENT_SPREAD({
-                  name: fragDef.name.value,
-                  fragmentTypeName: fragTypeName,
-                  parentType: abstractType.name,
-                  fragmentTypeCondition: fragDef.typeCondition.name.value,
-                  nullable: false,
-                }),
-              )
-              objectTypeMap.set(typeConditionType.name, existing)
-            } else if (isAbstractType(typeConditionType)) {
-              const ir = this.buildSelectionSet(
-                typeConditionType,
-                fragDef.selectionSet,
-              )
-              if (ir.kind === 'UNION') {
-                for (const branch of ir.types) {
-                  if (branch.kind === 'OBJECT') {
-                    const merged = mergeObjectFields(
-                      objectTypeMap.get(branch.graphQLTypeName) || {},
-                      branch.fields,
-                    )
-                    objectTypeMap.set(branch.graphQLTypeName, merged)
-                  }
-                }
-              } else if (ir.kind === 'OBJECT') {
-                const merged = mergeObjectFields(
-                  objectTypeMap.get(ir.graphQLTypeName) || {},
-                  ir.fields,
-                )
-                objectTypeMap.set(ir.graphQLTypeName, merged)
-              }
+            } else if (ir.kind === 'FRAGMENT_SPREAD') {
+              const existing = objectTypeMap.get(type.name) || {}
+              mergeFragmentSpread(existing, ir)
+              objectTypeMap.set(type.name, existing)
             }
           }
         }
+      } else if (sel.kind === Kind.FRAGMENT_SPREAD) {
+        const fragName = sel.name.value
+        const fragDef = this.getFragmentNode(fragName)
 
-        const branches: IRNode[] = []
-        const typesWithFragments = new Set(objectTypeMap.keys())
-        const typesWithoutFragments = possibleTypes.filter(
-          (v) => !typesWithFragments.has(v),
-        )
-        const remainingCount = possibleTypes.length - typesWithFragments.size
-        const hasTypename = hasTypenameField(baseFields)
-        let unionIrNode: IRNodeTypename | null = null
+        const typeConditionName = fragDef.typeCondition.name.value
+        const typeConditionType = this.schema.getType(typeConditionName)
+        if (!typeConditionType) {
+          throw new TypeNotFoundError(typeConditionName)
+        }
 
-        for (const objectTypeName of possibleTypes) {
-          // Clone the base fields.
-          const mergedFields = { ...baseFields }
-
-          // If user had an inline fragment for the type, merge those fields.
-          const subtypeFields = objectTypeMap.get(objectTypeName)
-          if (subtypeFields) {
-            mergeObjectFields(mergedFields, subtypeFields)
-          }
-
-          if (hasTypename) {
-            if (
-              typesWithFragments.has(objectTypeName) ||
-              !this.options.output.mergeTypenames
-            ) {
-              // If this type has fragments, its __typename should be the name of the object type.
-              mergedFields[TYPENAME] = IR.TYPENAME(
-                this.getOrCreateObjectTypeName(objectTypeName),
-              )
-            } else if (typesWithFragments.size > 0) {
-              // Only use the Exclude<> for __typename when we have enough remaining types.
-              // Else we would be creating an exclude argument that is longer than the actual
-              // remaining types.
-              // Also cache the created node so we don't call it for every type iteration.
-              if (unionIrNode === null && remainingCount > 3) {
-                // This is a fallback type (no inline fragments), and some types have fragments.
-                // We can use Exclude<Interface, TypesWithFragments> to
-                const excludedTypes = Array.from(typesWithFragments).map(
-                  (name) => this.getOrCreateObjectTypeName(name),
-                )
-                unionIrNode = IR.TYPENAME(
-                  excludedTypes,
-                  this.getOrCreateUnionTypenameType(abstractType),
-                )
-              }
-
-              if (unionIrNode) {
-                mergedFields[TYPENAME] = unionIrNode
-              } else {
-                mergedFields[TYPENAME] = IR.TYPENAME(typesWithoutFragments)
-              }
-            }
-          }
-
-          branches.push(
-            IR.OBJECT({
-              graphQLTypeName: objectTypeName,
-              fields: mergedFields,
-              nullable: true,
+        if (isObjectType(typeConditionType)) {
+          const fragTypeName = this.options.buildFragmentTypeName(fragDef)
+          const existing = objectTypeMap.get(typeConditionType.name) || {}
+          mergeFragmentSpread(
+            existing,
+            IR.FRAGMENT_SPREAD({
+              name: fragDef.name.value,
+              fragmentTypeName: fragTypeName,
+              parentType: abstractType.name,
+              fragmentTypeCondition: fragDef.typeCondition.name.value,
+              nullable: false,
             }),
           )
+          objectTypeMap.set(typeConditionType.name, existing)
+        } else if (isAbstractType(typeConditionType)) {
+          const ir = this.buildSelectionSet(
+            typeConditionType,
+            fragDef.selectionSet,
+          )
+          if (ir.kind === 'UNION') {
+            for (const branch of ir.types) {
+              if (branch.kind === 'OBJECT') {
+                const merged = mergeObjectFields(
+                  objectTypeMap.get(branch.graphQLTypeName) || {},
+                  branch.fields,
+                )
+                objectTypeMap.set(branch.graphQLTypeName, merged)
+              }
+            }
+          } else if (ir.kind === 'OBJECT') {
+            const merged = mergeObjectFields(
+              objectTypeMap.get(ir.graphQLTypeName) || {},
+              ir.fields,
+            )
+            objectTypeMap.set(ir.graphQLTypeName, merged)
+          }
         }
+      }
+    }
 
-        // No branches: Produce an empty object.
-        if (branches.length === 0) {
-          return IR.OBJECT({
-            graphQLTypeName: abstractType.name,
-            fields: {},
-            nullable: true,
-          })
-        } else if (branches.length === 1) {
-          // Just one branch: We can return it directly.
-          return branches[0]!
-        }
-
-        return IR.UNION({
-          types: branches,
-          nullable: false,
-        })
-      },
+    const branches: IRNode[] = []
+    const typesWithFragments = new Set(objectTypeMap.keys())
+    const typesWithoutFragments = possibleTypes.filter(
+      (v) => !typesWithFragments.has(v),
     )
+    const remainingCount = possibleTypes.length - typesWithFragments.size
+    const hasTypename = hasTypenameField(baseFields)
+    let unionIrNode: IRNodeTypename | null = null
+
+    for (const objectTypeName of possibleTypes) {
+      // Clone the base fields.
+      const mergedFields = { ...baseFields }
+
+      // If user had an inline fragment for the type, merge those fields.
+      const subtypeFields = objectTypeMap.get(objectTypeName)
+      if (subtypeFields) {
+        mergeObjectFields(mergedFields, subtypeFields)
+      }
+
+      if (hasTypename) {
+        if (
+          typesWithFragments.has(objectTypeName) ||
+          !this.options.output.mergeTypenames
+        ) {
+          // If this type has fragments, its __typename should be the name of the object type.
+          mergedFields[TYPENAME] = IR.TYPENAME(
+            this.getOrCreateObjectTypeName(objectTypeName),
+          )
+        } else if (typesWithFragments.size > 0) {
+          // Only use the Exclude<> for __typename when we have enough remaining types.
+          // Else we would be creating an exclude argument that is longer than the actual
+          // remaining types.
+          // Also cache the created node so we don't call it for every type iteration.
+          if (unionIrNode === null && remainingCount > 3) {
+            // This is a fallback type (no inline fragments), and some types have fragments.
+            // We can use Exclude<Interface, TypesWithFragments> to
+            const excludedTypes = Array.from(typesWithFragments).map((name) =>
+              this.getOrCreateObjectTypeName(name),
+            )
+            unionIrNode = IR.TYPENAME(
+              excludedTypes,
+              this.getOrCreateUnionTypenameType(abstractType),
+            )
+          }
+
+          if (unionIrNode) {
+            mergedFields[TYPENAME] = unionIrNode
+          } else {
+            mergedFields[TYPENAME] = IR.TYPENAME(typesWithoutFragments)
+          }
+        }
+      }
+
+      branches.push(
+        IR.OBJECT({
+          graphQLTypeName: objectTypeName,
+          fields: mergedFields,
+          nullable: true,
+        }),
+      )
+    }
+
+    // No branches: Produce an empty object.
+    if (branches.length === 0) {
+      return IR.OBJECT({
+        graphQLTypeName: abstractType.name,
+        fields: {},
+        nullable: true,
+      })
+    } else if (branches.length === 1) {
+      // Just one branch: We can return it directly.
+      return branches[0]!
+    }
+
+    return IR.UNION({
+      types: branches,
+      nullable: false,
+    })
   }
 
   /**
@@ -1319,7 +1296,7 @@ export class Generator {
    * fragment spreads, we inline the entire field. We still use the fragment type if
    * possible, however, we exclude the conflicting fields from the fragment using Omit<>.
    *
-   * @TODO: This should probably be handled in the post process stage.
+   * @TODO: This should be handled when building the selection set.
    *
    * @param fields - The field map.
    * @param spreads - The collected fragment spread IR nodes.
@@ -1478,15 +1455,7 @@ export class Generator {
     field: GraphQLField<any, any>,
     fieldNode: FieldNode,
   ): IRNode {
-    const ir = this.withCache(
-      'buildFieldIRFromFieldDef',
-      field.name +
-        field.type.toString() +
-        selectionSetToKey(fieldNode.selectionSet),
-      () => {
-        return this.buildOutputTypeIR(field.type, fieldNode.selectionSet)
-      },
-    )
+    const ir = this.buildOutputTypeIR(field.type, fieldNode.selectionSet)
 
     const nullable = !isNonNullType(field.type)
 

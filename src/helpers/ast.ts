@@ -38,45 +38,6 @@ export function hasConditionalDirective(node: FieldNode): boolean {
   return false
 }
 
-/**
- * Returns a stable string for the given selection set.
- */
-export function selectionSetToKey(set?: SelectionSetNode): string {
-  if (!set) {
-    return 'none'
-  }
-
-  // Create an array of individual selection keys for sorting
-  const keys: string[] = []
-
-  for (let i = 0; i < set.selections.length; i++) {
-    const selection = set.selections[i]!
-    let selKey =
-      selection.directives?.map((v) => v.name.value).join('-') ||
-      'no-directives'
-
-    if (selection.kind === Kind.FIELD) {
-      selKey +=
-        '-' +
-        selection.name.value +
-        (selection.alias?.value || '') +
-        selectionSetToKey(selection.selectionSet)
-    } else if (selection.kind === Kind.FRAGMENT_SPREAD) {
-      selKey += '-' + selection.name.value
-    } else {
-      selKey +=
-        '-' +
-        (selection.typeCondition?.name.value || '') +
-        selectionSetToKey(selection.selectionSet)
-    }
-
-    keys.push(selKey)
-  }
-
-  // Sort the selection keys and join them
-  return keys.sort().join('')
-}
-
 export function mergeSameFieldSelections(
   selectionSet: SelectionSetNode,
 ): SelectionSetNode {

@@ -73,7 +73,7 @@ function cleanGraphqlDocument(document: DocumentNode): DocumentNode {
 async function runWithDuration(
   fileName: string,
   cb: () => Promise<string> | string,
-) {
+): Promise<string> {
   console.log('-'.repeat(80))
   console.log('Starting ' + fileName)
   const usageStart = process.memoryUsage()
@@ -86,13 +86,14 @@ async function runWithDuration(
   console.log('Duration: ' + Math.round((end - start) * 1000) / 1000 + 'ms')
   console.log('-'.repeat(80))
   if (isProfiling) {
-    return
+    return ''
   }
   const destRaw = path.resolve(outputFolder, fileName + '.ts')
   await fs.writeFile(destRaw, result)
   const destFormatted = path.resolve(outputFolder, fileName + '-formatted.ts')
   const formatted = await format(result)
   await fs.writeFile(destFormatted, formatted)
+  return formatted
 }
 
 async function main(): Promise<void> {
@@ -136,7 +137,7 @@ async function main(): Promise<void> {
     },
   })
 
-  await runWithDuration('Custom: First Call', () => {
+  await runWithDuration('custom', () => {
     generator.add(documentCleaned)
     return generator.build().getAll()
   })
@@ -144,10 +145,6 @@ async function main(): Promise<void> {
   if (isProfiling) {
     return
   }
-
-  await runWithDuration('Custom: Second Call', () => {
-    return generator.build().getAll()
-  })
 
   await runWithDuration('result-codegen', () => {
     return generateCodegen(schemaFile, documentCleanedString)
