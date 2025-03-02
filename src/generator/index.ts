@@ -900,6 +900,12 @@ export class Generator {
       'buildAbstractSelectionSet',
       abstractType.name + selectionSetToKey(selectionSet),
       () => {
+        const selections = selectionSet.selections
+
+        const abstractTypeFields = isInterfaceType(abstractType)
+          ? abstractType.getFields()
+          : {}
+
         // Fields requested on interface/union level.
         const baseFields: Record<string, IRNode> = {}
 
@@ -917,8 +923,17 @@ export class Generator {
           )
         }
 
+        // const fragmentsByConcreteType: Record<
+        //   string,
+        //   FragmentDefinitionNode[]
+        // > = {}
+        // const inlineFragmentsByConcreteType: Record<string>
+
+        // for (const sel of selections) {
+        // }
+
         // Gather all field selections on interface/union level.
-        for (const sel of selectionSet.selections) {
+        for (const sel of selections) {
           if (sel.kind === Kind.FIELD) {
             const fieldName = sel.name.value
             const aliasName = sel.alias?.value || fieldName
@@ -931,7 +946,7 @@ export class Generator {
             }
             // If it's an interface, we can also gather interface-level fields directly
             else if (isInterfaceType(abstractType)) {
-              const fieldDef = abstractType.getFields()[fieldName]
+              const fieldDef = abstractTypeFields[fieldName]
               if (!fieldDef) {
                 throw new FieldNotFoundError(fieldName, abstractType.name)
               }

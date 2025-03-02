@@ -126,7 +126,7 @@ async function main(): Promise<void> {
 
   const generator = new Generator(schema, {
     debugMode: true,
-    useCache: false,
+    useCache: true,
     dependencyTracking: true,
     output: {
       mergeTypenames: true,
