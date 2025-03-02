@@ -41,6 +41,7 @@ export type GeneratedCodeType =
   | 'operation'
   | 'typename-object'
   | 'typename-union'
+  | 'helpers'
 
 export interface GeneratedCode {
   /**

@@ -9,6 +9,7 @@ const DEFAULT_SORTING: GeneratedCodeType[] = [
   'fragment',
   'operation',
   'input',
+  'helpers',
 ]
 
 export type GeneratorOutputOptions = {

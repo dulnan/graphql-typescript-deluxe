@@ -67,5 +67,7 @@ export function getCodeTypeLabel(type: GeneratedCodeType): string {
       return 'Operations'
     case 'fragment':
       return 'Fragments'
+    case 'helpers':
+      return 'Helpers'
   }
 }

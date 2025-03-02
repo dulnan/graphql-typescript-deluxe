@@ -1126,10 +1126,12 @@ export class Generator {
    * fragment spreads, we inline the entire field. We still use the fragment type if
    * possible, however, we exclude the conflicting fields from the fragment using Omit<>.
    *
+   * @TODO: This should probably be handled in the post process stage.
+   *
    * @param fields - The field map.
    * @param spreads - The collected fragment spread IR nodes.
    *
-   * @returns The output.
+   * @returns The output or null if no conflicts exist.
    */
   private mergeFragmentSpreads(
     fields: Map<string, IRNode>,
@@ -1606,7 +1608,7 @@ export class Generator {
     // the code has a bug. Better throw an error here so it doesn't go unnoticed.
     if (this.dependencyTracker?.hasStack()) {
       throw new LogicError(
-        'Finished processing documents, but there is still a dependency tracker stack.',
+        'Finished processing documents, but there is still a dependency tracker stack. This is likely due to a bug in the library. Set "dependencyTracking: false" to disable dependency tracking.',
       )
     }
     const code = this.generatedCode.values()
