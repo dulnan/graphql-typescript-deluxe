@@ -32,19 +32,19 @@ export type TestQuery = {
   getRandomEntity?:
     | object
     | {
-        /** The body text. */
-        body?: string
-        /** The ID of the page. */
-        id: string
-        /** The title of the node. */
-        title: string
-      }
-    | {
         /** Categories of this article. */
         categories?: Array<{
           /** The label. */
           label: string
         }>
+        /** The title of the node. */
+        title: string
+      }
+    | {
+        /** The body text. */
+        body?: string
+        /** The ID of the page. */
+        id: string
         /** The title of the node. */
         title: string
       }

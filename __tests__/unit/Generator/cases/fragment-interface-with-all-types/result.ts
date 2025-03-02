@@ -58,15 +58,11 @@ export type EntityFragment =
   | ({
       /** The ID. */
       id: string
-    } & UserFragment)
+    } & CommentFragment)
   | ({
       /** The ID. */
       id: string
     } & DomainFragment)
-  | ({
-      /** The ID. */
-      id: string
-    } & CommentFragment)
   | ({
       /** The ID. */
       id: string
@@ -78,11 +74,15 @@ export type EntityFragment =
   | ({
       /** The ID. */
       id: string
+    } & NodeArticleFragment)
+  | ({
+      /** The ID. */
+      id: string
     } & NodePageFragment)
   | ({
       /** The ID. */
       id: string
-    } & NodeArticleFragment)
+    } & UserFragment)
 
 /**
  * @see {@link ./test.graphql}

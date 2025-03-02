@@ -250,7 +250,7 @@ fragment mediaImage on MediaImage {
 
       export type QueryFirstQuery = {
         /** Get random entity. */
-        getRandomEntity?: (object | (Omit<ArticleOneFragment, "categories"> & {
+        getRandomEntity?: (({
         /** Categories of this article. */
         categories?: Array<{
         /** The label. */
@@ -263,7 +263,7 @@ fragment mediaImage on MediaImage {
         /** The URL for the category overview page. */
         url?: string;
       }>;
-      }));
+      } & Omit<ArticleOneFragment, "categories">) | object);
       };
 
       export type QueryFirstQueryVariables = object;"
@@ -306,7 +306,7 @@ fragment mediaImage on MediaImage {
 
       export type QueryFirstQuery = {
         /** Get random entity. */
-        getRandomEntity?: (object | (Omit<ArticleOneFragment, "categories"> & {
+        getRandomEntity?: (({
         /** Categories of this article. */
         categories?: Array<{
         /** The label. */
@@ -319,7 +319,7 @@ fragment mediaImage on MediaImage {
         /** The URL for the category overview page. */
         urlRenamed?: string;
       }>;
-      }));
+      } & Omit<ArticleOneFragment, "categories">) | object);
       };
 
       export type QueryFirstQueryVariables = object;"

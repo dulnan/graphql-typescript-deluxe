@@ -78,6 +78,14 @@ export type NodeArticleFragment = {
 export type FragmentInterfaceQuery = {
   /** Always get an entity. */
   getNonNullEntity:
+    | ({
+        /** The EntityType enum. */
+        entityType: EntityType
+        /** The ID. */
+        id: string
+        /** The title of the node. */
+        title: string
+      } & NodeArticleFragment)
     | {
         /** The EntityType enum. */
         entityType: EntityType
@@ -94,14 +102,6 @@ export type FragmentInterfaceQuery = {
         /** The title of the page. */
         title: string
       }
-    | ({
-        /** The EntityType enum. */
-        entityType: EntityType
-        /** The ID. */
-        id: string
-        /** The title of the node. */
-        title: string
-      } & NodeArticleFragment)
 }
 
 /**

@@ -44,12 +44,12 @@ export type TestQuery = {
     | {
         /** The ID. */
         id: string
+        /** The title of the page. */
+        title: string
       }
     | {
         /** The ID. */
         id: string
-        /** The title of the page. */
-        title: string
       }
 }
 

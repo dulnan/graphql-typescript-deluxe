@@ -42,12 +42,12 @@ export type Url = DefaultEntityUrl | DefaultUrl
  */
 export type RouteFragment = {
   route?:
+    | object
     | {
         entity?: {
           id: string
         }
       }
-    | object
 }
 
 // --------------------------------------------------------------------------------
@@ -85,9 +85,8 @@ export type FieldMergingDeepNestedQuery = {
         __typename: DefaultEntityUrl
         entity?:
           | {
-              __typename: NodePage
+              __typename: Image
               id: string
-              title: string
             }
           | {
               __typename: NodeArticle
@@ -95,8 +94,9 @@ export type FieldMergingDeepNestedQuery = {
               id: string
             }
           | {
-              __typename: Image
+              __typename: NodePage
               id: string
+              title: string
             }
       }
     | {

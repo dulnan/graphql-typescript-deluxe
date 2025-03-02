@@ -108,7 +108,14 @@ export type QueryFragmentsQuery = {
   /** Get random entity. */
   getRandomEntity?:
     | {
-        __typename: Exclude<Entity, NodePage | NodeArticle>
+        __typename: Exclude<Entity, NodeArticle | NodePage>
+        /** The ID. */
+        id: string
+      }
+    | {
+        __typename: NodeArticle
+        /** The body text of the article. */
+        body?: string
         /** The ID. */
         id: string
       }
@@ -118,13 +125,6 @@ export type QueryFragmentsQuery = {
         id: string
         /** The title of the page. */
         title: string
-      }
-    | {
-        __typename: NodeArticle
-        /** The body text of the article. */
-        body?: string
-        /** The ID. */
-        id: string
       }
 }
 

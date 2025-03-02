@@ -90,7 +90,7 @@ export type FragmentUnionQuery = {
   /** Always get an entity. */
   getNonNullEntity:
     | {
-        __typename: User | Domain | Comment
+        __typename: Comment | Domain | User
       }
     | {
         __typename: MediaImage | MediaVideo
@@ -98,14 +98,14 @@ export type FragmentUnionQuery = {
         provider?: string
       }
     | {
-        __typename: NodePage
-        /** The body text. */
-        body?: string
+        __typename: NodeArticle
         /** The title of the node. */
         title: string
       }
     | {
-        __typename: NodeArticle
+        __typename: NodePage
+        /** The body text. */
+        body?: string
         /** The title of the node. */
         title: string
       }

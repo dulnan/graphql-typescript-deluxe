@@ -62,18 +62,18 @@ export type TestQuery = {
         entityType: EntityType
         /** The ID. */
         id: string
-      }
-    | {
-        /** The body text. */
-        body?: string
-        /** The EntityType enum. */
-        entityType: EntityType
-        /** The ID. */
-        id: string
         /** The title of the node. */
         title: string
       }
     | {
+        /** The EntityType enum. */
+        entityType: EntityType
+        /** The ID. */
+        id: string
+      }
+    | {
+        /** The body text. */
+        body?: string
         /** The EntityType enum. */
         entityType: EntityType
         /** The ID. */

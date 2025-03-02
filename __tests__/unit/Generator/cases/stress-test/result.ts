@@ -19,15 +19,15 @@
  */
 export type CategoryRelatedNodeFragment =
   | {
-      /** The title of the node. */
-      title: string
-    }
-  | {
       /** Categories of this article. */
       categories?: Array<{
         /** The URL for the category overview page. */
         url?: string
       }>
+      /** The title of the node. */
+      title: string
+    }
+  | {
       /** The title of the node. */
       title: string
     }
@@ -58,10 +58,6 @@ export type StressTestQuery = {
   entityById?:
     | object
     | {
-        /** The title of the node. */
-        title: string
-      }
-    | {
         /** Categories of this article. */
         categories?: Array<{
           /** The label. */
@@ -69,6 +65,10 @@ export type StressTestQuery = {
           /** The URL for the category overview page. */
           url?: string
         }>
+        /** The title of the node. */
+        title: string
+      }
+    | {
         /** The title of the node. */
         title: string
       }

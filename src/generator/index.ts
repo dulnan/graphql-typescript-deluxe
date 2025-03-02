@@ -1435,7 +1435,7 @@ export class Generator {
 
     // Add merged conflict fields as a separate object into the intersection.
     if (conflictFields.size > 0) {
-      intersectionParts.push(this.fieldMapToCode(conflictFields))
+      intersectionParts.unshift(this.fieldMapToCode(conflictFields))
     }
 
     if (intersectionParts.length === 0) {
@@ -1588,7 +1588,7 @@ export class Generator {
       }
 
       case 'TYPENAME': {
-        const union = ir.types.join(' | ')
+        const union = [...ir.types].sort().join(' | ')
         if (ir.excludeType) {
           // Special case for Exclude<A, B>
           return `Exclude<${ir.excludeType}, ${union}>`
@@ -1609,12 +1609,12 @@ export class Generator {
       }
 
       case 'UNION': {
-        const parts = ir.types.map((t) => this.IRToCode(t))
+        const parts = ir.types.map((t) => this.IRToCode(t)).sort()
         return `(${parts.join(' | ')})`
       }
 
       case 'INTERSECTION': {
-        const parts = ir.types.map((t) => this.IRToCode(t))
+        const parts = ir.types.map((t) => this.IRToCode(t)).sort()
         return `(${parts.join(' & ')})`
       }
 

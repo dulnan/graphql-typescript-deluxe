@@ -94,14 +94,7 @@ export type TypenameMergingQuery = {
   /** Get random entity. */
   withTypename?:
     | {
-        __typename: Exclude<Entity, NodePage | NodeArticle>
-        /** The ID. */
-        id: string
-      }
-    | {
-        __typename: NodePage
-        /** The body text. */
-        body?: string
+        __typename: Exclude<Entity, NodeArticle | NodePage>
         /** The ID. */
         id: string
       }
@@ -112,8 +105,21 @@ export type TypenameMergingQuery = {
         /** The title of the article. */
         title: string
       } & NodeArticleFragment)
+    | {
+        __typename: NodePage
+        /** The body text. */
+        body?: string
+        /** The ID. */
+        id: string
+      }
   /** Get random entity. */
   withoutTypename?:
+    | ({
+        /** The ID. */
+        id: string
+        /** The title of the article. */
+        title: string
+      } & NodeArticleFragment)
     | {
         /** The ID. */
         id: string
@@ -124,12 +130,6 @@ export type TypenameMergingQuery = {
         /** The ID. */
         id: string
       }
-    | ({
-        /** The ID. */
-        id: string
-        /** The title of the article. */
-        title: string
-      } & NodeArticleFragment)
 }
 
 /**

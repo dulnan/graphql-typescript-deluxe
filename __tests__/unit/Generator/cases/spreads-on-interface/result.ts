@@ -15,9 +15,9 @@
  * ```
  */
 export type AllBlocksFragment =
-  | BlockTextFragment
-  | BlockImageFragment
   | BlockContainerFragment
+  | BlockImageFragment
+  | BlockTextFragment
   | object
 
 /**

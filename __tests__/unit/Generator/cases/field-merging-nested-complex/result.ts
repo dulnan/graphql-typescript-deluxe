@@ -94,12 +94,12 @@ export type NodeArticleTwoFragment = {
       | {
           /** The ID. */
           id: string
+          /** The title of the page. */
+          title: string
         }
       | {
           /** The ID. */
           id: string
-          /** The title of the page. */
-          title: string
         }
     >
     /** The URL for the category overview page. */
@@ -143,12 +143,7 @@ export type RelatedFragment = {
 export type FieldMergingNestedComplexQuery = {
   /** Get an entity by ID. */
   entityById?:
-    | {
-        __typename: Exclude<Entity, NodeArticle>
-      }
     | ({
-        __typename: NodeArticle
-      } & {
         /** Categories of this article. */
         categories?: Array<{
           /** Related entities. */
@@ -169,7 +164,12 @@ export type FieldMergingNestedComplexQuery = {
           /** The URL for the category overview page. */
           url?: string
         }>
+      } & {
+        __typename: NodeArticle
       })
+    | {
+        __typename: Exclude<Entity, NodeArticle>
+      }
 }
 
 /**

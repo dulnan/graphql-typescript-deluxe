@@ -156,13 +156,13 @@ export type FragmentInterfaceQuery = {
         entityType: EntityType
         /** The ID. */
         id: string
-      } & NodePageFragment)
+      } & NodeArticleFragment)
     | ({
         /** The EntityType enum. */
         entityType: EntityType
         /** The ID. */
         id: string
-      } & NodeArticleFragment)
+      } & NodePageFragment)
 }
 
 /**

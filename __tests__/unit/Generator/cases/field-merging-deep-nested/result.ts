@@ -92,7 +92,7 @@ export type RouteEntityFragment = {
  * ```
  */
 export type RouteFragment = {
-  route?: RouteInternalFragment | RouteEntityFragment | object
+  route?: RouteEntityFragment | RouteInternalFragment | object
 }
 
 /**
