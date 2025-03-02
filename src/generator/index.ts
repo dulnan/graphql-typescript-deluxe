@@ -72,6 +72,27 @@ import { DependencyTracker } from '../classes/DependencyTracker'
 import type { DeepRequired } from '../helpers/type'
 import { NO_FILE_PATH, TYPENAME } from '../constants'
 
+function buildFragmentIRFields(ir: IRNode): Record<string, IRNode> {
+  // If it's an OBJECT node, just return its fields.
+  if (ir.kind === 'OBJECT') {
+    return ir.fields
+  }
+
+  // If it's a UNION, unify all OBJECT branches.
+  if (ir.kind === 'UNION') {
+    let merged: Record<string, IRNode> = {}
+    for (const branch of ir.types) {
+      if (branch.kind === 'OBJECT') {
+        merged = mergeObjectFields(merged, branch.fields)
+      }
+    }
+    return merged
+  }
+
+  // There are no fields.
+  return {}
+}
+
 export class Generator {
   /**
    * The mapped options.
@@ -129,7 +150,7 @@ export class Generator {
    */
   private fragmentIRs: Map<
     string,
-    { ir: IRNode; filePath: string; dependencies: string[] }
+    { map: Record<string, IRNode>; filePath: string; dependencies: string[] }
   > = new Map()
 
   /**
@@ -580,7 +601,7 @@ export class Generator {
       )
       const dependencies = this.dependencyTracker?.end() || []
       this.fragmentIRs.set(item.node.name.value, {
-        ir,
+        map: buildFragmentIRFields(ir),
         dependencies,
         filePath: this.dependencyTracker?.getCurrentFile() || NO_FILE_PATH,
       })
@@ -798,17 +819,17 @@ export class Generator {
    */
   private getFragmentIRFields(fragmentName: string): Record<string, IRNode> {
     return this.withCache('getFragmentIRFields', fragmentName, () => {
-      let ir = this.fragmentIRs.get(fragmentName)?.ir
+      let map = this.fragmentIRs.get(fragmentName)?.map
 
       // This means the fragment has not yet been created.
-      if (!ir) {
+      if (!map) {
         // Generate the actual fragment IR.
         // If successful, this will store the IR of the fragment.
         this.generateFragmentType(fragmentName)
-        ir = this.fragmentIRs.get(fragmentName)?.ir
+        map = this.fragmentIRs.get(fragmentName)?.map
       }
 
-      if (!ir) {
+      if (!map) {
         // Likely means there are circular references between two or more
         // fragments and we are trying to generated the IR recursively.
         // As this is anyway not allowed in the spec, throw an error.
@@ -816,28 +837,7 @@ export class Generator {
           'Failed to generate IR for fragment: ' + fragmentName,
         )
       }
-
-      // If it's an OBJECT node, just return its fields.
-      if (ir.kind === 'OBJECT') {
-        return ir.fields
-      }
-
-      // If it's a UNION, unify all OBJECT branches.
-      if (ir.kind === 'UNION') {
-        // Let's do a naive approach: unify all object branches
-        // e.g. for each object branch => mergeObjectIR(...) into a single fields map
-        let merged: Record<string, IRNode> = {}
-        for (const branch of ir.types) {
-          if (branch.kind === 'OBJECT') {
-            merged = mergeObjectFields(merged, branch.fields)
-          }
-          // If it's something else like SCALAR or FRAGMENT_SPREAD, skip or handle as needed
-        }
-        return merged
-      }
-
-      // If it's an ARRAY, SCALAR, or FRAGMENT_SPREAD => there's no real "fields"
-      return {}
+      return map
     })
   }
 
@@ -912,11 +912,13 @@ export class Generator {
           )
         }
 
-        return IR.OBJECT({
+        const result = IR.OBJECT({
           graphQLTypeName: objectType.name,
           fields,
           nullable: true,
         })
+
+        return result
       },
     )
   }
@@ -1346,7 +1348,7 @@ export class Generator {
       fragmentFieldMaps[spread.fragmentTypeName] = fragmentFields
     }
 
-    // We'll gather a union of all field names from all fragments and direct fields
+    // Gather a union of all field names from all fragments and direct fields.
     const allFieldNames = new Set<string>([
       ...fields.keys(),
       ...Object.values(fragmentFieldMaps).flatMap((fieldMap) =>
@@ -1354,9 +1356,9 @@ export class Generator {
       ),
     ])
 
+    // All fields for which we have a conflict.
     const conflictFields: Map<string, IRNode> = new Map()
 
-    // Now check for conflicts among fragments and direct fields
     for (const fieldName of allFieldNames) {
       const nodes: IRNode[] = []
 
@@ -1398,41 +1400,47 @@ export class Generator {
       }
     }
 
-    // Create objects for our intersection
+    // When there are no conflicts found: Return a simple intersection.
+    if (conflictFields.size === 0) {
+      const codeFields = this.fieldMapToCode(fields)
+      return [codeFields, ...spreads.map((v) => v.fragmentTypeName)].join(' & ')
+    }
+
+    // Create objects for our intersection.
     const intersectionParts: string[] = []
 
-    // Handle direct fields (excluding those that are in conflicts)
+    // Handle direct fields (excluding those that are in conflicts).
     const nonConflictingDirectFields = new Map(fields)
     for (const fieldName of conflictFields.keys()) {
       nonConflictingDirectFields.delete(fieldName)
     }
 
-    // Add direct fields as an object if there are any non-conflicting fields
+    // Add direct fields as an object if there are any non-conflicting fields.
     if (nonConflictingDirectFields.size > 0) {
       intersectionParts.push(this.fieldMapToCode(nonConflictingDirectFields))
     }
 
-    // Add fragments with Omit for conflicting fields
+    // Add fragments with Omit for conflicting fields.
     for (const spread of spreads) {
       const fragmentFields = fragmentFieldMaps[spread.fragmentTypeName]
       const allFragmentFieldNames = fragmentFields
         ? Object.keys(fragmentFields)
         : []
 
-      // If there's a conflict field that the fragment actually defines, use Omit
+      // If there's a conflict field that the fragment actually defines, use Omit.
       const conflictsForThisFrag = [...conflictFields.keys()].filter((fld) => {
         return fragmentFields && fragmentFields[fld] !== undefined
       })
 
-      // Skip fragment entirely if all of its fields are conflicting
+      // Skip fragment entirely if all of its fields are conflicting.
       if (conflictsForThisFrag.length === allFragmentFieldNames.length) {
         continue
       }
 
-      // Start with the fragment name
+      // Start with the fragment name.
       let replacedType = spread.fragmentTypeName
 
-      // Apply Omit for conflicting fields
+      // Apply Omit for conflicting fields.
       if (conflictsForThisFrag.length > 0) {
         const omitFields = conflictsForThisFrag.map((f) => `"${f}"`).join(' | ')
         replacedType = `Omit<${spread.fragmentTypeName}, ${omitFields}>`

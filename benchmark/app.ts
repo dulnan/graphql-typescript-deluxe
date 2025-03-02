@@ -115,6 +115,7 @@ async function main(): Promise<void> {
   const ALL = true
 
   const documentFile = ALL ? documentFileAll : documentFileSingle
+  // const documentFile = TEST
   // const document = parse(documentFile, {
   //     noLocation: false,
   //   })
