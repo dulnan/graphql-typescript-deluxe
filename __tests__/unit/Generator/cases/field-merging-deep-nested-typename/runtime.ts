@@ -12,6 +12,10 @@ export default function (query: FieldMergingDeepNestedQuery): void {
     console.log(route.entity?.title)
     console.log(route.entity?.id)
 
+    if (route.entity === undefined) {
+      return
+    }
+
     if (route.entity.__typename === 'NodeArticle') {
       console.log(route.entity.id)
       console.log(route.entity.body)

@@ -53,7 +53,7 @@ export type Entity =
  */
 export type InlineFieldsQuery = {
   /** Get random entity. */
-  getRandomEntity:
+  getRandomEntity?:
     | {
         __typename: Exclude<Entity, NodePage>
         /** The ID. */

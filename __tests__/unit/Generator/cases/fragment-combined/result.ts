@@ -56,7 +56,7 @@ export type EntityType = (typeof EntityType)[keyof typeof EntityType]
  */
 export type TestQuery = {
   /** Get random entity. */
-  getRandomEntity:
+  getRandomEntity?:
     | {
         /** The EntityType enum. */
         entityType: EntityType

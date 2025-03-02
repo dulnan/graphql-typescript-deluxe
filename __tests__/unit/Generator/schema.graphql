@@ -390,17 +390,24 @@ type Query {
   """
   Get a fully nullable array.
   """
-  nullableArray: [Entity]
+  nullableArray: [Nullability]
 
   """
   Get a non-nullable array with nullable items.
   """
-  nonNullableArray: [Entity]!
+  nonNullableArray: [Nullability]!
 
   """
   Get a non-nullable array with non-nullable items.
   """
-  fullyNonNullableArray: [Entity!]!
+  fullyNonNullableArray: [Nullability!]!
+}
+
+type Nullability {
+  nullableId: String
+  nonNullableId: String!
+  nullableEntity: Entity
+  nonNullableEntity: Entity!
 }
 
 type Mutation {

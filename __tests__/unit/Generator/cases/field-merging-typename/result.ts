@@ -35,7 +35,7 @@ export type Url = DefaultEntityUrl | DefaultInternalUrl | DefaultUrl
  * ```
  */
 export type RouteFragment = {
-  route:
+  route?:
     | {
         __typename: DefaultEntityUrl | DefaultInternalUrl
         foobar?: string
@@ -70,7 +70,7 @@ export type RouteFragment = {
  * ```
  */
 export type FieldMergingTypenameQuery = {
-  route:
+  route?:
     | {
         __typename: DefaultEntityUrl
         foobar?: string

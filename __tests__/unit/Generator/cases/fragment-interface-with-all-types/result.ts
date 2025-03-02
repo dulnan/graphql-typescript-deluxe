@@ -183,7 +183,7 @@ export type UserFragment = {
  */
 export type TestQuery = {
   /** Get random entity. */
-  getRandomEntity: EntityFragment
+  getRandomEntity?: EntityFragment
 }
 
 /**

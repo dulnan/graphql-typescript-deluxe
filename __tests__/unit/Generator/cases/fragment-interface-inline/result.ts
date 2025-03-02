@@ -47,7 +47,7 @@ export type EntityType = (typeof EntityType)[keyof typeof EntityType]
  */
 export type FragmentInterfaceQuery = {
   /** Get random entity. */
-  getRandomEntity: {
+  getRandomEntity?: {
     /** The EntityType enum. */
     entityType: EntityType
     /** The ID. */

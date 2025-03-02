@@ -40,7 +40,7 @@ export type EntityFragment = {
  */
 export type TestQuery = {
   /** Get random entity. */
-  getRandomEntity:
+  getRandomEntity?:
     | {
         /** The ID. */
         id: string

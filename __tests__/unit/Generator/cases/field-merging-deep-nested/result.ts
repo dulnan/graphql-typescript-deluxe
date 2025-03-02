@@ -92,7 +92,7 @@ export type RouteEntityFragment = {
  * ```
  */
 export type RouteFragment = {
-  route: RouteInternalFragment | RouteEntityFragment | object
+  route?: RouteInternalFragment | RouteEntityFragment | object
 }
 
 /**
@@ -139,7 +139,7 @@ export type RouteInternalFragment = {
  * ```
  */
 export type FieldMergingDeepNestedQuery = {
-  route:
+  route?:
     | {
         __typename: DefaultEntityUrl
         entity?: {

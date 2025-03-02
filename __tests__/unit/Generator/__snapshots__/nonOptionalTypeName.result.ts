@@ -78,7 +78,7 @@ export type UserFragment = {
 export type FoobarQuery = {
   __typename: Query
   /** Get random entity. */
-  page:
+  page?:
     | {
         __typename: Exclude<Entity, NodeArticle>
         /** The ID. */
@@ -96,7 +96,7 @@ export type FoobarQuery = {
         id: string
       }
   /** Get random entity. */
-  user:
+  user?:
     | ({
         __typename: User
       } & UserFragment)

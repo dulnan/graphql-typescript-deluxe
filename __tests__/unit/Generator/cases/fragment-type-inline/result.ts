@@ -29,7 +29,7 @@
  */
 export type TestQuery = {
   /** Get random entity. */
-  getRandomEntity:
+  getRandomEntity?:
     | object
     | {
         /** The body text. */

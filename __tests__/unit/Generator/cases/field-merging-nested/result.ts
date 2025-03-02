@@ -119,7 +119,7 @@ export type NodeArticleTwoFragment = {
  */
 export type FieldMergingNestedQuery = {
   /** Get an entity by ID. */
-  entityById:
+  entityById?:
     | object
     | (Omit<NodeArticleOneFragment, 'categories'> &
         Omit<NodeArticleTwoFragment, 'categories'> & {

@@ -138,7 +138,7 @@ export type NodePageFragment = {
  */
 export type FragmentInterfaceQuery = {
   /** Get random entity. */
-  getRandomEntity:
+  getRandomEntity?:
     | {
         /** The EntityType enum. */
         entityType: EntityType

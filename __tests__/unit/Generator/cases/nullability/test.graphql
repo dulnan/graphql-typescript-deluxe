@@ -1,23 +1,40 @@
 query nullability {
   nullableArray {
-    id
+    nullableId
+    nonNullableId
   }
   nonNullableArray {
-    id
+    nullableId
+    nonNullableId
   }
   fullyNonNullableArray {
-    id
+    nullableId
+    nonNullableId
   }
 }
 
-fragment nullability on Query {
+fragment nullabilityQuery on Query {
   nullableArray {
-    id
+    nullableId
+    nonNullableId
   }
   nonNullableArray {
-    id
+    nullableId
+    nonNullableId
   }
   fullyNonNullableArray {
+    nullableId
+    nonNullableId
+  }
+}
+
+fragment nullability on Nullability {
+  nullableId
+  nonNullableId
+  nullableEntity {
+    id
+  }
+  nonNullableEntity {
     id
   }
 }

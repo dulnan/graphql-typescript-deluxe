@@ -39,7 +39,7 @@ export type NodePageFragment = {
  */
 export type InlineFieldsQuery = {
   /** Get random entity. */
-  alias_getRandomEntity:
+  alias_getRandomEntity?:
     | {
         /** The ID. */
         alias_id: string

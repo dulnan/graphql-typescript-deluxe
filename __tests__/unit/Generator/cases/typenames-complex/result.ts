@@ -51,7 +51,7 @@ export type Entity =
  */
 export type TypenamesComplexQuery = {
   /** Get random entity. */
-  one:
+  one?:
     | {
         __typename: Exclude<Entity, NodePage>
       }

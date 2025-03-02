@@ -44,7 +44,7 @@ export type EntityType = (typeof EntityType)[keyof typeof EntityType]
  */
 export type InputTypesQuery = {
   /** Get an entity by ID. */
-  entityById: {
+  entityById?: {
     /** The ID. */
     id: string
   }

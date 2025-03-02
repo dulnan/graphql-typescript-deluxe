@@ -1480,12 +1480,14 @@ export class Generator {
       },
     )
 
+    const nullable = !isNonNullType(field.type)
+
     // Always create a shallow clone, since the cache key we use excludes
     // directives and description.
     return {
       ...ir,
       // Either already nullable or nullable due to directive.
-      nullable: ir.nullable || hasConditionalDirective(fieldNode),
+      nullable: hasConditionalDirective(fieldNode) || ir.nullable || nullable,
       description: field.description,
     }
   }

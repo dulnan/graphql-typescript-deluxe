@@ -55,7 +55,7 @@ export type CategoryRelatedNodeFragment =
  */
 export type StressTestQuery = {
   /** Get an entity by ID. */
-  entityById:
+  entityById?:
     | object
     | {
         /** The title of the node. */

@@ -250,7 +250,7 @@ fragment mediaImage on MediaImage {
 
       export type QueryFirstQuery = {
         /** Get random entity. */
-        getRandomEntity: (object | (Omit<ArticleOneFragment, "categories"> & {
+        getRandomEntity?: (object | (Omit<ArticleOneFragment, "categories"> & {
         /** Categories of this article. */
         categories?: Array<{
         /** The label. */
@@ -306,7 +306,7 @@ fragment mediaImage on MediaImage {
 
       export type QueryFirstQuery = {
         /** Get random entity. */
-        getRandomEntity: (object | (Omit<ArticleOneFragment, "categories"> & {
+        getRandomEntity?: (object | (Omit<ArticleOneFragment, "categories"> & {
         /** Categories of this article. */
         categories?: Array<{
         /** The label. */

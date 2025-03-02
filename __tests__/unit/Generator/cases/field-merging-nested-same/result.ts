@@ -73,7 +73,7 @@ export type NodeArticleTwoFragment = {
  */
 export type FieldMergingNestedQuery = {
   /** Get an entity by ID. */
-  entityById: object | (NodeArticleOneFragment & NodeArticleTwoFragment)
+  entityById?: object | (NodeArticleOneFragment & NodeArticleTwoFragment)
 }
 
 /**

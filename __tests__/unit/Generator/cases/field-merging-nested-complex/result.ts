@@ -142,7 +142,7 @@ export type RelatedFragment = {
  */
 export type FieldMergingNestedComplexQuery = {
   /** Get an entity by ID. */
-  entityById:
+  entityById?:
     | {
         __typename: Exclude<Entity, NodeArticle>
       }

@@ -37,7 +37,7 @@
  */
 export type DirectivesSkipQuery = {
   /** Get random entity. */
-  getRandomEntity:
+  getRandomEntity?:
     | object
     | {
         /** The author of the article. */

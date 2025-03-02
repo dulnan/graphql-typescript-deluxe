@@ -89,7 +89,7 @@ export type NodePageFragment = {
  */
 export type NestedQuery = {
   /** Get random entity. */
-  getRandomEntity:
+  getRandomEntity?:
     | {
         /** The ID. */
         id: string

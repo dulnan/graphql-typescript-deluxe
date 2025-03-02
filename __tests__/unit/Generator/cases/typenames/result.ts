@@ -56,7 +56,7 @@ export type Entity =
  */
 export type InlineFieldsQuery = {
   /** Get random entity. */
-  foobar:
+  foobar?:
     | {
         __typename: Exclude<Entity, NodePage>
       }
@@ -66,7 +66,7 @@ export type InlineFieldsQuery = {
         body_alias?: string
       }
   /** Get random entity. */
-  singleObject: {
+  singleObject?: {
     __typename: Entity
     /** The ID. */
     id: string

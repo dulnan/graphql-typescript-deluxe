@@ -50,7 +50,7 @@ export type Entity =
  */
 export type QueryOneFragment = {
   /** Get random entity. */
-  getRandomEntity:
+  getRandomEntity?:
     | object
     | {
         /** The title of the page. */
@@ -75,7 +75,7 @@ export type QueryOneFragment = {
  */
 export type QueryTwoFragment = {
   /** Get random entity. */
-  getRandomEntity:
+  getRandomEntity?:
     | {
         __typename: Exclude<Entity, NodeArticle>
       }
@@ -106,7 +106,7 @@ export type QueryTwoFragment = {
  */
 export type QueryFragmentsQuery = {
   /** Get random entity. */
-  getRandomEntity:
+  getRandomEntity?:
     | {
         __typename: Exclude<Entity, NodePage | NodeArticle>
         /** The ID. */

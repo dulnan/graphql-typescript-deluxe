@@ -90,7 +90,7 @@ export type NodeArticleFragment = {
  */
 export type TypenameMergingQuery = {
   /** Get random entity. */
-  withTypename:
+  withTypename?:
     | {
         __typename: Exclude<Entity, NodePage | NodeArticle>
         /** The ID. */
@@ -111,7 +111,7 @@ export type TypenameMergingQuery = {
         title: string
       } & NodeArticleFragment)
   /** Get random entity. */
-  withoutTypename:
+  withoutTypename?:
     | {
         /** The ID. */
         id: string
