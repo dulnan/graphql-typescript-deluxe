@@ -63,6 +63,7 @@ import {
   type IRNode,
   type IRNodeFragmentSpread,
   type IRNodeObject,
+  type IRNodeScalar,
   type IRNodeTypename,
 } from '../helpers/ir'
 import { getRootType } from '../helpers/schema'
@@ -886,6 +887,16 @@ export class Generator {
   }
 
   /**
+   * Return a scalar node for an empty object.
+   */
+  private emptyObjectScalar(): IRNodeScalar {
+    return IR.SCALAR({
+      tsType: this.options.output.emptyObject,
+      nullable: false,
+    })
+  }
+
+  /**
    * Generate the IR selection set for an abstract (interface, union) type.
    *
    * @param abstractType - The interface/union type.
@@ -913,6 +924,7 @@ export class Generator {
 
         // Possible types that implement the interface/union.
         const possibleTypes = this.schema.getPossibleTypes(abstractType)
+        const totalPossibleTypes = possibleTypes.length
 
         // Fields requested on interface/union level.
         const baseFields: Record<string, IRNode> = {}
@@ -1002,6 +1014,14 @@ export class Generator {
           concreteInlineFragmentTypes.length > 0
         const hasConcreteFragments = concreteFragmentTypes.length > 0
 
+        // ====================================================================
+        // Shortcuts for common use cases.
+        //
+        // This section is very verbose, because we try to find common
+        // combinations of selections for which we can return an IR node
+        // directly.
+        // ====================================================================
+
         // We don't have any base fields.
         if (!hasBaseFields) {
           // We only have fragments for abstract.
@@ -1020,19 +1040,59 @@ export class Generator {
               })
             }
           }
-
           // We only have concrete fragment spreads.
-          if (
+          else if (
             !hasInlineFragmentsForAbstract &&
             !hasFragmentsForAbstract &&
             !hasConcreteInlineFragments &&
             hasConcreteFragments
           ) {
-            // All concrete fragment target the same type.
+            // We only have spreads for a single type.
             if (concreteFragmentTypes.length === 1) {
+              const typeName = concreteFragmentTypes[0]!
+              const fragments = fragmentsByConcreteType[typeName]!
+
+              // We have just a single fragment.
+              if (fragments.length === 1) {
+                return IR.SCALAR({
+                  tsType: this.generateFragmentType(fragments[0]!.name.value),
+                  nullable: false,
+                })
+              }
+            } else {
+              // We have exactly one fragment per type.
+              const allTargetDifferent = concreteFragmentTypes.every(
+                (typeName) => {
+                  const fragments = fragmentsByConcreteType[typeName]!
+                  return fragments.length === 1
+                },
+              )
+
+              if (allTargetDifferent) {
+                const unionTypes = concreteFragmentTypes.map((typeName) => {
+                  const fragment = fragmentsByConcreteType[typeName]![0]!
+                  return IR.SCALAR({
+                    tsType: this.generateFragmentType(fragment.name.value),
+                    nullable: false,
+                  })
+                })
+                const totalTargets = concreteFragmentTypes.length
+
+                if (totalTargets !== totalPossibleTypes) {
+                  unionTypes.push(this.emptyObjectScalar())
+                }
+                return IR.UNION({
+                  types: unionTypes,
+                  nullable: false,
+                })
+              }
             }
           }
         }
+
+        // ====================================================================
+        // Full gathering of all possible combinations.
+        // ====================================================================
 
         // Gather all field selections on interface/union level.
         for (const sel of selections) {

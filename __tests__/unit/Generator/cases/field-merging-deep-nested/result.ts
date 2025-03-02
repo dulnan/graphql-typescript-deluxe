@@ -92,19 +92,7 @@ export type RouteEntityFragment = {
  * ```
  */
 export type RouteFragment = {
-  route:
-    | {
-        entity?: {
-          id: string
-        }
-        metatags: Array<MetatagFragment>
-        routeName: string
-      }
-    | {
-        metatags: Array<MetatagFragment>
-        routeName: string
-      }
-    | object
+  route: RouteInternalFragment | RouteEntityFragment | object
 }
 
 /**

@@ -17,8 +17,8 @@
 export type AllBlocksFragment =
   | BlockTextFragment
   | BlockImageFragment
-  | object
   | BlockContainerFragment
+  | object
 
 /**
  * @see {@link ./test.graphql}
