@@ -34,11 +34,23 @@ export type TypeContext = {
   type?: GraphQLNamedType
 }
 
+export type GeneratedCodeIdentifier =
+  | 'fragment'
+  | 'query'
+  | 'mutation'
+  | 'subscription'
+  | 'enum'
+  | 'input'
+  | 'interface'
+  | 'union'
+  | 'type'
+
 export type GeneratedCodeType =
   | 'enum'
   | 'input'
   | 'fragment'
   | 'operation'
+  | 'operation-variables'
   | 'typename-object'
   | 'typename-union'
   | 'helpers'
@@ -55,6 +67,16 @@ export interface GeneratedCode {
   name: string
 
   /**
+   * The name of the corresponding GraphQL element.
+   */
+  graphqlName: string | null
+
+  /**
+   * The GraphQL identifier.
+   */
+  identifier: GeneratedCodeIdentifier | null
+
+  /**
    * The full code of the generated type, including export identifiers.
    */
   code: string
@@ -68,4 +90,9 @@ export interface GeneratedCode {
    * The dependencies.
    */
   dependencies: string[]
+
+  /**
+   * The GraphQL source.
+   */
+  source: string | null
 }

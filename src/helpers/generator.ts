@@ -65,6 +65,8 @@ export function getCodeTypeLabel(type: GeneratedCodeType): string {
       return 'Input Types'
     case 'operation':
       return 'Operations'
+    case 'operation-variables':
+      return 'Operation Variables'
     case 'fragment':
       return 'Fragments'
     case 'helpers':

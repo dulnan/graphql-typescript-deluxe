@@ -76,6 +76,10 @@ export type FieldMergingNestedQuery = {
   entityById?: (NodeArticleOneFragment & NodeArticleTwoFragment) | object
 }
 
+// --------------------------------------------------------------------------------
+// Operation Variables
+// --------------------------------------------------------------------------------
+
 /**
  * @see {@link ./test.graphql}
  *

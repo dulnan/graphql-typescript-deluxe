@@ -23,6 +23,10 @@ export type InputTypesPartialMutation = {
   submitForm: boolean
 }
 
+// --------------------------------------------------------------------------------
+// Operation Variables
+// --------------------------------------------------------------------------------
+
 /**
  * @see {@link ./test.graphql}
  *

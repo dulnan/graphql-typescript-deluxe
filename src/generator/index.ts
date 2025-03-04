@@ -26,6 +26,7 @@ import {
   type TypeNode,
 } from 'graphql'
 import {
+  getAstSource,
   getTypeNodeKey,
   hasConditionalDirective,
   inlineRootQueryFragmentsAndMerge,
@@ -40,6 +41,7 @@ import type {
   GeneratorInputArg,
   GeneratorInput,
   TypeContext,
+  GeneratedCodeIdentifier,
 } from '../types'
 import { toInputDocuments } from '../helpers/generator'
 import {
@@ -114,6 +116,21 @@ export class Generator {
   private fragments: Map<
     string,
     { node: FragmentDefinitionNode; filePath: string; dependencies: string[] }
+  > = new Map()
+
+  /**
+   * All operation definitions.
+   */
+  private operations: Map<
+    string,
+    {
+      node: OperationDefinitionNode
+      filePath: string
+      dependencies: string[]
+      operationTypeName: string
+      variablesTypeName: string
+      hasVariables: boolean
+    }
   > = new Map()
 
   /**
@@ -277,27 +294,40 @@ export class Generator {
   private generateCodeOnce(
     generatedTypeType: GeneratedCodeType,
     key: string,
-    cb: () => { code: string; typeName: string; context?: TypeContext },
+    cb: () => {
+      code: string
+      typeName: string
+      graphqlName: string | null
+      context?: TypeContext
+      identifier: GeneratedCodeIdentifier | null
+      source: string | null
+    },
   ): string {
     const existing = this.generatedCode.get(key)
     if (existing) {
       this.dependencyTracker?.merge(existing)
       return existing.name
     }
+
     this.dependencyTracker?.start()
     const result = cb()
     this.dependencyTracker?.add(generatedTypeType, result.typeName)
     const dependencies = this.dependencyTracker?.end() || []
+
     let comment = ''
     if (result.context && this.options.output.typeComment) {
       comment = makeTypeDoc(result.context) + '\n'
     }
+    const code = `${comment}${result.code}`
     this.generatedCode.set(key, {
       type: generatedTypeType,
       name: result.typeName,
-      code: `${comment}${result.code}`,
+      code,
       filePath: this.dependencyTracker?.getCurrentFile() || '',
       dependencies,
+      source: result.source,
+      graphqlName: result.graphqlName,
+      identifier: result.identifier,
     })
     return result.typeName
   }
@@ -341,6 +371,19 @@ export class Generator {
     return this
   }
 
+  /**
+   * Reset all caches.
+   */
+  private resetCaches(): Generator {
+    this.fragments.clear()
+    this.operations.clear()
+    this.generatedCode.clear()
+    this.cache.clear()
+    this.fragmentIRs.clear()
+    this.dependencyTracker?.reset()
+    return this
+  }
+
   // ===========================================================================
   // Input Documents / Schema
   // ===========================================================================
@@ -378,7 +421,7 @@ export class Generator {
       throw new FragmentNotFoundError(name)
     }
 
-    this.dependencyTracker?.merge(item)
+    this.generateFragmentType(name)
 
     return item.node
   }
@@ -451,6 +494,9 @@ export class Generator {
           definition: type.astNode,
           type,
         },
+        source: null,
+        graphqlName: type.name,
+        identifier: 'enum',
       }
     })
   }
@@ -535,6 +581,9 @@ export class Generator {
         code: makeExport(typeName, this.objectNodeToCode(obj)),
         typeName,
         context: { definition: type.astNode, type },
+        source: null,
+        graphqlName: type.name,
+        identifier: 'input',
       }
     })
   }
@@ -562,6 +611,7 @@ export class Generator {
       if (!item) {
         throw new FragmentNotFoundError(fragmentName)
       }
+      const source = getAstSource(item.node)
       const typeName = this.options.buildFragmentTypeName(item.node)
 
       const graphqlTypeName = item.node.typeCondition.name.value
@@ -571,6 +621,7 @@ export class Generator {
       }
 
       this.dependencyTracker?.start()
+      this.dependencyTracker?.addFragment(fragmentName)
       const ir = postProcessIR(
         this.buildSelectionSet(type, item.node.selectionSet),
       )
@@ -589,6 +640,9 @@ export class Generator {
           filePath: item.filePath,
           definition: item.node,
         },
+        source,
+        graphqlName: fragmentName,
+        identifier: 'fragment',
       }
     })
   }
@@ -619,6 +673,7 @@ export class Generator {
     }
 
     this.generateCodeOnce('operation', opName + '-base', () => {
+      this.logDebug('Generating operation: ' + opName)
       const selectionSet = inlineRootQueryFragmentsAndMerge(
         operation,
         this.fragments,
@@ -630,6 +685,8 @@ export class Generator {
         operation,
       )
 
+      const source = getAstSource(operation)
+
       return {
         code: makeExport(
           typeName,
@@ -639,17 +696,27 @@ export class Generator {
         ),
         context: { input, definition: operation },
         typeName,
+        source,
+        graphqlName: opName,
+        identifier: operation.operation,
       }
     })
 
-    this.generateCodeOnce('operation', opName + '-variables', () => {
+    this.generateCodeOnce('operation-variables', opName + '-variables', () => {
       const typeName = this.options.buildOperationVariablesTypeName(
         opName,
         rootType,
         operation,
       )
       const code = makeExport(typeName, this.generateVariablesType(operation))
-      return { code, typeName, context: { input } }
+      return {
+        code,
+        typeName,
+        context: { input },
+        source: null,
+        graphqlName: null,
+        identifier: null,
+      }
     })
   }
 
@@ -712,6 +779,9 @@ export class Generator {
         code: `type ${name} = '${name}';`,
         typeName: name,
         context: { type },
+        source: null,
+        graphqlName: type.name,
+        identifier: 'type',
       }
     })
   }
@@ -739,6 +809,9 @@ export class Generator {
         context: {
           type,
         },
+        source: null,
+        graphqlName: type.name,
+        identifier: 'union',
       }
     })
   }
@@ -788,17 +861,17 @@ export class Generator {
    */
   private getFragmentIRFields(fragmentName: string): Record<string, IRNode> {
     return this.withCache('getFragmentIRFields', fragmentName, () => {
-      let map = this.fragmentIRs.get(fragmentName)?.map
+      let item = this.fragmentIRs.get(fragmentName)
 
       // This means the fragment has not yet been created.
-      if (!map) {
+      if (!item) {
         // Generate the actual fragment IR.
         // If successful, this will store the IR of the fragment.
         this.generateFragmentType(fragmentName)
-        map = this.fragmentIRs.get(fragmentName)?.map
+        item = this.fragmentIRs.get(fragmentName)
       }
 
-      if (!map) {
+      if (!item) {
         // Likely means there are circular references between two or more
         // fragments and we are trying to generated the IR recursively.
         // As this is anyway not allowed in the spec, throw an error.
@@ -806,7 +879,7 @@ export class Generator {
           'Failed to generate IR for fragment: ' + fragmentName,
         )
       }
-      return map
+      return item.map
     })
   }
 
@@ -1636,7 +1709,7 @@ export class Generator {
    *
    * @returns Generator
    */
-  updateSchema(schema: GraphQLSchema): Generator {
+  public updateSchema(schema: GraphQLSchema): Generator {
     this.schema = schema
     return this.reset()
   }
@@ -1648,7 +1721,7 @@ export class Generator {
    *
    * @returns Generator
    */
-  add(arg: GeneratorInputArg): Generator {
+  public add(arg: GeneratorInputArg): Generator {
     const docs = toInputDocuments(arg)
 
     for (let i = 0; i < docs.length; i++) {
@@ -1663,7 +1736,7 @@ export class Generator {
   }
 
   /**
-   * Resets the entire state.
+   * Resets the entire state. This is equal to creating a new instance.
    *
    * - Remove all added input documents
    * - Remove all generated code
@@ -1671,15 +1744,9 @@ export class Generator {
    *
    * @returns Generator
    */
-  reset(): Generator {
+  public reset(): Generator {
     this.inputDocuments.clear()
-    this.fragments.clear()
-    this.generatedCode.clear()
-    this.cache.clear()
-    this.fragmentIRs.clear()
-    this.schemaImplementation.clear()
-    this.schemaPossibleTypes.clear()
-    return this
+    return this.resetCaches()
   }
 
   /**
@@ -1689,7 +1756,7 @@ export class Generator {
    *
    * @returns Generator
    */
-  update(arg: GeneratorInputArg): Generator {
+  public update(arg: GeneratorInputArg): Generator {
     const docs = toInputDocuments(arg)
 
     for (let i = 0; i < docs.length; i++) {
@@ -1713,7 +1780,7 @@ export class Generator {
    *
    * @returns Generator
    */
-  remove(filePath: string): Generator {
+  public remove(filePath: string): Generator {
     this.purgeFilePath(filePath)
     return this
   }
@@ -1723,35 +1790,40 @@ export class Generator {
    *
    * @returns GeneratorOutput
    */
-  build(): GeneratorOutput {
-    this.forEachDefinitionKind(Kind.FRAGMENT_DEFINITION, (node) => {
-      if (!this.fragments.has(node.name.value)) {
+  public build(): GeneratorOutput {
+    try {
+      this.forEachDefinitionKind(Kind.FRAGMENT_DEFINITION, (node) => {
         this.fragments.set(node.name.value, {
           node,
           filePath: this.dependencyTracker?.getCurrentFile() || '',
           dependencies: [],
         })
-      }
-    })
-
-    this.forEachDefinitionKind(Kind.FRAGMENT_DEFINITION, (def) => {
-      this.generateFragmentType(def.name.value)
-    })
-
-    this.forEachDefinitionKind(Kind.OPERATION_DEFINITION, (def, input) => {
-      this.generateOperationType(def, input)
-    })
-
-    if (this.options.debugMode) {
-      const entries = Object.entries(this.debugCounts)
-      const longestKey =
-        entries
-          .map((v) => v[0])
-          .sort((a, b) => b.length - a.length)
-          .at(0)?.length || 20
-      Object.entries(this.debugCounts).forEach(([key, count]) => {
-        console.log(`${key.padEnd(longestKey + 1)}: ${count}`)
       })
+
+      this.forEachDefinitionKind(Kind.FRAGMENT_DEFINITION, (def) => {
+        this.generateFragmentType(def.name.value)
+      })
+
+      this.forEachDefinitionKind(Kind.OPERATION_DEFINITION, (def, input) => {
+        this.generateOperationType(def, input)
+      })
+
+      if (this.options.debugMode) {
+        const entries = Object.entries(this.debugCounts)
+        const longestKey =
+          entries
+            .map((v) => v[0])
+            .sort((a, b) => b.length - a.length)
+            .at(0)?.length || 20
+        Object.entries(this.debugCounts).forEach(([key, count]) => {
+          console.log(`${key.padEnd(longestKey + 1)}: ${count}`)
+        })
+      }
+    } catch (error) {
+      // Reset caches so we don't run into inconsistent state.
+      this.resetCaches()
+      // Re-throw the error.
+      throw error
     }
 
     // If we still have a remaining dependency tracker stack item at this point,

@@ -58,6 +58,7 @@ query foobar {
           {
             "dependencies": [
               "file#####fragment.user.graphql",
+              "fragment-name#####user",
               "fragment#####UserFragment",
             ],
             "filePath": "fragment.user.graphql",
@@ -75,8 +76,9 @@ query foobar {
           },
           {
             "dependencies": [
-              "file#####fragment.entity.graphql",
               "enum#####EntityType",
+              "file#####fragment.entity.graphql",
+              "fragment-name#####entity",
               "fragment#####EntityFragment",
             ],
             "filePath": "fragment.entity.graphql",
@@ -86,8 +88,12 @@ query foobar {
           {
             "dependencies": [
               "file#####fragment.user.graphql",
+              "fragment-name#####user",
+              "fragment#####UserFragment",
               "file#####fragment.entity.graphql",
               "enum#####EntityType",
+              "fragment-name#####entity",
+              "fragment#####EntityFragment",
               "operation#####FoobarQuery",
               "file#####query.foobar.graphql",
             ],
@@ -97,12 +103,12 @@ query foobar {
           },
           {
             "dependencies": [
-              "operation#####FoobarQueryVariables",
+              "operation-variables#####FoobarQueryVariables",
               "file#####query.foobar.graphql",
             ],
             "filePath": "query.foobar.graphql",
             "name": "FoobarQueryVariables",
-            "type": "operation",
+            "type": "operation-variables",
           },
         ]
       `)
@@ -124,6 +130,7 @@ fragment mediaImage on MediaImage {
           {
             "dependencies": [
               "file#####fragment.user.graphql",
+              "fragment-name#####user",
               "fragment#####UserFragment",
             ],
             "filePath": "fragment.user.graphql",
@@ -141,8 +148,9 @@ fragment mediaImage on MediaImage {
           },
           {
             "dependencies": [
-              "file#####fragment.entity.graphql",
               "enum#####EntityType",
+              "file#####fragment.entity.graphql",
+              "fragment-name#####entity",
               "fragment#####EntityFragment",
             ],
             "filePath": "fragment.entity.graphql",
@@ -152,8 +160,12 @@ fragment mediaImage on MediaImage {
           {
             "dependencies": [
               "file#####fragment.user.graphql",
+              "fragment-name#####user",
+              "fragment#####UserFragment",
               "file#####fragment.entity.graphql",
               "enum#####EntityType",
+              "fragment-name#####entity",
+              "fragment#####EntityFragment",
               "operation#####FoobarQuery",
               "file#####query.foobar.graphql",
             ],
@@ -163,16 +175,17 @@ fragment mediaImage on MediaImage {
           },
           {
             "dependencies": [
-              "operation#####FoobarQueryVariables",
+              "operation-variables#####FoobarQueryVariables",
               "file#####query.foobar.graphql",
             ],
             "filePath": "query.foobar.graphql",
             "name": "FoobarQueryVariables",
-            "type": "operation",
+            "type": "operation-variables",
           },
           {
             "dependencies": [
               "file#####fragment.mediaImage.graphql",
+              "fragment-name#####mediaImage",
               "fragment#####MediaImageFragment",
             ],
             "filePath": "fragment.mediaImage.graphql",
@@ -181,6 +194,64 @@ fragment mediaImage on MediaImage {
           },
         ]
       `)
+  })
+
+  it('tracks fragment references', async () => {
+    const generator = new Generator(schema)
+
+    const documents = [
+      toDocument(
+        'fragment nodeArticle on NodeArticle { categories { ...category } }',
+        'fragment.article.graphql',
+      ),
+      toDocument(
+        'fragment category on Category { related { ...relatedEntity } }',
+        'fragment.category.graphql',
+      ),
+      toDocument(
+        'fragment relatedEntity on Entity { id }',
+        'fragment.relatedEntity.graphql',
+      ),
+      toDocument(
+        `
+query foobar {
+  getRandomEntity {
+    ...nodeArticle
+  }
+}`,
+        'query.foobar.graphql',
+      ),
+    ]
+
+    generator.add(documents)
+
+    const result = generator.build().getOperations()
+    expect(result).toMatchInlineSnapshot(`
+      "
+      const fragment_relatedEntity = \`fragment relatedEntity on Entity{id}\`;
+      const fragment_category = \`fragment category on Category{related{...relatedEntity}}\`;
+      const fragment_nodeArticle = \`fragment nodeArticle on NodeArticle{categories{...category}}\`;
+      const operation_query_foobar = \`query foobar{getRandomEntity{...nodeArticle}}\`;
+
+
+      const query = {
+        'foobar': operation_query_foobar + fragment_relatedEntity + fragment_category + fragment_nodeArticle,
+      }
+
+      const mutation = {
+      }
+
+      const subscription = {
+      }
+
+      const operations = {
+        query,
+        mutation,
+        subscription
+      }
+      export { operations }
+      "
+    `)
   })
 
   it('handles updates correctly', async () => {
@@ -266,6 +337,11 @@ fragment mediaImage on MediaImage {
       } & Omit<ArticleOneFragment, "categories">) | object);
       };
 
+
+      // --------------------------------------------------------------------------------
+      // Operation Variables
+      // --------------------------------------------------------------------------------
+
       export type QueryFirstQueryVariables = object;"
     `)
 
@@ -321,6 +397,11 @@ fragment mediaImage on MediaImage {
       }>;
       } & Omit<ArticleOneFragment, "categories">) | object);
       };
+
+
+      // --------------------------------------------------------------------------------
+      // Operation Variables
+      // --------------------------------------------------------------------------------
 
       export type QueryFirstQueryVariables = object;"
     `)

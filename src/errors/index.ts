@@ -64,3 +64,14 @@ export class DuplicateInputDocumentError extends Error {
     Object.setPrototypeOf(this, DuplicateInputDocumentError.prototype)
   }
 }
+
+/**
+ * Thrown when the AST source code is required.
+ */
+export class NodeLocMissingError extends Error {
+  constructor(name: string) {
+    super(`Missing node.loc for: ${name}`)
+    this.name = 'NodeLocMissingError'
+    Object.setPrototypeOf(this, NodeLocMissingError.prototype)
+  }
+}

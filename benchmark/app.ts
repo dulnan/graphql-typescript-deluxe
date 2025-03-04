@@ -88,9 +88,9 @@ async function runWithDuration(
   if (isProfiling) {
     return ''
   }
-  const destRaw = path.resolve(outputFolder, fileName + '.ts')
+  const destRaw = path.resolve(outputFolder, fileName)
   await fs.writeFile(destRaw, result)
-  const destFormatted = path.resolve(outputFolder, fileName + '-formatted.ts')
+  const destFormatted = path.resolve(outputFolder, 'formatted-' + fileName)
   const formatted = await format(result)
   await fs.writeFile(destFormatted, formatted)
   return formatted
@@ -109,7 +109,8 @@ async function main(): Promise<void> {
     //   // path.resolve(graphqlFolder, './documents/paragraphs.graphql'),
     //   // path.resolve(graphqlFolder, './documents/merge-typenames.graphql'),
     // path.resolve(graphqlFolder, './documents/merge-fields-typename.graphql'),
-    path.resolve(graphqlFolder, './documents/nullability.graphql'),
+    // path.resolve(graphqlFolder, './documents/nullability.graphql'),
+    path.resolve(graphqlFolder, './documents/dependencies.graphql'),
     //   path.resolve(graphqlFolder, './documents/spread-interface.graphql'),
   )
 
@@ -128,7 +129,7 @@ async function main(): Promise<void> {
 
   const generator = new Generator(schema, {
     debugMode: true,
-    useCache: true,
+    useCache: false,
     dependencyTracking: true,
     output: {
       mergeTypenames: true,
@@ -137,16 +138,53 @@ async function main(): Promise<void> {
     },
   })
 
-  await runWithDuration('custom', () => {
+  await runWithDuration('custom-types.ts', () => {
     generator.add(documentCleaned)
-    return generator.build().getAll()
+    const output = generator.build()
+    // const codes = output.getGeneratedCode()
+    // codes.forEach((code) => {
+    // console.log('Type ' + code.type)
+    // console.log('Name ' + code.name)
+    // console.log('\nDependencies:')
+    //
+    // code.dependencies.forEach((dependency) => {
+    //   if (dependency.startsWith('fragment-name')) {
+    //     console.log(dependency.split(KEY_SEPARATOR)[1])
+    //   }
+    // })
+    // console.log('-'.repeat(80))
+    // })
+    return output.getAll()
+  })
+
+  await runWithDuration('codes.json', () => {
+    const output = generator.build()
+    // const codes = output.getGeneratedCode()
+    // codes.forEach((code) => {
+    // console.log('Type ' + code.type)
+    // console.log('Name ' + code.name)
+    // console.log('\nDependencies:')
+    //
+    // code.dependencies.forEach((dependency) => {
+    //   if (dependency.startsWith('fragment-name')) {
+    //     console.log(dependency.split(KEY_SEPARATOR)[1])
+    //   }
+    // })
+    // console.log('-'.repeat(80))
+    // })
+    return JSON.stringify(output.getGeneratedCode(), null, 2)
+  })
+
+  await runWithDuration('custom-operations.js', () => {
+    const output = generator.build()
+    return output.getOperations()
   })
 
   if (isProfiling) {
     return
   }
 
-  await runWithDuration('result-codegen', () => {
+  await runWithDuration('result-codegen.ts', () => {
     return generateCodegen(schemaFile, documentCleanedString)
   })
 }

@@ -9,6 +9,7 @@ import {
   type SelectionSetNode,
   type TypeNode,
 } from 'graphql'
+import type { DependencyTracker } from '../classes/DependencyTracker'
 
 export function unwrapNonNull(typeNode: TypeNode): {
   type: TypeNode
@@ -105,22 +106,20 @@ export function mergeSameFieldSelections(
   }
 }
 
-// Step 2: For each operation that targets Query, inline the fragments
-// that have `on Query` at the top level. Then merge fields.
-// (You can do similarly for mutations/subscriptions if needed.)
+/**
+ * Inline fragments on operations.
+ */
 export function inlineRootQueryFragmentsAndMerge(
   definition: OperationDefinitionNode,
   fragmentsMap: Map<string, { node: FragmentDefinitionNode }>,
   queryRootName: string,
+  dependencyTracker?: DependencyTracker,
 ): SelectionSetNode {
-  if (definition.kind !== Kind.OPERATION_DEFINITION) {
-    return definition.selectionSet
-  }
-  // Inline once
   const inlined = inlineFragments(
     definition.selectionSet,
     queryRootName,
     fragmentsMap,
+    dependencyTracker,
   )
   // Then do your existing "merge repeated fields" pass
   // (whatever you named it)
@@ -131,12 +130,14 @@ export function inlineFragments(
   selectionSet: SelectionSetNode,
   currentTypeName: string,
   fragmentsMap: Map<string, { node: FragmentDefinitionNode }>,
+  dependencyTracker?: DependencyTracker,
 ): SelectionSetNode {
   let changed = false
   const newSelections: SelectionNode[] = []
 
   for (const spread of selectionSet.selections) {
     if (spread.kind === Kind.FRAGMENT_SPREAD) {
+      dependencyTracker?.addFragment(spread.name.value)
       const fragDef = fragmentsMap.get(spread.name.value)?.node
       if (
         fragDef &&
@@ -161,7 +162,12 @@ export function inlineFragments(
       kind: Kind.SELECTION_SET,
       selections: newSelections,
     }
-    return inlineFragments(updatedSet, currentTypeName, fragmentsMap)
+    return inlineFragments(
+      updatedSet,
+      currentTypeName,
+      fragmentsMap,
+      dependencyTracker,
+    )
   }
 
   // No changes => done
@@ -178,4 +184,14 @@ export function getTypeNodeKey(node: TypeNode): string {
     key += 'non-null-' + getTypeNodeKey(node.type)
   }
   return key
+}
+
+export function getAstSource(
+  node: OperationDefinitionNode | FragmentDefinitionNode,
+): string | null {
+  const loc = node.loc
+  if (!loc) {
+    return null
+  }
+  return loc.source.body.slice(loc.start, loc.end)
 }

@@ -38,6 +38,10 @@ export type FragmentInterfaceQuery = {
   getRandomEntity?: EntityFragment
 }
 
+// --------------------------------------------------------------------------------
+// Operation Variables
+// --------------------------------------------------------------------------------
+
 /**
  * @see {@link ./test.graphql}
  *

@@ -122,6 +122,10 @@ export type SpreadsOnInterfaceQuery = {
   getPage?: NodePageFragment
 }
 
+// --------------------------------------------------------------------------------
+// Operation Variables
+// --------------------------------------------------------------------------------
+
 /**
  * @see {@link ./test.graphql}
  *

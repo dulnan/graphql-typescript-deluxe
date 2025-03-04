@@ -229,6 +229,34 @@ describe('DependencyTracker', () => {
       )
     })
 
+    it('should handle multiple nested dependency tracking sessions correctly', () => {
+      // Start parent tracking
+      tracker.start('query.one.graphql')
+      tracker.add('operation', 'queryOne')
+
+      tracker.start('fragment.one.graphql')
+      tracker.addFragment('one')
+      tracker.start('fragment.two.graphql')
+      tracker.merge({ dependencies: ['fragment-name####four'], filePath: '' })
+      tracker.addFragment('two')
+      tracker.start('fragment.three.graphql')
+      tracker.addFragment('three')
+      tracker.end()
+      tracker.end()
+      tracker.end()
+      const dependencies = tracker.end()
+      expect(tracker.hasStack()).toBeFalsy()
+      expect(dependencies.filter((v) => v.includes('fragment-name')))
+        .toMatchInlineSnapshot(`
+          [
+            "fragment-name####four",
+            "fragment-name#####three",
+            "fragment-name#####two",
+            "fragment-name#####one",
+          ]
+        `)
+    })
+
     it('should correctly handle all supported GeneratedCodeType values', () => {
       tracker.start('test.ts')
 

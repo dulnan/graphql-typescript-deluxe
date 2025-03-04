@@ -23,4 +23,6 @@ export default defineBuildConfig({
 
   // Generates .d.ts declaration file
   declaration: true,
+
+  externals: ['typescript', 'source-map-support'],
 })
