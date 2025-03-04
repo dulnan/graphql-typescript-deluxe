@@ -5,11 +5,9 @@ import {
   type InlineFragmentNode,
   Kind,
   type OperationDefinitionNode,
-  type SelectionNode,
   type SelectionSetNode,
   type TypeNode,
 } from 'graphql'
-import type { DependencyTracker } from '../classes/DependencyTracker'
 
 export function unwrapNonNull(typeNode: TypeNode): {
   type: TypeNode
@@ -109,71 +107,6 @@ export function mergeSameFieldSelections(
 /**
  * Inline fragments on operations.
  */
-export function inlineRootQueryFragmentsAndMerge(
-  definition: OperationDefinitionNode,
-  fragmentsMap: Map<string, { node: FragmentDefinitionNode }>,
-  queryRootName: string,
-  dependencyTracker?: DependencyTracker,
-): SelectionSetNode {
-  const inlined = inlineFragments(
-    definition.selectionSet,
-    queryRootName,
-    fragmentsMap,
-    dependencyTracker,
-  )
-  // Then do your existing "merge repeated fields" pass
-  // (whatever you named it)
-  return mergeSameFieldSelections(inlined)
-}
-
-export function inlineFragments(
-  selectionSet: SelectionSetNode,
-  currentTypeName: string,
-  fragmentsMap: Map<string, { node: FragmentDefinitionNode }>,
-  dependencyTracker?: DependencyTracker,
-): SelectionSetNode {
-  let changed = false
-  const newSelections: SelectionNode[] = []
-
-  for (const spread of selectionSet.selections) {
-    if (spread.kind === Kind.FRAGMENT_SPREAD) {
-      dependencyTracker?.addFragment(spread.name.value)
-      const fragDef = fragmentsMap.get(spread.name.value)?.node
-      if (
-        fragDef &&
-        fragDef.typeCondition &&
-        fragDef.typeCondition.name.value === currentTypeName
-      ) {
-        // Inline the fragment's selections
-        newSelections.push(...fragDef.selectionSet.selections)
-        changed = true
-      } else {
-        newSelections.push(spread)
-      }
-    } else {
-      newSelections.push(spread)
-    }
-  }
-
-  if (changed) {
-    // If we inlined anything, we might now have newly inlined fragment spreads,
-    // so recurse again until stable
-    const updatedSet: SelectionSetNode = {
-      kind: Kind.SELECTION_SET,
-      selections: newSelections,
-    }
-    return inlineFragments(
-      updatedSet,
-      currentTypeName,
-      fragmentsMap,
-      dependencyTracker,
-    )
-  }
-
-  // No changes => done
-  return selectionSet
-}
-
 export function getTypeNodeKey(node: TypeNode): string {
   let key = ''
   if (node.kind === Kind.NAMED_TYPE) {

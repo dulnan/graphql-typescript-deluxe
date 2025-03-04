@@ -22,6 +22,7 @@ import {
   type GraphQLUnionType,
   type InlineFragmentNode,
   type OperationDefinitionNode,
+  type SelectionNode,
   type SelectionSetNode,
   type TypeNode,
 } from 'graphql'
@@ -29,7 +30,7 @@ import {
   getAstSource,
   getTypeNodeKey,
   hasConditionalDirective,
-  inlineRootQueryFragmentsAndMerge,
+  mergeSameFieldSelections,
   unwrapNonNull,
 } from '../helpers/ast'
 import type { GeneratorOptions } from '../types/options'
@@ -652,6 +653,50 @@ export class Generator {
   // ===========================================================================
 
   /**
+   * Inline fragments for root operations.
+   */
+  private inlineFragments(
+    selectionSet: SelectionSetNode,
+    currentTypeName: string,
+  ): SelectionSetNode {
+    let changed = false
+    const newSelections: SelectionNode[] = []
+
+    for (const spread of selectionSet.selections) {
+      if (spread.kind === Kind.FRAGMENT_SPREAD) {
+        this.dependencyTracker?.addFragment(spread.name.value)
+        const fragDef = this.getFragmentNode(spread.name.value)
+        if (
+          fragDef &&
+          fragDef.typeCondition &&
+          fragDef.typeCondition.name.value === currentTypeName
+        ) {
+          // Inline the fragment's selections
+          newSelections.push(...fragDef.selectionSet.selections)
+          changed = true
+        } else {
+          newSelections.push(spread)
+        }
+      } else {
+        newSelections.push(spread)
+      }
+    }
+
+    if (changed) {
+      // If we inlined anything, we might now have newly inlined fragment spreads,
+      // so recurse again until stable.
+      const updatedSet: SelectionSetNode = {
+        kind: Kind.SELECTION_SET,
+        selections: newSelections,
+      }
+      return this.inlineFragments(updatedSet, currentTypeName)
+    }
+
+    // No changes => done.
+    return selectionSet
+  }
+
+  /**
    * Generates the types for an operation.
    *
    * @param operation - The operation node.
@@ -674,11 +719,11 @@ export class Generator {
 
     this.generateCodeOnce('operation', opName + '-base', () => {
       this.logDebug('Generating operation: ' + opName)
-      const selectionSet = inlineRootQueryFragmentsAndMerge(
-        operation,
-        this.fragments,
+      const inlined = this.inlineFragments(
+        operation.selectionSet,
         rootType.name,
       )
+      const merged = mergeSameFieldSelections(inlined)
       const typeName = this.options.buildOperationTypeName(
         opName,
         rootType,
@@ -691,7 +736,7 @@ export class Generator {
         code: makeExport(
           typeName,
           this.IRToCode(
-            postProcessIR(this.buildSelectionSet(rootType, selectionSet)),
+            postProcessIR(this.buildSelectionSet(rootType, merged)),
           ),
         ),
         context: { input, definition: operation },
