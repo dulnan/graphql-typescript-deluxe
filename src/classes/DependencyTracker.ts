@@ -45,7 +45,7 @@ export class DependencyTracker {
    * Adds a key to the current set.
    */
   private addToCurrent(key: string): void {
-    if (this.currentIndex < 0) {
+    if (!this.stack[this.currentIndex]) {
       throw new LogicError('Tried to add dependency but no stack available.')
     }
     this.stack[this.currentIndex]!.add(key)
@@ -112,7 +112,7 @@ export class DependencyTracker {
 
   public reset(): void {
     this.stack = []
-    this.currentIndex = 0
+    this.currentIndex = -1
     this.currentFilePath = NO_FILE_PATH
   }
 

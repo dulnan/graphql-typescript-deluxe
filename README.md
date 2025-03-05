@@ -1,10 +1,13 @@
 # graphql-typescript-deluxe
 
 This is an **experimental** and **opiniated** code generator for generating
-TypeScript types for GraphQL operations and fragments.
+TypeScript code for GraphQL operations and fragments.
 
 ## Features
 
+- Types: Generates types for operations, variables, fragments, input types and
+  enums
+- Operations: Optionally generates fully valid operations with inlined fragments
 - Performance: Fast initial execution (at least 100x faster than
   graphql-codegen)
 - Readability: The generated types are easy to read and understand
@@ -17,7 +20,11 @@ TypeScript types for GraphQL operations and fragments.
 
 This is still very much beta and experimental. While there are a lot of tests
 that cover both basic queries and edge cases, I'm sure there are plenty that I
-missed.
+missed. Feel free to report anything you find, ideally by creating a pull
+request that implements a test case that shows the buggy output.
+
+In addition, the output is only minimally formatted. I recommend passing the
+output through prettier or any other code formatter.
 
 ## Usage
 
@@ -44,7 +51,7 @@ query myQuery {
 
 // Contains the compiled TS types as a string.
 const schema = loadSchemaSync(SCHEMA, { loaders: [] })
-const result = await Generator.generateOnce(schema, DOC)
+const result = Generator.generateOnce(schema, DOC)
 ```
 
 ### Stateful
@@ -54,7 +61,7 @@ More interesting, especially in a local dev enviroment, is the stateful usage:
 ```typescript
 import { Generator } from 'graphql-typescript-generator'
 import { parse } from 'graphql'
-import { loadSchema } from '@graphql-tools/load'
+import { loadSchemaSync } from '@graphql-tools/load'
 
 const SCHEMA = `
 type Image {
@@ -80,7 +87,7 @@ fragment myImage on Image {
   url
 }`
 
-const schema = await loadSchema(SCHEMA, { loaders: [] })
+const schema = loadSchemaSync(SCHEMA, { loaders: [] })
 const generator = new Generator(schema)
 
 // Add the documents.
@@ -95,7 +102,8 @@ generator.add([
   },
 ])
 
-console.log(generator.build().getAll())
+// Build the initial output.
+console.log(generator.build().getEverything())
 
 // Add a new one.
 generator.add({
@@ -103,8 +111,8 @@ generator.add({
   filePath: './somewhere/in/repo/myNewQuery.graphql',
 })
 
-// Will only generate code for the new query and reuse existing code.
-console.log(generator.build().getAll())
+// Will only generate code for the new query and reuse all existing code.
+console.log(generator.build().getEverything())
 
 // Update a previously added document.
 generator.update({
@@ -113,7 +121,7 @@ generator.update({
 })
 
 // Will update both the fragment type *and* the existing query type (since it depends on it).
-console.log(generator.build().getAll())
+console.log(generator.build().getEverything())
 ```
 
 ## Why?
@@ -136,9 +144,9 @@ same set of operations/fragments.
 
 ## Output
 
-The output is very opiniated and I don't plan to add options to customise it in
-significant ways. Some things can be customised, such as adding TypeDoc comments
-or altering how types or enums are named.
+The output is very opiniated and the available options to customise the output
+are fairly limited. I am open to adding new options, as long as they don't
+decrease performance.
 
 ### Fragment Types
 
