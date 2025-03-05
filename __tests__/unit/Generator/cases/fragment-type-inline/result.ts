@@ -39,10 +39,10 @@ export type TestQuery = {
     | object
     | {
         /** Categories of this article. */
-        categories?: Array<{
+        categories?: {
           /** The label. */
           label: string
-        }>
+        }[]
         /** The title of the node. */
         title: string
       }

@@ -134,10 +134,10 @@ export type MediaVideoFragment = {
  */
 export type NodeArticleFragment = {
   /** Categories of this article. */
-  categories?: Array<{
+  categories?: {
     /** The label. */
     label: string
-  }>
+  }[]
 }
 
 /**

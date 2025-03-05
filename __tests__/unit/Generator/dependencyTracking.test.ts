@@ -467,20 +467,20 @@ query foobar {
 
       export type ArticleOneFragment = {
         /** Categories of this article. */
-        categories?: Array<{
+        categories?: {
         /** The label. */
         label: string;
-      }>;
+      }[];
         /** The title of the article. */
         title: string;
       };
 
       export type ArticleTwoFragment = {
         /** Categories of this article. */
-        categories?: Array<{
+        categories?: {
         /** The URL for the category overview page. */
         url?: string;
-      }>;
+      }[];
       };
 
 
@@ -492,17 +492,17 @@ query foobar {
         /** Get random entity. */
         getRandomEntity?: (({
         /** Categories of this article. */
-        categories?: Array<{
+        categories?: {
         /** The label. */
         label: string;
         /** Related entities. */
-        related?: Array<({
+        related?: ({
         /** The ID. */
         id: string;
-      })>;
+      })[];
         /** The URL for the category overview page. */
         url?: string;
-      }>;
+      }[];
       } & Omit<ArticleOneFragment, "categories">) | object);
       };
 
@@ -535,20 +535,20 @@ query foobar {
 
       export type ArticleOneFragment = {
         /** Categories of this article. */
-        categories?: Array<{
+        categories?: {
         /** The label. */
         label: string;
-      }>;
+      }[];
         /** The title of the article. */
         title: string;
       };
 
       export type ArticleTwoFragment = {
         /** Categories of this article. */
-        categories?: Array<{
+        categories?: {
         /** The URL for the category overview page. */
         urlRenamed?: string;
-      }>;
+      }[];
       };
 
 
@@ -560,17 +560,17 @@ query foobar {
         /** Get random entity. */
         getRandomEntity?: (({
         /** Categories of this article. */
-        categories?: Array<{
+        categories?: {
         /** The label. */
         label: string;
         /** Related entities. */
-        related?: Array<({
+        related?: ({
         /** The ID. */
         id: string;
-      })>;
+      })[];
         /** The URL for the category overview page. */
         urlRenamed?: string;
-      }>;
+      }[];
       } & Omit<ArticleOneFragment, "categories">) | object);
       };
 

@@ -49,7 +49,7 @@ export type SearchResult = MediaVideo | NodeArticle
  */
 export type UnionTypesQuery = {
   /** Perform a search. */
-  search?: Array<
+  search?: (
     | {
         __typename: MediaVideo
         /** The URL of the video (external). */
@@ -62,7 +62,7 @@ export type UnionTypesQuery = {
         /** The title of the node. */
         title: string
       }
-  >
+  )[]
 }
 
 // --------------------------------------------------------------------------------

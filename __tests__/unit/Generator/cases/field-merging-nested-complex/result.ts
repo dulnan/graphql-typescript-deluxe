@@ -59,9 +59,9 @@ export type Entity =
  */
 export type NodeArticleOneFragment = {
   /** Categories of this article. */
-  categories?: Array<{
+  categories?: {
     /** Related entities. */
-    related?: Array<
+    related?: (
       | object
       | {
           /** The body text. */
@@ -69,8 +69,8 @@ export type NodeArticleOneFragment = {
           /** The title of the page. */
           title: string
         }
-    >
-  }>
+    )[]
+  }[]
 }
 
 /**
@@ -94,9 +94,9 @@ export type NodeArticleOneFragment = {
  */
 export type NodeArticleTwoFragment = {
   /** Categories of this article. */
-  categories?: Array<{
+  categories?: {
     /** Related entities. */
-    related?: Array<
+    related?: (
       | {
           /** The ID. */
           id: string
@@ -107,10 +107,10 @@ export type NodeArticleTwoFragment = {
           /** The ID. */
           id: string
         }
-    >
+    )[]
     /** The URL for the category overview page. */
     url?: string
-  }>
+  }[]
 }
 
 /**
@@ -151,9 +151,9 @@ export type FieldMergingNestedComplexQuery = {
   entityById?:
     | ({
         /** Categories of this article. */
-        categories?: Array<{
+        categories?: {
           /** Related entities. */
-          related?: Array<
+          related?: (
             | {
                 /** The ID. */
                 id: string
@@ -166,10 +166,10 @@ export type FieldMergingNestedComplexQuery = {
                 /** The title of the page. */
                 title: string
               }
-          >
+          )[]
           /** The URL for the category overview page. */
           url?: string
-        }>
+        }[]
       } & {
         __typename: NodeArticle
       })

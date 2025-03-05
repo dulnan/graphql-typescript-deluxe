@@ -83,7 +83,7 @@ export type ${nameInCode} = (typeof ${nameInCode})[keyof typeof ${nameInCode}];
 export function buildOptions(
   options?: GeneratorOptions,
 ): DeepRequired<GeneratorOptions> {
-  const arrayShape = options?.output?.arrayShape || 'Array<$T$>'
+  const arrayShape = options?.output?.arrayShape ?? '$T$[]'
   if (!arrayShape.includes('$T$')) {
     throw new InvalidOptionError(
       'The output.arrayShape option value is missing the $T$ placeholder.',
@@ -104,7 +104,7 @@ export function buildOptions(
     buildEnumTypeName: options?.buildEnumTypeName ?? buildEnumTypeName,
     buildEnumCode: options?.buildEnumCode ?? buildEnumCode,
     buildInputTypeName: options?.buildInputTypeName ?? buildInputTypeName,
-    buildScalarType: (type: GraphQLScalarType) => {
+    buildScalarType: (type: GraphQLScalarType): string | null | undefined => {
       // Generate custom.
       if (options?.buildScalarType) {
         const customType = options.buildScalarType(type)
@@ -125,6 +125,7 @@ export function buildOptions(
       nonOptionalTypename: options?.output?.nonOptionalTypename ?? false,
       mergeTypenames: options?.output?.mergeTypenames ?? true,
       typeComment: options?.output?.typeComment ?? true,
+      sortProperties: options?.output?.sortProperties ?? true,
     },
   }
 }

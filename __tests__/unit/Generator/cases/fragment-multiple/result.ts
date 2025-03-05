@@ -103,9 +103,9 @@ export type MediaImageFragment = {
  */
 export type NodeArticleFragment = {
   /** Categories of this article. */
-  categories?: Array<CategoryFragment>
+  categories?: CategoryFragment[]
   /** The tags. */
-  tags?: Array<string | null>
+  tags?: (string | null)[]
 }
 
 /**

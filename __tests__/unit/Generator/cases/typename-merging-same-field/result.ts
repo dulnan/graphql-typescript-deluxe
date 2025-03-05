@@ -52,7 +52,7 @@ export type Entity =
  */
 export type NodeArticleFragment = {
   /** The tags. */
-  tags?: Array<string | null>
+  tags?: (string | null)[]
 }
 
 // --------------------------------------------------------------------------------

@@ -61,15 +61,15 @@ export type DirectivesSkipQuery = {
           name: string
         }
         /** Categories of this article. */
-        categories?: Array<{
+        categories?: {
           /** The label. */
           label: string
-        }>
+        }[]
         /** Categories of this article. */
-        categoriesSkip?: Array<{
+        categoriesSkip?: {
           /** The label. */
           label: string
-        }>
+        }[]
       }
 }
 

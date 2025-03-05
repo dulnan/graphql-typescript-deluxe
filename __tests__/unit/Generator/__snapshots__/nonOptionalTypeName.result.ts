@@ -93,11 +93,11 @@ export type FoobarQuery = {
     | {
         __typename: NodeArticle
         /** Categories of this article. */
-        categories?: Array<{
+        categories?: {
           __typename: Category
           /** The label. */
           label: string
-        }>
+        }[]
         /** The ID. */
         id: string
       }

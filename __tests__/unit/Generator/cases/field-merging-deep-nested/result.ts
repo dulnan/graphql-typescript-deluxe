@@ -55,7 +55,7 @@ export type MetatagAttributeFragment = {
  * ```
  */
 export type MetatagFragment = {
-  attributes: Array<MetatagAttributeFragment>
+  attributes: MetatagAttributeFragment[]
   id: string
   tag: string
 }
@@ -80,7 +80,7 @@ export type RouteEntityFragment = {
   entity?: {
     id: string
   }
-  metatags: Array<MetatagFragment>
+  metatags: MetatagFragment[]
   routeName: string
 }
 
@@ -115,7 +115,7 @@ export type RouteFragment = {
  * ```
  */
 export type RouteInternalFragment = {
-  metatags: Array<MetatagFragment>
+  metatags: MetatagFragment[]
   routeName: string
 }
 
@@ -152,12 +152,12 @@ export type FieldMergingDeepNestedQuery = {
           id: string
           title: string
         }
-        metatags: Array<MetatagFragment>
+        metatags: MetatagFragment[]
         routeName: string
       }
     | {
         __typename: DefaultInternalUrl
-        metatags: Array<MetatagFragment>
+        metatags: MetatagFragment[]
         routeName: string
       }
     | {

@@ -24,12 +24,12 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
  */
 export type NodeArticleOneFragment = {
   /** Categories of this article. */
-  categories?: Array<{
+  categories?: {
     /** The label. */
     label: string
     /** The URL for the category overview page. */
     url?: string
-  }>
+  }[]
   /** The title of the article. */
   title: string
 }
@@ -50,14 +50,14 @@ export type NodeArticleOneFragment = {
  */
 export type NodeArticleTwoFragment = {
   /** Categories of this article. */
-  categories?: Array<{
+  categories?: {
     /** The label. */
     label: string
     /** The URL for the category overview page. */
     url?: string
-  }>
+  }[]
   /** The tags. */
-  tags?: Array<string | null>
+  tags?: (string | null)[]
 }
 
 // --------------------------------------------------------------------------------

@@ -54,7 +54,7 @@ export type Entity =
 export type NodeArticleFragment = {
   __typename: NodeArticle
   /** The tags. */
-  tags?: Array<string | null>
+  tags?: (string | null)[]
 }
 
 // --------------------------------------------------------------------------------

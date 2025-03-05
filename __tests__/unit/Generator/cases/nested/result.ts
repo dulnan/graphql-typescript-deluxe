@@ -108,11 +108,11 @@ export type NestedQuery = {
         /** The body text of the article. */
         body?: string
         /** Categories of this article. */
-        categories?: Array<{
+        categories?: {
           /** The label. */
           label: string
           /** Related entities. */
-          related?: Array<
+          related?: (
             | {
                 __typename: Exclude<Entity, NodeArticle>
                 /** The ID. */
@@ -127,8 +127,8 @@ export type NestedQuery = {
                 /** The title of the article. */
                 title: string
               }
-          >
-        }>
+          )[]
+        }[]
         /** The ID. */
         id: string
       }

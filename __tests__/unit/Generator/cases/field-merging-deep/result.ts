@@ -62,23 +62,15 @@ export type MenuLinkTreeElementFragment = {
 export type FieldMergingDeepQuery = {
   /** Load a menu. */
   getMenu?: {
-    links: Array<
-      {
-        subtree: Array<
-          {
-            subtree: Array<
-              {
-                subtree: Array<
-                  {
-                    subtree: Array<MenuLinkTreeElementFragment>
-                  } & MenuLinkTreeElementFragment
-                >
-              } & MenuLinkTreeElementFragment
-            >
-          } & MenuLinkTreeElementFragment
-        >
-      } & MenuLinkTreeElementFragment
-    >
+    links: ({
+      subtree: ({
+        subtree: ({
+          subtree: ({
+            subtree: MenuLinkTreeElementFragment[]
+          } & MenuLinkTreeElementFragment)[]
+        } & MenuLinkTreeElementFragment)[]
+      } & MenuLinkTreeElementFragment)[]
+    } & MenuLinkTreeElementFragment)[]
     name: string
   }
 }

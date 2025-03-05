@@ -99,7 +99,7 @@ describe('Generator Options', () => {
       expect(options.output.typeComment).toEqual(true)
       expect(options.output.mergeTypenames).toEqual(true)
       expect(options.output.nonOptionalTypename).toEqual(false)
-      expect(options.output.arrayShape).toEqual('Array<$T$>')
+      expect(options.output.arrayShape).toEqual('$T$[]')
       expect(options.output.nullableArrayElements).toEqual(true)
       expect(options.output.emptyObject).toEqual('object')
       expect(options.output.nullableField).toEqual('optional')

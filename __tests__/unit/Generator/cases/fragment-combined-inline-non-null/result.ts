@@ -48,7 +48,7 @@ export type EntityType = (typeof EntityType)[keyof typeof EntityType]
  */
 export type NodeArticleFragment = {
   /** The tags. */
-  tags?: Array<string | null>
+  tags?: (string | null)[]
 }
 
 // --------------------------------------------------------------------------------

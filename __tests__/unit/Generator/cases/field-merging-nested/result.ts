@@ -54,15 +54,15 @@ export type EntityType = (typeof EntityType)[keyof typeof EntityType]
  */
 export type NodeArticleOneFragment = {
   /** Categories of this article. */
-  categories?: Array<{
+  categories?: {
     /** The label. */
     label: string
     /** Related entities. */
-    related?: Array<{
+    related?: {
       /** The ID. */
       id: string
-    }>
-  }>
+    }[]
+  }[]
   /** The title of the article. */
   title: string
 }
@@ -85,17 +85,17 @@ export type NodeArticleOneFragment = {
  */
 export type NodeArticleTwoFragment = {
   /** Categories of this article. */
-  categories?: Array<{
+  categories?: {
     /** Related entities. */
-    related?: Array<{
+    related?: {
       /** The EntityType enum. */
       entityType: EntityType
-    }>
+    }[]
     /** The URL for the category overview page. */
     url?: string
-  }>
+  }[]
   /** The tags. */
-  tags?: Array<string | null>
+  tags?: (string | null)[]
 }
 
 // --------------------------------------------------------------------------------
@@ -128,19 +128,19 @@ export type FieldMergingNestedQuery = {
   entityById?:
     | ({
         /** Categories of this article. */
-        categories?: Array<{
+        categories?: {
           /** The label. */
           label: string
           /** Related entities. */
-          related?: Array<{
+          related?: {
             /** The EntityType enum. */
             entityType: EntityType
             /** The ID. */
             id: string
-          }>
+          }[]
           /** The URL for the category overview page. */
           url?: string
-        }>
+        }[]
       } & Omit<NodeArticleOneFragment, 'categories'> &
         Omit<NodeArticleTwoFragment, 'categories'>)
     | object

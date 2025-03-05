@@ -128,8 +128,8 @@ async function main(): Promise<void> {
   const documentCleanedString = print(documentCleaned)
 
   const generator = new Generator(schema, {
-    debugMode: true,
-    useCache: false,
+    debugMode: false,
+    useCache: true,
     dependencyTracking: true,
     additionalOutputCode: () => {
       return [
@@ -160,37 +160,11 @@ async function main(): Promise<void> {
   await runWithDuration('custom-types.ts', () => {
     generator.add(documentCleaned)
     const output = generator.build()
-    // const codes = output.getGeneratedCode()
-    // codes.forEach((code) => {
-    // console.log('Type ' + code.type)
-    // console.log('Name ' + code.name)
-    // console.log('\nDependencies:')
-    //
-    // code.dependencies.forEach((dependency) => {
-    //   if (dependency.startsWith('fragment-name')) {
-    //     console.log(dependency.split(KEY_SEPARATOR)[1])
-    //   }
-    // })
-    // console.log('-'.repeat(80))
-    // })
     return output.getEverything()
   })
 
   await runWithDuration('codes.json', () => {
     const output = generator.build()
-    // const codes = output.getGeneratedCode()
-    // codes.forEach((code) => {
-    // console.log('Type ' + code.type)
-    // console.log('Name ' + code.name)
-    // console.log('\nDependencies:')
-    //
-    // code.dependencies.forEach((dependency) => {
-    //   if (dependency.startsWith('fragment-name')) {
-    //     console.log(dependency.split(KEY_SEPARATOR)[1])
-    //   }
-    // })
-    // console.log('-'.repeat(80))
-    // })
     return JSON.stringify(output.getGeneratedCode(), null, 2)
   })
 

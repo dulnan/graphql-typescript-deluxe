@@ -29,10 +29,10 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
  */
 export type DefaultValuesQuery = {
   /** With default values. */
-  searchContent?: Array<{
+  searchContent?: ({
     /** The title of the node. */
     title: string
-  } | null>
+  } | null)[]
 }
 
 // --------------------------------------------------------------------------------

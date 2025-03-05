@@ -39,9 +39,9 @@ export type AllBlocksFragment =
  * ```
  */
 export type BlockContainerFragment = {
-  blocks?: Array<{
+  blocks?: ({
     id: string
-  } | null>
+  } | null)[]
 }
 
 /**
@@ -102,10 +102,10 @@ export type BlockTextFragment = {
  * ```
  */
 export type NodePageFragment = {
-  blocks?: Array<{
+  blocks?: ({
     id: string
     props: AllBlocksFragment
-  } | null>
+  } | null)[]
 }
 
 // --------------------------------------------------------------------------------

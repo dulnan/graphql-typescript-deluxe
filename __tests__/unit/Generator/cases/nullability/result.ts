@@ -61,20 +61,20 @@ export type NullabilityFragment = {
  */
 export type NullabilityQueryFragment = {
   /** Get a non-nullable array with non-nullable items. */
-  fullyNonNullableArray: Array<{
+  fullyNonNullableArray: {
     nonNullableId: string
     nullableId?: string
-  }>
+  }[]
   /** Get a non-nullable array with nullable items. */
-  nonNullableArray: Array<{
+  nonNullableArray: ({
     nonNullableId: string
     nullableId?: string
-  } | null>
+  } | null)[]
   /** Get a fully nullable array. */
-  nullableArray?: Array<{
+  nullableArray?: ({
     nonNullableId: string
     nullableId?: string
-  } | null>
+  } | null)[]
 }
 
 // --------------------------------------------------------------------------------
@@ -104,20 +104,20 @@ export type NullabilityQueryFragment = {
  */
 export type NullabilityQuery = {
   /** Get a non-nullable array with non-nullable items. */
-  fullyNonNullableArray: Array<{
+  fullyNonNullableArray: {
     nonNullableId: string
     nullableId?: string
-  }>
+  }[]
   /** Get a non-nullable array with nullable items. */
-  nonNullableArray: Array<{
+  nonNullableArray: ({
     nonNullableId: string
     nullableId?: string
-  } | null>
+  } | null)[]
   /** Get a fully nullable array. */
-  nullableArray?: Array<{
+  nullableArray?: ({
     nonNullableId: string
     nullableId?: string
-  } | null>
+  } | null)[]
 }
 
 // --------------------------------------------------------------------------------

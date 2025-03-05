@@ -26,10 +26,10 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
 export type CategoryRelatedNodeFragment =
   | {
       /** Categories of this article. */
-      categories?: Array<{
+      categories?: {
         /** The URL for the category overview page. */
         url?: string
-      }>
+      }[]
       /** The title of the node. */
       title: string
     }
@@ -65,12 +65,12 @@ export type StressTestQuery = {
     | object
     | {
         /** Categories of this article. */
-        categories?: Array<{
+        categories?: {
           /** The label. */
           label: string
           /** The URL for the category overview page. */
           url?: string
-        }>
+        }[]
         /** The title of the node. */
         title: string
       }
