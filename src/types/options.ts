@@ -295,7 +295,7 @@ export type GeneratorOptions = {
    *
    * @param type - The input object type from the schema.
    *
-   * @example Defaults to PascalCase of fragment name + "Input", e.g.:
+   * @example Defaults to PascalCase of the type.
    * ```graphqls
    * input ShippingAddress {
    *   street: String!
@@ -303,7 +303,7 @@ export type GeneratorOptions = {
    *   locality: String!
    * }
    * ```
-   * generates: "ShippingAddressInput"
+   * generates: "ShippingAddress"
    */
   buildInputTypeName?: (type: GraphQLInputObjectType) => string
 

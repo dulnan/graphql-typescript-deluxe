@@ -65,7 +65,7 @@ export type InputTypesMutation = {
  */
 export type InputTypesMutationVariables = Exact<{
   dryRun?: boolean | null
-  input: SubmitContactFormInput
+  input: SubmitContactForm
 }>
 
 // --------------------------------------------------------------------------------
@@ -97,7 +97,7 @@ export type InputTypesMutationVariables = Exact<{
  * }
  * ```
  */
-export type AddressInput = {
+export type Address = {
   /** The locality. */
   locality: string
   /** The street, including number. */
@@ -117,8 +117,8 @@ export type AddressInput = {
  * }
  * ```
  */
-export type SubmitContactFormInput = {
-  address: AddressInput
+export type SubmitContactForm = {
+  address: Address
   contactMethod?: ContactMethod | null
   firstName: string
   lastName: string

@@ -38,7 +38,7 @@ export type InputTypesPartialMutation = {
  *
  */
 export type InputTypesPartialMutationVariables = Exact<{
-  address: AddressInput
+  address: Address
   firstName: string
   lastName: string
 }>
@@ -72,7 +72,7 @@ export type InputTypesPartialMutationVariables = Exact<{
  * }
  * ```
  */
-export type AddressInput = {
+export type Address = {
   /** The locality. */
   locality: string
   /** The street, including number. */

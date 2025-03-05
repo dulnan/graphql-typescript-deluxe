@@ -29,7 +29,7 @@ export function buildFragmentTypeName(node: FragmentDefinitionNode): string {
 }
 
 export function buildInputTypeName(type: GraphQLInputObjectType): string {
-  return toPascalCase(type.name) + 'Input'
+  return toPascalCase(type.name)
 }
 
 export function buildEnumTypeName(type: GraphQLEnumType): string {
