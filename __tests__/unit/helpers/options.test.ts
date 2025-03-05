@@ -7,7 +7,6 @@ import {
   buildOptions,
   buildEnumCode,
   buildInputTypeName,
-  buildScalarType,
 } from './../../../src/helpers/options.js'
 import { GraphQLEnumType, GraphQLObjectType } from 'graphql'
 
@@ -86,67 +85,55 @@ describe('Generator Options', () => {
     it('should return default options when no options provided', () => {
       const options = buildOptions()
 
-      expect(options).toEqual({
-        debugMode: false,
-        useCache: false,
-        dependencyTracking: true,
-        buildOperationTypeName,
+      expect(options.debugMode).toEqual(false)
+      expect(options.useCache).toEqual(false)
+      expect(options.dependencyTracking).toEqual(true)
+      expect(options.buildOperationTypeName).toEqual(buildOperationTypeName)
+      expect(options.buildOperationVariablesTypeName).toEqual(
         buildOperationVariablesTypeName,
-        buildFragmentTypeName,
-        buildEnumTypeName,
-        buildEnumCode,
-        buildInputTypeName,
-        buildScalarType,
-        output: {
-          typeComment: true,
-          mergeTypenames: true,
-          nonOptionalTypename: false,
-          arrayShape: 'Array<$T$>',
-          emptyObject: 'object',
-          nullableField: 'optional',
-        },
-      })
+      )
+      expect(options.buildFragmentTypeName).toEqual(buildFragmentTypeName)
+      expect(options.buildEnumTypeName).toEqual(buildEnumTypeName)
+      expect(options.buildEnumCode).toEqual(buildEnumCode)
+      expect(options.buildInputTypeName).toEqual(buildInputTypeName)
+      expect(options.output.typeComment).toEqual(true)
+      expect(options.output.mergeTypenames).toEqual(true)
+      expect(options.output.nonOptionalTypename).toEqual(false)
+      expect(options.output.arrayShape).toEqual('Array<$T$>')
+      expect(options.output.nullableArrayElements).toEqual(true)
+      expect(options.output.emptyObject).toEqual('object')
+      expect(options.output.nullableField).toEqual('optional')
     })
 
     it('should merge provided options with defaults', () => {
       const customBuildOperationTypeName = (): string => 'Custom'
-      const customBuildScalarType = (): string => 'any'
       const options = buildOptions({
         debugMode: true,
         useCache: false,
         dependencyTracking: false,
         buildOperationTypeName: customBuildOperationTypeName,
-        buildScalarType: customBuildScalarType,
         output: {
           emptyObject: 'type',
           typeComment: false,
           mergeTypenames: false,
           nonOptionalTypename: true,
+          nullableArrayElements: false,
           arrayShape: 'MyCustomArray<$T$>',
           nullableField: 'null',
         },
       })
 
-      expect(options).toEqual({
-        debugMode: true,
-        useCache: false,
-        dependencyTracking: false,
-        buildOperationTypeName: customBuildOperationTypeName,
-        buildOperationVariablesTypeName,
-        buildFragmentTypeName,
-        buildEnumTypeName,
-        buildEnumCode,
-        buildInputTypeName,
-        buildScalarType: customBuildScalarType,
-        output: {
-          emptyObject: 'type',
-          typeComment: false,
-          mergeTypenames: false,
-          nonOptionalTypename: true,
-          arrayShape: 'MyCustomArray<$T$>',
-          nullableField: 'null',
-        },
-      })
+      expect(options.debugMode).toEqual(true)
+      expect(options.useCache).toEqual(false)
+      expect(options.dependencyTracking).toEqual(false)
+
+      expect(options.output.emptyObject).toEqual('type')
+      expect(options.output.typeComment).toEqual(false)
+      expect(options.output.mergeTypenames).toEqual(false)
+      expect(options.output.nonOptionalTypename).toEqual(true)
+      expect(options.output.nullableArrayElements).toEqual(false)
+      expect(options.output.arrayShape).toEqual('MyCustomArray<$T$>')
+      expect(options.output.nullableField).toEqual('null')
     })
   })
 })

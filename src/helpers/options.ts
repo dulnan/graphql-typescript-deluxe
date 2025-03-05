@@ -93,6 +93,7 @@ export function buildOptions(
     debugMode: !!options?.debugMode,
     useCache: options?.useCache ?? false,
     dependencyTracking: options?.dependencyTracking ?? true,
+    additionalOutputCode: options?.additionalOutputCode ?? (() => []),
     buildOperationTypeName:
       options?.buildOperationTypeName ?? buildOperationTypeName,
     buildOperationVariablesTypeName:
@@ -103,11 +104,23 @@ export function buildOptions(
     buildEnumTypeName: options?.buildEnumTypeName ?? buildEnumTypeName,
     buildEnumCode: options?.buildEnumCode ?? buildEnumCode,
     buildInputTypeName: options?.buildInputTypeName ?? buildInputTypeName,
-    buildScalarType: options?.buildScalarType ?? buildScalarType,
+    buildScalarType: (type: GraphQLScalarType) => {
+      // Generate custom.
+      if (options?.buildScalarType) {
+        const customType = options.buildScalarType(type)
+        if (customType) {
+          return customType
+        }
+      }
+
+      // Fallback.
+      return buildScalarType(type)
+    },
 
     output: {
       nullableField: options?.output?.nullableField || 'optional',
       arrayShape,
+      nullableArrayElements: options?.output?.nullableArrayElements ?? true,
       emptyObject: options?.output?.emptyObject ?? 'object',
       nonOptionalTypename: options?.output?.nonOptionalTypename ?? false,
       mergeTypenames: options?.output?.mergeTypenames ?? true,

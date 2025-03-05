@@ -368,7 +368,7 @@ export class Generator {
   }
 
   /**
-   * Reset all caches.
+   * Reset all caches and dependency tracker state.
    */
   private resetCaches(): Generator {
     this.fragments.clear()
@@ -1631,7 +1631,9 @@ export class Generator {
       return IR.ARRAY({
         ofType: innerIR,
         nullable: true,
-        nullableElement: !isNonNullType(innerType),
+        nullableElement:
+          !isNonNullType(innerType) &&
+          this.options.output.nullableArrayElements,
       })
     } else if (isObjectType(type)) {
       if (!selectionSet) {
@@ -1735,7 +1737,10 @@ export class Generator {
 
       case 'ARRAY': {
         const elemTS = this.IRToCode(ir.ofType)
-        const finalElem = ir.nullableElement ? `${elemTS} | null` : elemTS
+        const finalElem =
+          ir.nullableElement && this.options.output.nullableArrayElements
+            ? `${elemTS} | null`
+            : elemTS
         return this.toArrayShape(finalElem)
       }
 
@@ -1925,6 +1930,9 @@ export class Generator {
       )
     }
     const code = this.generatedCode.values()
-    return new GeneratorOutput([...code], [...this.operations.values()])
+    return new GeneratorOutput(
+      [...code, ...this.options.additionalOutputCode()],
+      [...this.operations.values()],
+    )
   }
 }

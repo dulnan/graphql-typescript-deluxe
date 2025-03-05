@@ -6,6 +6,7 @@ import type {
   GraphQLScalarType,
   OperationDefinitionNode,
 } from 'graphql'
+import type { GeneratedCode } from '.'
 
 export type GeneratorOptionsOutput = {
   /**
@@ -33,12 +34,27 @@ export type GeneratorOptionsOutput = {
    * How arrays should be represented.
    *
    * - 'Array<$T$>' results in e.g. `Array<MyFragment>` or `Array<{ label: string }>`
-   * - '$T$[]' results in e.g. `(MyFragment)[]` or `({ label: string })[]`
+   * - '$T$[]' results in e.g. `MyFragment[]` or `({ label: string } | { url: string })[]`
    *
-   * You can also provide any code you want, it must contain the "$T$" placeholder.
-   * This is where the type is replaced.
+   * You can also provide any code you want, it must contain the "$T$" placeholder,
+   * which is where the generated type is replaced with.
+   *
+   * @default "Array<$T$>"
    */
   arrayShape?: string
+
+  /**
+   * Generate nullable array elements.
+   *
+   * If true, a `[String]` array in the schema results in `Array<string | null>`.
+   * If false, both `[String]` and `[String!]` arrays produce `Array<string>`.
+   *
+   * Note that the array will contain `null` values unless explicitly removed
+   * by the GraphQL client. So only set this to `false` if this is the case.
+   *
+   * @default true
+   */
+  nullableArrayElements?: boolean
 
   /**
    * Force a __typename field on every type.
@@ -119,10 +135,52 @@ export type GeneratorOptions = {
   output?: GeneratorOptionsOutput
 
   /**
-   * Enable caching.
+   * Provide additional, static output code.
+   *
+   * The method is executed once when the class is initialised. You can add
+   * some custom helpers or types here.
+   *
+   * For example, if you want to provide a custom type for scalars, define the
+   * type here:
+   *
+   * @example
+   *
+   * ```typescript
+   * {
+   *   additionalOutputCode: () => {
+   *     return [
+   *       {
+   *         type: 'type-helpers',
+   *         name: 'MyCustomScalar',
+   *         code: 'type NumberMap = Record<string, number>',
+   *       }
+   *     ]
+   *   }
+   * }
+   * ```
+   *
+   * And then tell the Generator to use your custom type for this scalar:
+   * ```typescript
+   * {
+   *   buildScalarType: (type) => {
+   *     if (type.name === 'MyCustomScalar') {
+   *       // Use your custom type.
+   *       return 'NumberMap'
+   *     }
+   *   }
+   * }
+   * ```
+   *
+   * @default () => []
+   */
+  additionalOutputCode?: () => GeneratedCode[]
+
+  /**
+   * Enable caching for intermediate representations of documents.
    *
    * Depending on the size and complexity of the operations and fragments this
-   * can have an additional 5-10 decrease in time it takes to generate.
+   * can make subsequent incremental updates faster. For initial generation it
+   * has barely any impact.
    *
    * Use at your own risk. It's recommended to compare the output of both cached
    * and uncached generations to make sure they produce the same output.

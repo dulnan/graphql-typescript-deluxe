@@ -131,9 +131,26 @@ async function main(): Promise<void> {
     debugMode: true,
     useCache: false,
     dependencyTracking: true,
+    additionalOutputCode: () => {
+      return [
+        {
+          type: 'type-helpers',
+          name: 'MessengerMessage',
+          code: `type MessengerMessage = { message: string; type: string }`,
+        },
+      ]
+    },
+    buildScalarType: (type) => {
+      if (type.name === 'MessengerMessage') {
+        return 'MessengerMessage[]'
+      }
+
+      return null
+    },
     output: {
       mergeTypenames: true,
       nonOptionalTypename: false,
+      nullableArrayElements: false,
       typeComment: true,
       arrayShape: '$T$[]',
     },
