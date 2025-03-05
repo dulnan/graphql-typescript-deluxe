@@ -205,7 +205,7 @@ export class Generator {
     const docs = toInputDocuments(input)
     const generator = new Generator(schema, options)
     generator.add(docs)
-    return generator.build().getAll()
+    return generator.build().getEverything()
   }
 
   // ===========================================================================
@@ -659,7 +659,7 @@ export class Generator {
     selectionSet: SelectionSetNode,
     currentTypeName: string,
   ): SelectionSetNode {
-    let changed = false
+    let hasChanged = false
     const newSelections: SelectionNode[] = []
 
     for (const spread of selectionSet.selections) {
@@ -673,7 +673,7 @@ export class Generator {
         ) {
           // Inline the fragment's selections
           newSelections.push(...fragDef.selectionSet.selections)
-          changed = true
+          hasChanged = true
         } else {
           newSelections.push(spread)
         }
@@ -682,7 +682,7 @@ export class Generator {
       }
     }
 
-    if (changed) {
+    if (hasChanged) {
       // If we inlined anything, we might now have newly inlined fragment spreads,
       // so recurse again until stable.
       const updatedSet: SelectionSetNode = {

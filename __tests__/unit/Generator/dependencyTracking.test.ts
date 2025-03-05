@@ -3,11 +3,12 @@ import schemaContent from './schema.graphql?raw'
 import { Generator } from '../../../src/generator/index.js'
 import { loadSchemaSync } from '@graphql-tools/load'
 import { parse } from 'graphql'
-import type { GeneratedCode, GeneratorInput } from '../../../src/types/index.js'
+import type { GeneratorInput } from '../../../src/types/index.js'
+import type { GeneratorOutputCode } from '../../../src/classes/GeneratorOutput'
 
 const schema = loadSchemaSync(schemaContent, { loaders: [] })
 
-function resultWithoutCode(items: GeneratedCode[]): any[] {
+function resultWithoutCode(items: GeneratorOutputCode[]): any[] {
   return items.map((v) => {
     return {
       type: v.type,
@@ -57,9 +58,18 @@ query foobar {
         [
           {
             "dependencies": [
-              "file#####fragment.user.graphql",
-              "fragment-name#####user",
-              "fragment#####UserFragment",
+              {
+                "type": "file",
+                "value": "fragment.user.graphql",
+              },
+              {
+                "type": "fragment-name",
+                "value": "user",
+              },
+              {
+                "type": "fragment",
+                "value": "UserFragment",
+              },
             ],
             "filePath": "fragment.user.graphql",
             "name": "UserFragment",
@@ -67,8 +77,14 @@ query foobar {
           },
           {
             "dependencies": [
-              "enum#####EntityType",
-              "file#####fragment.entity.graphql",
+              {
+                "type": "enum",
+                "value": "EntityType",
+              },
+              {
+                "type": "file",
+                "value": "fragment.entity.graphql",
+              },
             ],
             "filePath": "fragment.entity.graphql",
             "name": "EntityType",
@@ -76,10 +92,22 @@ query foobar {
           },
           {
             "dependencies": [
-              "enum#####EntityType",
-              "file#####fragment.entity.graphql",
-              "fragment-name#####entity",
-              "fragment#####EntityFragment",
+              {
+                "type": "enum",
+                "value": "EntityType",
+              },
+              {
+                "type": "file",
+                "value": "fragment.entity.graphql",
+              },
+              {
+                "type": "fragment-name",
+                "value": "entity",
+              },
+              {
+                "type": "fragment",
+                "value": "EntityFragment",
+              },
             ],
             "filePath": "fragment.entity.graphql",
             "name": "EntityFragment",
@@ -87,15 +115,42 @@ query foobar {
           },
           {
             "dependencies": [
-              "file#####fragment.user.graphql",
-              "fragment-name#####user",
-              "fragment#####UserFragment",
-              "file#####fragment.entity.graphql",
-              "enum#####EntityType",
-              "fragment-name#####entity",
-              "fragment#####EntityFragment",
-              "operation#####FoobarQuery",
-              "file#####query.foobar.graphql",
+              {
+                "type": "file",
+                "value": "fragment.user.graphql",
+              },
+              {
+                "type": "fragment-name",
+                "value": "user",
+              },
+              {
+                "type": "fragment",
+                "value": "UserFragment",
+              },
+              {
+                "type": "file",
+                "value": "fragment.entity.graphql",
+              },
+              {
+                "type": "enum",
+                "value": "EntityType",
+              },
+              {
+                "type": "fragment-name",
+                "value": "entity",
+              },
+              {
+                "type": "fragment",
+                "value": "EntityFragment",
+              },
+              {
+                "type": "operation",
+                "value": "FoobarQuery",
+              },
+              {
+                "type": "file",
+                "value": "query.foobar.graphql",
+              },
             ],
             "filePath": "query.foobar.graphql",
             "name": "FoobarQuery",
@@ -103,8 +158,14 @@ query foobar {
           },
           {
             "dependencies": [
-              "operation-variables#####FoobarQueryVariables",
-              "file#####query.foobar.graphql",
+              {
+                "type": "operation-variables",
+                "value": "FoobarQueryVariables",
+              },
+              {
+                "type": "file",
+                "value": "query.foobar.graphql",
+              },
             ],
             "filePath": "query.foobar.graphql",
             "name": "FoobarQueryVariables",
@@ -129,9 +190,18 @@ fragment mediaImage on MediaImage {
         [
           {
             "dependencies": [
-              "file#####fragment.user.graphql",
-              "fragment-name#####user",
-              "fragment#####UserFragment",
+              {
+                "type": "file",
+                "value": "fragment.user.graphql",
+              },
+              {
+                "type": "fragment-name",
+                "value": "user",
+              },
+              {
+                "type": "fragment",
+                "value": "UserFragment",
+              },
             ],
             "filePath": "fragment.user.graphql",
             "name": "UserFragment",
@@ -139,8 +209,14 @@ fragment mediaImage on MediaImage {
           },
           {
             "dependencies": [
-              "enum#####EntityType",
-              "file#####fragment.entity.graphql",
+              {
+                "type": "enum",
+                "value": "EntityType",
+              },
+              {
+                "type": "file",
+                "value": "fragment.entity.graphql",
+              },
             ],
             "filePath": "fragment.entity.graphql",
             "name": "EntityType",
@@ -148,10 +224,22 @@ fragment mediaImage on MediaImage {
           },
           {
             "dependencies": [
-              "enum#####EntityType",
-              "file#####fragment.entity.graphql",
-              "fragment-name#####entity",
-              "fragment#####EntityFragment",
+              {
+                "type": "enum",
+                "value": "EntityType",
+              },
+              {
+                "type": "file",
+                "value": "fragment.entity.graphql",
+              },
+              {
+                "type": "fragment-name",
+                "value": "entity",
+              },
+              {
+                "type": "fragment",
+                "value": "EntityFragment",
+              },
             ],
             "filePath": "fragment.entity.graphql",
             "name": "EntityFragment",
@@ -159,15 +247,42 @@ fragment mediaImage on MediaImage {
           },
           {
             "dependencies": [
-              "file#####fragment.user.graphql",
-              "fragment-name#####user",
-              "fragment#####UserFragment",
-              "file#####fragment.entity.graphql",
-              "enum#####EntityType",
-              "fragment-name#####entity",
-              "fragment#####EntityFragment",
-              "operation#####FoobarQuery",
-              "file#####query.foobar.graphql",
+              {
+                "type": "file",
+                "value": "fragment.user.graphql",
+              },
+              {
+                "type": "fragment-name",
+                "value": "user",
+              },
+              {
+                "type": "fragment",
+                "value": "UserFragment",
+              },
+              {
+                "type": "file",
+                "value": "fragment.entity.graphql",
+              },
+              {
+                "type": "enum",
+                "value": "EntityType",
+              },
+              {
+                "type": "fragment-name",
+                "value": "entity",
+              },
+              {
+                "type": "fragment",
+                "value": "EntityFragment",
+              },
+              {
+                "type": "operation",
+                "value": "FoobarQuery",
+              },
+              {
+                "type": "file",
+                "value": "query.foobar.graphql",
+              },
             ],
             "filePath": "query.foobar.graphql",
             "name": "FoobarQuery",
@@ -175,8 +290,14 @@ fragment mediaImage on MediaImage {
           },
           {
             "dependencies": [
-              "operation-variables#####FoobarQueryVariables",
-              "file#####query.foobar.graphql",
+              {
+                "type": "operation-variables",
+                "value": "FoobarQueryVariables",
+              },
+              {
+                "type": "file",
+                "value": "query.foobar.graphql",
+              },
             ],
             "filePath": "query.foobar.graphql",
             "name": "FoobarQueryVariables",
@@ -184,9 +305,18 @@ fragment mediaImage on MediaImage {
           },
           {
             "dependencies": [
-              "file#####fragment.mediaImage.graphql",
-              "fragment-name#####mediaImage",
-              "fragment#####MediaImageFragment",
+              {
+                "type": "file",
+                "value": "fragment.mediaImage.graphql",
+              },
+              {
+                "type": "fragment-name",
+                "value": "mediaImage",
+              },
+              {
+                "type": "fragment",
+                "value": "MediaImageFragment",
+              },
             ],
             "filePath": "fragment.mediaImage.graphql",
             "name": "MediaImageFragment",
@@ -225,31 +355,25 @@ query foobar {
 
     generator.add(documents)
 
-    const result = generator.build().getOperations()
+    const result = generator.build().getOperationsFile()
     expect(result).toMatchInlineSnapshot(`
       "
-      const fragment_relatedEntity = \`fragment relatedEntity on Entity{id}\`;
       const fragment_category = \`fragment category on Category{related{...relatedEntity}}\`;
       const fragment_nodeArticle = \`fragment nodeArticle on NodeArticle{categories{...category}}\`;
-      const operation_query_foobar = \`query foobar{getRandomEntity{...nodeArticle}}\`;
+      const fragment_relatedEntity = \`fragment relatedEntity on Entity{id}\`;
+      const query_foobar = \`query foobar{getRandomEntity{...nodeArticle}}\`;
 
-
-      const query = {
-        'foobar': operation_query_foobar + fragment_relatedEntity + fragment_category + fragment_nodeArticle,
+      export const operations = {
+        query: {
+          'foobar': query_foobar + fragment_relatedEntity + fragment_category + fragment_nodeArticle,
+        },
+        mutation: {
+          
+        },
+        subscription: {
+          
+        }
       }
-
-      const mutation = {
-      }
-
-      const subscription = {
-      }
-
-      const operations = {
-        query,
-        mutation,
-        subscription
-      }
-      export { operations }
       "
     `)
   })
@@ -291,7 +415,7 @@ query foobar {
     const documents = [articleOne, articleTwo, queryFirst]
 
     generator.add(documents)
-    expect(generator.build().getAll()).toMatchInlineSnapshot(`
+    expect(generator.build().getEverything()).toMatchInlineSnapshot(`
       "// --------------------------------------------------------------------------------
       // Fragments
       // --------------------------------------------------------------------------------
@@ -352,7 +476,7 @@ query foobar {
       ),
     )
 
-    expect(generator.build().getAll()).toMatchInlineSnapshot(`
+    expect(generator.build().getEverything()).toMatchInlineSnapshot(`
       "// --------------------------------------------------------------------------------
       // Fragments
       // --------------------------------------------------------------------------------

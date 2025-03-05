@@ -33,7 +33,7 @@ async function generate(
     filePath: './test.graphql',
   })
   const output = generator.build()
-  return format(output.getAll())
+  return format(output.getEverything())
 }
 
 describe('Generator', () => {
