@@ -101,6 +101,11 @@ export interface GeneratedCode {
    * The GraphQL source.
    */
   source?: string | null
+
+  /**
+   * The timestamp at which the code was generated.
+   */
+  timestamp?: number
 }
 
 export type CollectedOperation = {
@@ -108,7 +113,9 @@ export type CollectedOperation = {
   graphqlName: string
   typeName: string
   variablesTypeName: string
+  hasVariables: boolean
   needsVariables: boolean
   dependencies: string[]
   filePath: string
+  timestamp: number
 }

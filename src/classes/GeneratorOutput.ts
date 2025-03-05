@@ -36,6 +36,13 @@ export type GeneratorOutputCode = Omit<GeneratedCode, 'dependencies'> & {
   dependencies: MappedDependency[]
 }
 
+export type GeneratorOutputOperation = Omit<
+  CollectedOperation,
+  'dependencies'
+> & {
+  dependencies: MappedDependency[]
+}
+
 export type GeneratorOutputOptions = {
   /**
    * How each block should be sorted.
@@ -43,23 +50,34 @@ export type GeneratorOutputOptions = {
   sorting?: GeneratedCodeType[]
 }
 
+function mapDependencies(dependencies?: string[]): MappedDependency[] {
+  if (!dependencies) {
+    return []
+  }
+  return dependencies.map((dependency) => {
+    const [type, value] = dependency.split(KEY_SEPARATOR)
+    return {
+      type: type as MappedDependencyType,
+      value: value || '',
+    }
+  })
+}
+
 export class GeneratorOutput {
   private code: GeneratorOutputCode[]
+  private operations: GeneratorOutputOperation[]
 
-  constructor(
-    codes: GeneratedCode[],
-    private operations: CollectedOperation[],
-  ) {
+  constructor(codes: GeneratedCode[], operations: CollectedOperation[]) {
     this.code = codes.map((code) => {
       return {
         ...code,
-        dependencies: (code.dependencies || []).map((dependency) => {
-          const [type, value] = dependency.split(KEY_SEPARATOR)
-          return {
-            type: type as MappedDependencyType,
-            value: value || '',
-          }
-        }),
+        dependencies: mapDependencies(code.dependencies),
+      }
+    })
+    this.operations = operations.map((operation) => {
+      return {
+        ...operation,
+        dependencies: mapDependencies(operation.dependencies),
       }
     })
   }
@@ -68,7 +86,7 @@ export class GeneratorOutput {
     return this.code
   }
 
-  public getCollectedOperations(): CollectedOperation[] {
+  public getCollectedOperations(): GeneratorOutputOperation[] {
     return this.operations
   }
 

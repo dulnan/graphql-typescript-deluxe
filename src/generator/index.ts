@@ -317,6 +317,7 @@ export class Generator {
       source: result.source,
       graphqlName: result.graphqlName,
       identifier: result.identifier,
+      timestamp: performance.now(),
     })
     return result.typeName
   }
@@ -364,19 +365,6 @@ export class Generator {
     this.purgeFromMap(this.cache, filePath)
     this.purgeFromMap(this.fragmentIRs, filePath)
     this.purgeFromMap(this.operations, filePath)
-    return this
-  }
-
-  /**
-   * Reset all caches and dependency tracker state.
-   */
-  private resetCaches(): Generator {
-    this.fragments.clear()
-    this.operations.clear()
-    this.generatedCode.clear()
-    this.cache.clear()
-    this.fragmentIRs.clear()
-    this.dependencyTracker?.reset()
     return this
   }
 
@@ -782,6 +770,8 @@ export class Generator {
       return
     }
 
+    const hasVariables = !!operation.variableDefinitions?.length
+
     const needsVariables = !operation.variableDefinitions?.every((v: any) => {
       return v.defaultValue
     })
@@ -792,8 +782,10 @@ export class Generator {
       typeName,
       variablesTypeName,
       needsVariables,
+      hasVariables,
       dependencies,
       filePath: this.dependencyTracker?.getCurrentFile() || NO_FILE_PATH,
+      timestamp: performance.now(),
     })
   }
 
@@ -1828,6 +1820,21 @@ export class Generator {
       this.inputDocuments.set(doc.filePath, doc)
     }
 
+    return this
+  }
+
+  /**
+   * Reset all caches and dependency tracker state.
+   *
+   * This keeps all added documents.
+   */
+  public resetCaches(): Generator {
+    this.fragments.clear()
+    this.operations.clear()
+    this.generatedCode.clear()
+    this.cache.clear()
+    this.fragmentIRs.clear()
+    this.dependencyTracker?.reset()
     return this
   }
 
