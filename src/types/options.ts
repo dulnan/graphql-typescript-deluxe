@@ -32,10 +32,13 @@ export type GeneratorOptionsOutput = {
   /**
    * How arrays should be represented.
    *
-   * - 'Array' results in e.g. `Array<MyFragment>` or `Array<{ label: string }>`
-   * - '[]' results in e.g. `(MyFragment)[]` or `({ label: string })[]`
+   * - 'Array<$T$>' results in e.g. `Array<MyFragment>` or `Array<{ label: string }>`
+   * - '$T$[]' results in e.g. `(MyFragment)[]` or `({ label: string })[]`
+   *
+   * You can also provide any code you want, it must contain the "$T$" placeholder.
+   * This is where the type is replaced.
    */
-  arrayShape?: 'Array' | '[]'
+  arrayShape?: string
 
   /**
    * Force a __typename field on every type.
@@ -114,13 +117,6 @@ export type GeneratorOptions = {
    * Output options.
    */
   output?: GeneratorOptionsOutput
-
-  /**
-   * Generate a map of all operations.
-   *
-   * @default false
-   */
-  generateOperationsMap?: boolean
 
   /**
    * Enable caching.

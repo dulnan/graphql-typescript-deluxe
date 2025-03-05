@@ -1,4 +1,10 @@
 // --------------------------------------------------------------------------------
+// Type Helpers
+// --------------------------------------------------------------------------------
+
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+
+// --------------------------------------------------------------------------------
 // Operations
 // --------------------------------------------------------------------------------
 
@@ -37,8 +43,8 @@ export type DefaultValuesQuery = {
  * @see {@link ./test.graphql}
  *
  */
-export type DefaultValuesQueryVariables = {
+export type DefaultValuesQueryVariables = Exact<{
   bundle?: string | null
   bundleRequired: string
   text?: string | null
-}
+}>

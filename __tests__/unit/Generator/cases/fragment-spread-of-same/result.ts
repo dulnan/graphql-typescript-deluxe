@@ -1,4 +1,10 @@
 // --------------------------------------------------------------------------------
+// Type Helpers
+// --------------------------------------------------------------------------------
+
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+
+// --------------------------------------------------------------------------------
 // Fragments
 // --------------------------------------------------------------------------------
 
@@ -61,4 +67,4 @@ export type TestQuery = {
  * @see {@link ./test.graphql}
  *
  */
-export type TestQueryVariables = object
+export type TestQueryVariables = Exact<{ [key: string]: never }>

@@ -43,6 +43,7 @@ import type {
   GeneratorInput,
   TypeContext,
   GeneratedCodeIdentifier,
+  CollectedOperation,
 } from '../types'
 import { toInputDocuments } from '../helpers/generator'
 import {
@@ -102,11 +103,6 @@ export class Generator {
   private options: DeepRequired<GeneratorOptions>
 
   /**
-   * The schema for which we generate types.
-   */
-  private schema: GraphQLSchema
-
-  /**
    * The input documents.
    */
   private inputDocuments: Map<string, GeneratorInput> = new Map()
@@ -122,17 +118,7 @@ export class Generator {
   /**
    * All operation definitions.
    */
-  private operations: Map<
-    string,
-    {
-      node: OperationDefinitionNode
-      filePath: string
-      dependencies: string[]
-      operationTypeName: string
-      variablesTypeName: string
-      hasVariables: boolean
-    }
-  > = new Map()
+  private operations: Map<string, CollectedOperation> = new Map()
 
   /**
    * The generated code.
@@ -181,8 +167,10 @@ export class Generator {
    * @param schema - The GraphQL schema.
    * @param options - The options.
    */
-  constructor(schema: GraphQLSchema, options?: GeneratorOptions) {
-    this.schema = schema
+  constructor(
+    private schema: GraphQLSchema,
+    options?: GeneratorOptions,
+  ) {
     this.options = buildOptions(options) as DeepRequired<GeneratorOptions>
     if (this.options.dependencyTracking) {
       this.dependencyTracker = new DependencyTracker()
@@ -298,10 +286,10 @@ export class Generator {
     cb: () => {
       code: string
       typeName: string
-      graphqlName: string | null
+      graphqlName?: string | null
       context?: TypeContext
-      identifier: GeneratedCodeIdentifier | null
-      source: string | null
+      identifier?: GeneratedCodeIdentifier | null
+      source?: string | null
     },
   ): string {
     const existing = this.generatedCode.get(key)
@@ -341,10 +329,12 @@ export class Generator {
    * @param filePath - The filePath to purge.
    */
   private purgeFromMap(
-    map: Map<string, { filePath: string; dependencies: string[] }>,
-    filePath: string,
+    map: Map<string, { filePath?: string; dependencies?: string[] }>,
+    filePath?: string,
   ): void {
-    const fileDependencyKey = DependencyTracker.toKey('file', filePath)
+    const fileDependencyKey = filePath
+      ? DependencyTracker.toKey('file', filePath)
+      : null
 
     const entries = map.entries()
     for (const entry of entries) {
@@ -352,7 +342,11 @@ export class Generator {
       const item = entry[1]
       if (item.filePath === filePath) {
         map.delete(key)
-      } else if (item.dependencies.includes(fileDependencyKey)) {
+      } else if (
+        fileDependencyKey &&
+        item.dependencies &&
+        item.dependencies.includes(fileDependencyKey)
+      ) {
         map.delete(key)
       }
     }
@@ -369,6 +363,7 @@ export class Generator {
     this.purgeFromMap(this.generatedCode, filePath)
     this.purgeFromMap(this.cache, filePath)
     this.purgeFromMap(this.fragmentIRs, filePath)
+    this.purgeFromMap(this.operations, filePath)
     return this
   }
 
@@ -474,6 +469,19 @@ export class Generator {
     }
   }
 
+  private getTypeHelper(type: 'exact'): string {
+    if (type === 'exact') {
+      return this.generateCodeOnce('type-helpers', type, () => {
+        return {
+          typeName: 'Exact',
+          code: `type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }; `,
+        }
+      })
+    }
+
+    throw new LogicError('Invalid helper type: ' + type)
+  }
+
   // ===========================================================================
   // Enums
   // ===========================================================================
@@ -524,10 +532,7 @@ export class Generator {
 
         if (type.kind === Kind.LIST_TYPE) {
           const element = this.createInputTS(type.type)
-          output =
-            this.options.output.arrayShape === 'Array'
-              ? `Array<${element}>`
-              : `${element}[]`
+          output = this.toArrayShape(element)
         } else if (type.kind === Kind.NAMED_TYPE) {
           const namedType = this.schema.getType(type.name.value)
           if (!namedType) {
@@ -717,6 +722,20 @@ export class Generator {
       throw new MissingRootTypeError(operation.name.value)
     }
 
+    const typeName = this.options.buildOperationTypeName(
+      opName,
+      rootType,
+      operation,
+    )
+
+    const variablesTypeName = this.options.buildOperationVariablesTypeName(
+      opName,
+      rootType,
+      operation,
+    )
+
+    this.dependencyTracker?.start()
+
     this.generateCodeOnce('operation', opName + '-base', () => {
       this.logDebug('Generating operation: ' + opName)
       const inlined = this.inlineFragments(
@@ -724,11 +743,6 @@ export class Generator {
         rootType.name,
       )
       const merged = mergeSameFieldSelections(inlined)
-      const typeName = this.options.buildOperationTypeName(
-        opName,
-        rootType,
-        operation,
-      )
 
       const source = getAstSource(operation)
 
@@ -748,20 +762,38 @@ export class Generator {
     })
 
     this.generateCodeOnce('operation-variables', opName + '-variables', () => {
-      const typeName = this.options.buildOperationVariablesTypeName(
-        opName,
-        rootType,
-        operation,
+      const exact = this.getTypeHelper('exact')
+      const code = makeExport(
+        variablesTypeName,
+        `${exact}<${this.generateVariablesType(operation)}>`,
       )
-      const code = makeExport(typeName, this.generateVariablesType(operation))
       return {
         code,
-        typeName,
+        typeName: variablesTypeName,
         context: { input },
         source: null,
         graphqlName: null,
         identifier: null,
       }
+    })
+    const dependencies = this.dependencyTracker?.end() || []
+
+    if (this.operations.has(opName)) {
+      return
+    }
+
+    const needsVariables = !operation.variableDefinitions?.every((v: any) => {
+      return v.defaultValue
+    })
+
+    this.operations.set(opName, {
+      operationType: operation.operation,
+      graphqlName: opName,
+      typeName,
+      variablesTypeName,
+      needsVariables,
+      dependencies,
+      filePath: this.dependencyTracker?.getCurrentFile() || NO_FILE_PATH,
     })
   }
 
@@ -775,7 +807,7 @@ export class Generator {
   private generateVariablesType(operation: OperationDefinitionNode): string {
     const definitions = operation.variableDefinitions
     if (!definitions?.length) {
-      return this.options.output.emptyObject
+      return `{ [key: string]: never; }`
     }
 
     return this.objectNodeToCode(
@@ -864,6 +896,22 @@ export class Generator {
   // ===========================================================================
   // AST/IR
   // ===========================================================================
+
+  private toArrayShape(type: string): string {
+    const shape = this.options.output.arrayShape
+    // We can directly pass in the type because the shape uses < and >.
+    if (shape.includes('<') && shape.includes('>')) {
+      return shape.replace('$T$', type)
+    }
+
+    // Check if we have any unions or intersections.
+    if (type.includes('|') || type.includes('&')) {
+      // Wrap the type in parantheses so we produce valid syntax.
+      return shape.replace('$T$', `(${type})`)
+    }
+
+    return shape.replace('$T$', type)
+  }
 
   /**
    * Builds the IR for the selection set.
@@ -1688,9 +1736,7 @@ export class Generator {
       case 'ARRAY': {
         const elemTS = this.IRToCode(ir.ofType)
         const finalElem = ir.nullableElement ? `${elemTS} | null` : elemTS
-        return this.options.output.arrayShape === 'Array'
-          ? `Array<${finalElem}>`
-          : `(${finalElem})[]`
+        return this.toArrayShape(finalElem)
       }
 
       case 'UNION': {
@@ -1879,6 +1925,6 @@ export class Generator {
       )
     }
     const code = this.generatedCode.values()
-    return new GeneratorOutput([...code])
+    return new GeneratorOutput([...code], [...this.operations.values()])
   }
 }

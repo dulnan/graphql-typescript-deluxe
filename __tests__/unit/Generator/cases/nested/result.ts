@@ -1,4 +1,10 @@
 // --------------------------------------------------------------------------------
+// Type Helpers
+// --------------------------------------------------------------------------------
+
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+
+// --------------------------------------------------------------------------------
 // Object Types
 // --------------------------------------------------------------------------------
 
@@ -136,4 +142,4 @@ export type NestedQuery = {
  * @see {@link ./test.graphql}
  *
  */
-export type NestedQueryVariables = object
+export type NestedQueryVariables = Exact<{ [key: string]: never }>

@@ -1,4 +1,10 @@
 // --------------------------------------------------------------------------------
+// Type Helpers
+// --------------------------------------------------------------------------------
+
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+
+// --------------------------------------------------------------------------------
 // Enums
 // --------------------------------------------------------------------------------
 
@@ -57,10 +63,10 @@ export type InputTypesMutation = {
  * @see {@link ./test.graphql}
  *
  */
-export type InputTypesMutationVariables = {
+export type InputTypesMutationVariables = Exact<{
   dryRun?: boolean | null
   input: SubmitContactFormInput
-}
+}>
 
 // --------------------------------------------------------------------------------
 // Input Types

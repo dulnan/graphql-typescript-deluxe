@@ -1,4 +1,10 @@
 // --------------------------------------------------------------------------------
+// Type Helpers
+// --------------------------------------------------------------------------------
+
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+
+// --------------------------------------------------------------------------------
 // Object Types
 // --------------------------------------------------------------------------------
 
@@ -180,4 +186,6 @@ export type FieldMergingNestedComplexQuery = {
  * @see {@link ./test.graphql}
  *
  */
-export type FieldMergingNestedComplexQueryVariables = object
+export type FieldMergingNestedComplexQueryVariables = Exact<{
+  [key: string]: never
+}>

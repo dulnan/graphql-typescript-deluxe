@@ -75,3 +75,14 @@ export class NodeLocMissingError extends Error {
     Object.setPrototypeOf(this, NodeLocMissingError.prototype)
   }
 }
+
+/**
+ * Thrown when an invalid option is provided.
+ */
+export class InvalidOptionError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'InvalidOptionError'
+    Object.setPrototypeOf(this, InvalidOptionError.prototype)
+  }
+}

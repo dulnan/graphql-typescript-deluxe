@@ -1,4 +1,10 @@
 // --------------------------------------------------------------------------------
+// Type Helpers
+// --------------------------------------------------------------------------------
+
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+
+// --------------------------------------------------------------------------------
 // Object Types
 // --------------------------------------------------------------------------------
 
@@ -67,4 +73,4 @@ export type UnionTypesQuery = {
  * @see {@link ./test.graphql}
  *
  */
-export type UnionTypesQueryVariables = object
+export type UnionTypesQueryVariables = Exact<{ [key: string]: never }>

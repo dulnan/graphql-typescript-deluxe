@@ -1,4 +1,10 @@
 // --------------------------------------------------------------------------------
+// Type Helpers
+// --------------------------------------------------------------------------------
+
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+
+// --------------------------------------------------------------------------------
 // Operations
 // --------------------------------------------------------------------------------
 
@@ -31,11 +37,11 @@ export type InputTypesPartialMutation = {
  * @see {@link ./test.graphql}
  *
  */
-export type InputTypesPartialMutationVariables = {
+export type InputTypesPartialMutationVariables = Exact<{
   address: AddressInput
   firstName: string
   lastName: string
-}
+}>
 
 // --------------------------------------------------------------------------------
 // Input Types

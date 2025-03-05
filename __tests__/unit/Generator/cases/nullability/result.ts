@@ -1,4 +1,10 @@
 // --------------------------------------------------------------------------------
+// Type Helpers
+// --------------------------------------------------------------------------------
+
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+
+// --------------------------------------------------------------------------------
 // Fragments
 // --------------------------------------------------------------------------------
 
@@ -122,4 +128,4 @@ export type NullabilityQuery = {
  * @see {@link ./test.graphql}
  *
  */
-export type NullabilityQueryVariables = object
+export type NullabilityQueryVariables = Exact<{ [key: string]: never }>

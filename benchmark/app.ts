@@ -135,6 +135,7 @@ async function main(): Promise<void> {
       mergeTypenames: true,
       nonOptionalTypename: false,
       typeComment: true,
+      arrayShape: '$T$[]',
     },
   })
 
@@ -154,7 +155,7 @@ async function main(): Promise<void> {
     // })
     // console.log('-'.repeat(80))
     // })
-    return output.getAll()
+    return output.getEverything()
   })
 
   await runWithDuration('codes.json', () => {
@@ -177,7 +178,7 @@ async function main(): Promise<void> {
 
   await runWithDuration('custom-operations.js', () => {
     const output = generator.build()
-    return output.getOperations()
+    return output.getOperationsFile()
   })
 
   if (isProfiling) {

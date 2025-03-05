@@ -1,4 +1,10 @@
 // --------------------------------------------------------------------------------
+// Type Helpers
+// --------------------------------------------------------------------------------
+
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+
+// --------------------------------------------------------------------------------
 // Operations
 // --------------------------------------------------------------------------------
 
@@ -66,7 +72,7 @@ export type DirectivesIncludeQuery = {
  * @see {@link ./test.graphql}
  *
  */
-export type DirectivesIncludeQueryVariables = {
+export type DirectivesIncludeQueryVariables = Exact<{
   withAuthor?: boolean | null
   withCategories?: boolean | null
-}
+}>

@@ -159,12 +159,31 @@ query foobar {
           {
             "dependencies": [
               {
-                "type": "operation-variables",
-                "value": "FoobarQueryVariables",
+                "type": "type-helpers",
+                "value": "Exact",
               },
               {
                 "type": "file",
                 "value": "query.foobar.graphql",
+              },
+            ],
+            "filePath": "query.foobar.graphql",
+            "name": "Exact",
+            "type": "type-helpers",
+          },
+          {
+            "dependencies": [
+              {
+                "type": "file",
+                "value": "query.foobar.graphql",
+              },
+              {
+                "type": "type-helpers",
+                "value": "Exact",
+              },
+              {
+                "type": "operation-variables",
+                "value": "FoobarQueryVariables",
               },
             ],
             "filePath": "query.foobar.graphql",
@@ -291,12 +310,31 @@ fragment mediaImage on MediaImage {
           {
             "dependencies": [
               {
-                "type": "operation-variables",
-                "value": "FoobarQueryVariables",
+                "type": "type-helpers",
+                "value": "Exact",
               },
               {
                 "type": "file",
                 "value": "query.foobar.graphql",
+              },
+            ],
+            "filePath": "query.foobar.graphql",
+            "name": "Exact",
+            "type": "type-helpers",
+          },
+          {
+            "dependencies": [
+              {
+                "type": "file",
+                "value": "query.foobar.graphql",
+              },
+              {
+                "type": "type-helpers",
+                "value": "Exact",
+              },
+              {
+                "type": "operation-variables",
+                "value": "FoobarQueryVariables",
               },
             ],
             "filePath": "query.foobar.graphql",
@@ -417,6 +455,13 @@ query foobar {
     generator.add(documents)
     expect(generator.build().getEverything()).toMatchInlineSnapshot(`
       "// --------------------------------------------------------------------------------
+      // Type Helpers
+      // --------------------------------------------------------------------------------
+
+      type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }; 
+
+
+      // --------------------------------------------------------------------------------
       // Fragments
       // --------------------------------------------------------------------------------
 
@@ -466,7 +511,7 @@ query foobar {
       // Operation Variables
       // --------------------------------------------------------------------------------
 
-      export type QueryFirstQueryVariables = object;"
+      export type QueryFirstQueryVariables = Exact<{ [key: string]: never; }>;"
     `)
 
     generator.update(
@@ -478,6 +523,13 @@ query foobar {
 
     expect(generator.build().getEverything()).toMatchInlineSnapshot(`
       "// --------------------------------------------------------------------------------
+      // Type Helpers
+      // --------------------------------------------------------------------------------
+
+      type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }; 
+
+
+      // --------------------------------------------------------------------------------
       // Fragments
       // --------------------------------------------------------------------------------
 
@@ -527,7 +579,7 @@ query foobar {
       // Operation Variables
       // --------------------------------------------------------------------------------
 
-      export type QueryFirstQueryVariables = object;"
+      export type QueryFirstQueryVariables = Exact<{ [key: string]: never; }>;"
     `)
   })
 })

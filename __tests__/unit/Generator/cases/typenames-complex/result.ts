@@ -1,4 +1,10 @@
 // --------------------------------------------------------------------------------
+// Type Helpers
+// --------------------------------------------------------------------------------
+
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+
+// --------------------------------------------------------------------------------
 // Object Types
 // --------------------------------------------------------------------------------
 
@@ -70,4 +76,4 @@ export type TypenamesComplexQuery = {
  * @see {@link ./test.graphql}
  *
  */
-export type TypenamesComplexQueryVariables = object
+export type TypenamesComplexQueryVariables = Exact<{ [key: string]: never }>

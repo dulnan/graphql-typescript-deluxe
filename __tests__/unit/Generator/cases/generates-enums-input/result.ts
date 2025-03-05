@@ -1,4 +1,10 @@
 // --------------------------------------------------------------------------------
+// Type Helpers
+// --------------------------------------------------------------------------------
+
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+
+// --------------------------------------------------------------------------------
 // Enums
 // --------------------------------------------------------------------------------
 
@@ -58,7 +64,7 @@ export type EnumFromInputQuery = {
  * @see {@link ./test.graphql}
  *
  */
-export type EnumFromInputQueryVariables = {
+export type EnumFromInputQueryVariables = Exact<{
   entityType: EntityType
   id: string | number
-}
+}>

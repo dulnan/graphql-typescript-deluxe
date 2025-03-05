@@ -1,4 +1,10 @@
 // --------------------------------------------------------------------------------
+// Type Helpers
+// --------------------------------------------------------------------------------
+
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+
+// --------------------------------------------------------------------------------
 // Operations
 // --------------------------------------------------------------------------------
 
@@ -29,4 +35,4 @@ Another line.
  * @see {@link ./test.graphql}
  *
  */
-export type CommentsQueryVariables = object
+export type CommentsQueryVariables = Exact<{ [key: string]: never }>

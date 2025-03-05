@@ -1,11 +1,17 @@
 import { NodeLocMissingError } from '../errors'
 import { getCodeTypeLabel } from '../helpers/generator'
 import { notNullish } from '../helpers/type'
-import type { GeneratedCode, GeneratedCodeType } from '../types/index'
+import type {
+  CollectedOperation,
+  GeneratedCode,
+  GeneratedCodeType,
+} from '../types/index'
 import { KEY_SEPARATOR } from './DependencyTracker'
 import { stripIgnoredCharacters } from 'graphql'
 
 const DEFAULT_SORTING: GeneratedCodeType[] = [
+  'helpers',
+  'type-helpers',
   'enum',
   'typename-object',
   'typename-union',
@@ -13,7 +19,6 @@ const DEFAULT_SORTING: GeneratedCodeType[] = [
   'operation',
   'operation-variables',
   'input',
-  'helpers',
 ]
 
 function toValidString(str: string): string {
@@ -41,11 +46,14 @@ export type GeneratorOutputOptions = {
 export class GeneratorOutput {
   private code: GeneratorOutputCode[]
 
-  constructor(codes: GeneratedCode[]) {
+  constructor(
+    codes: GeneratedCode[],
+    private operations: CollectedOperation[],
+  ) {
     this.code = codes.map((code) => {
       return {
         ...code,
-        dependencies: code.dependencies.map((dependency) => {
+        dependencies: (code.dependencies || []).map((dependency) => {
           const [type, value] = dependency.split(KEY_SEPARATOR)
           return {
             type: type as MappedDependencyType,
@@ -56,8 +64,12 @@ export class GeneratorOutput {
     })
   }
 
-  getGeneratedCode(): GeneratorOutputCode[] {
+  public getGeneratedCode(): GeneratorOutputCode[] {
     return this.code
+  }
+
+  public getCollectedOperations(): CollectedOperation[] {
+    return this.operations
   }
 
   private buildOutputTypes(
@@ -132,6 +144,9 @@ export class GeneratorOutput {
    * The file contains a single exported object named "operations", with properties for
    * every operation type, containing all operations keyed by operation name.
    *
+   * If the provided input document nodes were parsed with `noLocation: true` a
+   * NodeLocMissingError will be thrown.
+   *
    * @returns The file contents.
    */
   public getOperationsFile(): string {
@@ -140,33 +155,28 @@ export class GeneratorOutput {
     const mutation: string[] = []
     const subscription: string[] = []
 
+    const addDeclaration = (name: string, code: string): void => {
+      declarations.push(`const ${name} = ` + '`' + toValidString(code) + '`;')
+    }
+
     for (const code of this.code) {
       if (code.type === 'fragment') {
-        if (code.source === null) {
+        if (!notNullish(code.source)) {
           throw new NodeLocMissingError(code.graphqlName || code.name)
         }
-        declarations.push(
-          `const fragment_${code.graphqlName} = ` +
-            '`' +
-            toValidString(code.source) +
-            '`;',
-        )
+        addDeclaration('fragment_' + code.graphqlName, code.source)
       } else if (code.type === 'operation') {
-        if (code.source === null) {
+        if (!notNullish(code.source)) {
           throw new NodeLocMissingError(code.graphqlName || code.name)
         }
         const operationVarName = `${code.identifier!}_${code.graphqlName || code.name}`
-        declarations.push(
-          `const ${operationVarName} = ` +
-            '`' +
-            toValidString(code.source) +
-            '`;',
-        )
+        addDeclaration(operationVarName, code.source)
+
         const fragmentDependencies = code.dependencies
           .filter((v) => v.type === 'fragment-name')
           .map((v) => 'fragment_' + v.value)
-        const parts = [operationVarName, ...fragmentDependencies].join(' + ')
 
+        const parts = [operationVarName, ...fragmentDependencies].join(' + ')
         const declaration = `'${code.graphqlName!}': ${parts},`
         if (code.identifier === 'query') {
           query.push(declaration)
@@ -189,7 +199,7 @@ export const operations = {
     ${mutation.sort().join('\n    ')}
   },
   subscription: {
-    ${mutation.sort().join('\n    ')}
+    ${subscription.sort().join('\n    ')}
   }
 }
 `

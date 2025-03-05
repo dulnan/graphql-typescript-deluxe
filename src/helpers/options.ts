@@ -8,6 +8,7 @@ import type {
 import type { GeneratorOptions } from '../types/options'
 import { makeComment, toPascalCase } from './string'
 import type { DeepRequired } from './type'
+import { InvalidOptionError } from '../errors'
 
 export function buildOperationTypeName(
   operationName: string,
@@ -82,11 +83,16 @@ export type ${nameInCode} = (typeof ${nameInCode})[keyof typeof ${nameInCode}];
 export function buildOptions(
   options?: GeneratorOptions,
 ): DeepRequired<GeneratorOptions> {
+  const arrayShape = options?.output?.arrayShape || 'Array<$T$>'
+  if (!arrayShape.includes('$T$')) {
+    throw new InvalidOptionError(
+      'The output.arrayShape option value is missing the $T$ placeholder.',
+    )
+  }
   return {
     debugMode: !!options?.debugMode,
     useCache: options?.useCache ?? false,
     dependencyTracking: options?.dependencyTracking ?? true,
-    generateOperationsMap: options?.generateOperationsMap ?? false,
     buildOperationTypeName:
       options?.buildOperationTypeName ?? buildOperationTypeName,
     buildOperationVariablesTypeName:
@@ -101,7 +107,7 @@ export function buildOptions(
 
     output: {
       nullableField: options?.output?.nullableField || 'optional',
-      arrayShape: options?.output?.arrayShape || 'Array',
+      arrayShape,
       emptyObject: options?.output?.emptyObject ?? 'object',
       nonOptionalTypename: options?.output?.nonOptionalTypename ?? false,
       mergeTypenames: options?.output?.mergeTypenames ?? true,

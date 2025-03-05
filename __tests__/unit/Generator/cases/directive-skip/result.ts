@@ -1,4 +1,10 @@
 // --------------------------------------------------------------------------------
+// Type Helpers
+// --------------------------------------------------------------------------------
+
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+
+// --------------------------------------------------------------------------------
 // Operations
 // --------------------------------------------------------------------------------
 
@@ -75,7 +81,7 @@ export type DirectivesSkipQuery = {
  * @see {@link ./test.graphql}
  *
  */
-export type DirectivesSkipQueryVariables = {
+export type DirectivesSkipQueryVariables = Exact<{
   skipAuthor?: boolean | null
   skipCategories?: boolean | null
-}
+}>

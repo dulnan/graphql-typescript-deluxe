@@ -1,4 +1,10 @@
 // --------------------------------------------------------------------------------
+// Type Helpers
+// --------------------------------------------------------------------------------
+
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+
+// --------------------------------------------------------------------------------
 // Enums
 // --------------------------------------------------------------------------------
 
@@ -148,4 +154,4 @@ export type FieldMergingNestedQuery = {
  * @see {@link ./test.graphql}
  *
  */
-export type FieldMergingNestedQueryVariables = object
+export type FieldMergingNestedQueryVariables = Exact<{ [key: string]: never }>

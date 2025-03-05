@@ -1,4 +1,10 @@
 // --------------------------------------------------------------------------------
+// Type Helpers
+// --------------------------------------------------------------------------------
+
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+
+// --------------------------------------------------------------------------------
 // Fragments
 // --------------------------------------------------------------------------------
 
@@ -130,4 +136,4 @@ export type SpreadsOnInterfaceQuery = {
  * @see {@link ./test.graphql}
  *
  */
-export type SpreadsOnInterfaceQueryVariables = object
+export type SpreadsOnInterfaceQueryVariables = Exact<{ [key: string]: never }>

@@ -1,4 +1,9 @@
-import type { DefinitionNode, DocumentNode, GraphQLNamedType } from 'graphql'
+import type {
+  DefinitionNode,
+  DocumentNode,
+  GraphQLNamedType,
+  OperationTypeNode,
+} from 'graphql'
 
 export type GeneratorInput = {
   /**
@@ -54,6 +59,7 @@ export type GeneratedCodeType =
   | 'typename-object'
   | 'typename-union'
   | 'helpers'
+  | 'type-helpers'
 
 export interface GeneratedCode {
   /**
@@ -69,12 +75,12 @@ export interface GeneratedCode {
   /**
    * The name of the corresponding GraphQL element.
    */
-  graphqlName: string | null
+  graphqlName?: string | null
 
   /**
    * The GraphQL identifier.
    */
-  identifier: GeneratedCodeIdentifier | null
+  identifier?: GeneratedCodeIdentifier | null
 
   /**
    * The full code of the generated type, including export identifiers.
@@ -84,15 +90,25 @@ export interface GeneratedCode {
   /**
    * The path of the file that provided this type.
    */
-  filePath: string
+  filePath?: string
 
   /**
    * The dependencies.
    */
-  dependencies: string[]
+  dependencies?: string[]
 
   /**
    * The GraphQL source.
    */
-  source: string | null
+  source?: string | null
+}
+
+export type CollectedOperation = {
+  operationType: OperationTypeNode
+  graphqlName: string
+  typeName: string
+  variablesTypeName: string
+  needsVariables: boolean
+  dependencies: string[]
+  filePath: string
 }

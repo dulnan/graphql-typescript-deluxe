@@ -1,4 +1,10 @@
 // --------------------------------------------------------------------------------
+// Type Helpers
+// --------------------------------------------------------------------------------
+
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+
+// --------------------------------------------------------------------------------
 // Object Types
 // --------------------------------------------------------------------------------
 
@@ -111,4 +117,4 @@ export type FoobarQuery = {
  * @see {@link query.foobar.graphql}
  *
  */
-export type FoobarQueryVariables = object
+export type FoobarQueryVariables = Exact<{ [key: string]: never }>

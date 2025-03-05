@@ -1,4 +1,10 @@
 // --------------------------------------------------------------------------------
+// Type Helpers
+// --------------------------------------------------------------------------------
+
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+
+// --------------------------------------------------------------------------------
 // Enums
 // --------------------------------------------------------------------------------
 
@@ -112,4 +118,4 @@ export type FragmentInterfaceQuery = {
  * @see {@link ./test.graphql}
  *
  */
-export type FragmentInterfaceQueryVariables = object
+export type FragmentInterfaceQueryVariables = Exact<{ [key: string]: never }>
