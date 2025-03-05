@@ -151,6 +151,7 @@ async function main(): Promise<void> {
       mergeTypenames: true,
       nonOptionalTypename: false,
       nullableArrayElements: false,
+      sortProperties: false,
       typeComment: true,
       arrayShape: '$T$[]',
     },

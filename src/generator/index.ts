@@ -100,7 +100,7 @@ export class Generator {
   /**
    * The mapped options.
    */
-  private options: DeepRequired<GeneratorOptions>
+  public readonly options: DeepRequired<GeneratorOptions>
 
   /**
    * The input documents.
@@ -457,7 +457,14 @@ export class Generator {
     }
   }
 
-  private getTypeHelper(type: 'exact'): string {
+  /**
+   * Get or create the given type helper.
+   *
+   * @param type - The type helper.
+   *
+   * @returns The name of the generated type helper.
+   */
+  private getOrCreateTypeHelper(type: 'exact'): string {
     if (type === 'exact') {
       return this.generateCodeOnce('type-helpers', type, () => {
         return {
@@ -750,7 +757,7 @@ export class Generator {
     })
 
     this.generateCodeOnce('operation-variables', opName + '-variables', () => {
-      const exact = this.getTypeHelper('exact')
+      const exact = this.getOrCreateTypeHelper('exact')
       const code = makeExport(
         variablesTypeName,
         `${exact}<${this.generateVariablesType(operation)}>`,
@@ -902,6 +909,7 @@ export class Generator {
       return shape.replace('$T$', `(${type})`)
     }
 
+    // We can safely replace it with e.g. `string[]`.
     return shape.replace('$T$', type)
   }
 
@@ -990,8 +998,7 @@ export class Generator {
           fields[TYPENAME] = IR.TYPENAME(
             this.getOrCreateObjectTypeName(objectType),
           )
-          // We continue here so we skip calling buildFieldIR for __typename
-          // (which might return the abstract union type)
+          // Continue since __typename is not a field that exists.
           continue
         }
 
@@ -1007,7 +1014,7 @@ export class Generator {
         const fragName = sel.name.value
         const fragDef = this.getFragmentNode(fragName)
 
-        // If the fragment's typeCondition is the same or an interface the object implements, merge it
+        // If the fragment's typeCondition is the same or an interface the object implements, merge it.
         const condName = fragDef.typeCondition.name.value
         if (
           condName === objectType.name ||
@@ -1028,7 +1035,7 @@ export class Generator {
       }
     }
 
-    // Always __typename field if option is set.
+    // Always add __typename field if option is set.
     if (this.options.output.nonOptionalTypename && !fields[TYPENAME]) {
       fields[TYPENAME] = IR.TYPENAME(this.getOrCreateObjectTypeName(objectType))
     }
@@ -1069,10 +1076,6 @@ export class Generator {
     const abstractTypeFields = isInterfaceType(abstractType)
       ? abstractType.getFields()
       : {}
-
-    // Stores inline fragment fields for each implementing object type.
-    // Key is name of object type, value is an object of fields => node.
-    const objectTypeMap = new Map<string, Record<string, IRNode>>()
 
     // Possible types that implement the interface/union.
     const possibleTypes = this.getPossibleObjectTypeNames(abstractType.name)
@@ -1162,7 +1165,8 @@ export class Generator {
     //
     // This section is very verbose, because we try to find common
     // combinations of selections for which we can return an IR node
-    // directly.
+    // directly, without the overhead of generating a union branch for every
+    // implementing type.
     // ====================================================================
 
     // We don't have any base fields.
@@ -1174,6 +1178,7 @@ export class Generator {
         !hasConcreteInlineFragments &&
         !hasConcreteFragments
       ) {
+        // We can only return if there is exactly one fragment.
         if (fragmentsForAbstract.length === 1) {
           return IR.SCALAR({
             tsType: this.generateFragmentType(
@@ -1210,6 +1215,8 @@ export class Generator {
           })
 
           if (allTargetDifferent) {
+            // If all fragment spreads target different types we can create an
+            // union type.
             const unionTypes = concreteFragmentTypes.map((typeName) => {
               const fragment = fragmentsByConcreteType[typeName]![0]!
               return IR.SCALAR({
@@ -1219,6 +1226,8 @@ export class Generator {
             })
             const totalTargets = concreteFragmentTypes.length
 
+            // If there are still types left that aren't targeted by any of the
+            // fragments: Add an empty object.
             if (totalTargets !== totalPossibleTypes) {
               unionTypes.push(this.emptyObjectScalar())
             }
@@ -1235,8 +1244,13 @@ export class Generator {
     // Full gathering of all possible combinations.
     //
     // This creates a branch for every possible type to create a union node
-    // of all possible object shapes.
+    // of all possible object shapes. This is what allows us to check for
+    // field conflicts between spreads on the same type later on.
     // ====================================================================
+
+    // Stores inline fragment fields for each implementing object type.
+    // Key is name of object type, value is an object of fields => node.
+    const objectTypeMap = new Map<string, Record<string, IRNode>>()
 
     // Gather all field selections on interface/union level.
     for (const sel of selections) {
@@ -1421,7 +1435,7 @@ export class Generator {
    * fragment spreads, we inline the entire field. We still use the fragment type if
    * possible, however, we exclude the conflicting fields from the fragment using Omit<>.
    *
-   * @TODO: This should be handled when building the selection set.
+   * @TODO: This could already be handled when building the selection set.
    *
    * @param fields - The field map.
    * @param spreads - The collected fragment spread IR nodes.
@@ -1673,7 +1687,10 @@ export class Generator {
     }
     this.incrementDebugCount('fieldMapToCode')
 
-    const fieldNames = [...fields.keys()].sort()
+    const fieldNames = [...fields.keys()]
+    if (this.options.output.sortProperties) {
+      fieldNames.sort()
+    }
 
     let output = '{'
 
@@ -1717,7 +1734,8 @@ export class Generator {
       case 'TYPENAME': {
         const union = [...ir.types].sort().join(' | ')
         if (ir.excludeType) {
-          // Special case for Exclude<A, B>
+          // Special case for Exclude<A, B>: The provided types should be *excluded*
+          // from the defined excludeType (which is either a GraphQL interface or union).
           return `Exclude<${ir.excludeType}, ${union}>`
         }
         return union

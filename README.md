@@ -399,4 +399,7 @@ export type ContactMethod = (typeof ContactMethod)[keyof typeof ContactMethod]
 
 ## Options
 
+No options are required. The defaults are "sane" and picked to produce the
+smallest and fastest output possible.
+
 Check out [all options](./src/types/options.ts).

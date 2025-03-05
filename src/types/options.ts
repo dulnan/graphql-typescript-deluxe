@@ -39,7 +39,12 @@ export type GeneratorOptionsOutput = {
    * You can also provide any code you want, it must contain the "$T$" placeholder,
    * which is where the generated type is replaced with.
    *
-   * @default "Array<$T$>"
+   * The generator checks whether "<" and ">" are present. If they are, it will
+   * omit wrapping the type in ().
+   * If "<" and ">" are not present it will assume that unions and intersections have
+   * to be wrapped in ().
+   *
+   * @default "$T$[]"
    */
   arrayShape?: string
 
@@ -119,6 +124,16 @@ export type GeneratorOptionsOutput = {
    * @default true
    */
   typeComment?: boolean
+
+  /**
+   * If enabled, all object properties are sorted alphabetically.
+   *
+   * If disabled, the object properties are sorted in the same order as in the
+   * document.
+   *
+   * @default true
+   */
+  sortProperties?: boolean
 }
 
 export type GeneratorOptions = {
