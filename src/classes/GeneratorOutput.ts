@@ -6,9 +6,10 @@ import type {
   GeneratedCode,
   GeneratedCodeType,
 } from '../types/index'
-import { KEY_SEPARATOR } from './DependencyTracker'
-import { stripIgnoredCharacters } from 'graphql'
 import { MinifyVariableName } from './MinifyVariableName'
+import { GeneratorOutputCode } from './GeneratorOutputCode'
+import { GeneratorOutputOperation } from './GeneratorOutputOperation'
+import { graphqlToString } from '../helpers/string'
 
 const DEFAULT_SORTING: GeneratedCodeType[] = [
   'helpers',
@@ -22,31 +23,6 @@ const DEFAULT_SORTING: GeneratedCodeType[] = [
   'input',
 ]
 
-/**
- * Escapes any "`" in the string so that the string can be used in "`${str}`".
- */
-function toValidString(str: string): string {
-  return '`' + stripIgnoredCharacters(str).replaceAll('`', '\\`') + '`'
-}
-
-type MappedDependencyType = GeneratedCodeType | 'fragment-name'
-
-type MappedDependency = {
-  type: MappedDependencyType
-  value: string
-}
-
-export type GeneratorOutputCode = Omit<GeneratedCode, 'dependencies'> & {
-  dependencies: MappedDependency[]
-}
-
-export type GeneratorOutputOperation = Omit<
-  CollectedOperation,
-  'dependencies'
-> & {
-  dependencies: MappedDependency[]
-}
-
 export type GeneratorOutputOptions = {
   /**
    * How each block should be sorted.
@@ -54,36 +30,13 @@ export type GeneratorOutputOptions = {
   sorting?: GeneratedCodeType[]
 }
 
-function mapDependencies(dependencies?: string[]): MappedDependency[] {
-  if (!dependencies) {
-    return []
-  }
-  return dependencies.map((dependency) => {
-    const [type, value] = dependency.split(KEY_SEPARATOR)
-    return {
-      type: type as MappedDependencyType,
-      value: value || '',
-    }
-  })
-}
-
 export class GeneratorOutput {
   private code: GeneratorOutputCode[]
   private operations: GeneratorOutputOperation[]
 
   constructor(codes: GeneratedCode[], operations: CollectedOperation[]) {
-    this.code = codes.map((code) => {
-      return {
-        ...code,
-        dependencies: mapDependencies(code.dependencies),
-      }
-    })
-    this.operations = operations.map((operation) => {
-      return {
-        ...operation,
-        dependencies: mapDependencies(operation.dependencies),
-      }
-    })
+    this.code = codes.map((v) => new GeneratorOutputCode(v))
+    this.operations = operations.map((v) => new GeneratorOutputOperation(v))
   }
 
   public getGeneratedCode(): GeneratorOutputCode[] {
@@ -196,13 +149,14 @@ export class GeneratorOutput {
           throw new NodeLocMissingError(code.graphqlName || code.name)
         }
 
-        const fragmentDependencies = code.dependencies
-          .filter((v) => v.type === 'fragment-name')
-          .map((v) => variableMinifier.getVarName(v.value))
+        const fragmentDependencies = code
+          .getGraphQLFragmentDependencies()
+          .map((v) => variableMinifier.getVarName(v))
 
-        let parts = [toValidString(code.source), ...fragmentDependencies].join(
-          ' + ',
-        )
+        let parts = [
+          graphqlToString(code.source),
+          ...fragmentDependencies,
+        ].join(' + ')
         if (parts.length > 80 && !shouldMinify) {
           parts = '\n      ' + parts.replaceAll(' + ', ' +\n      ')
         }
@@ -219,7 +173,7 @@ export class GeneratorOutput {
 
     const sortedDeclarations = declarations
       .sort((a, b) => a.value.localeCompare(b.value))
-      .map((v) => `const ${v.name} = ${toValidString(v.value)};`)
+      .map((v) => `const ${v.name} = ${graphqlToString(v.value)};`)
       .join('\n')
 
     return `${sortedDeclarations}

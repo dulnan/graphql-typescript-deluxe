@@ -4,7 +4,7 @@ import { Generator } from '../../../src/generator/index.js'
 import { loadSchemaSync } from '@graphql-tools/load'
 import { parse } from 'graphql'
 import type { GeneratorInput } from '../../../src/types/index.js'
-import type { GeneratorOutputCode } from '../../../src/classes/GeneratorOutput'
+import type { GeneratorOutputCode } from '../../../src/classes/GeneratorOutputCode'
 
 const schema = loadSchemaSync(schemaContent, { loaders: [] })
 
@@ -14,7 +14,7 @@ function resultWithoutCode(items: GeneratorOutputCode[]): any[] {
       type: v.type,
       name: v.name,
       filePath: v.filePath,
-      dependencies: v.dependencies,
+      dependencies: v.getDependencies(),
     }
   })
 }
@@ -395,15 +395,13 @@ query foobar {
 
     const result = generator.build().getOperationsFile()
     expect(result).toMatchInlineSnapshot(`
-      "
-      const fragment_category = \`fragment category on Category{related{...relatedEntity}}\`;
-      const fragment_nodeArticle = \`fragment nodeArticle on NodeArticle{categories{...category}}\`;
-      const fragment_relatedEntity = \`fragment relatedEntity on Entity{id}\`;
-      const query_foobar = \`query foobar{getRandomEntity{...nodeArticle}}\`;
+      "const b = \`fragment category on Category{related{...relatedEntity}}\`;
+      const c = \`fragment nodeArticle on NodeArticle{categories{...category}}\`;
+      const a = \`fragment relatedEntity on Entity{id}\`;
 
       export const operations = {
         query: {
-          'foobar': query_foobar + fragment_relatedEntity + fragment_category + fragment_nodeArticle,
+          'foobar': \`query foobar{getRandomEntity{...nodeArticle}}\` + a + b + c,
         },
         mutation: {
           
@@ -411,8 +409,7 @@ query foobar {
         subscription: {
           
         }
-      }
-      "
+      }"
     `)
   })
 

@@ -1,5 +1,6 @@
 import { NO_FILE_PATH } from '../constants'
 import type { TypeContext } from '../types'
+import { stripIgnoredCharacters } from 'graphql'
 
 export function escapeStringForComment(input: string): string {
   return input.replace(/\*\//g, '*\\/')
@@ -60,4 +61,11 @@ export function makeExport(
     return `${makeComment(comment)}\n${code}`
   }
   return code
+}
+
+/**
+ * Transforms the given GraphQl source to a full JavaScript string.
+ */
+export function graphqlToString(str: string): string {
+  return '`' + stripIgnoredCharacters(str).replaceAll('`', '\\`') + '`'
 }

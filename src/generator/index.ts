@@ -56,6 +56,7 @@ import {
 } from '../errors'
 import {
   IR,
+  buildFragmentIRFields,
   hasTypenameField,
   isIdenticalIR,
   mergeFragmentSpread,
@@ -74,27 +75,6 @@ import { DependencyTracker } from '../classes/DependencyTracker'
 import type { DeepRequired } from '../helpers/type'
 import { NO_FILE_PATH, TYPENAME } from '../constants'
 import { formatCode } from '../helpers/format'
-
-function buildFragmentIRFields(ir: IRNode): Record<string, IRNode> {
-  // If it's an OBJECT node, just return its fields.
-  if (ir.kind === 'OBJECT') {
-    return ir.fields
-  }
-
-  // If it's a UNION, unify all OBJECT branches.
-  if (ir.kind === 'UNION') {
-    let merged: Record<string, IRNode> = {}
-    for (const branch of ir.types) {
-      if (branch.kind === 'OBJECT') {
-        merged = mergeObjectFields(merged, branch.fields)
-      }
-    }
-    return merged
-  }
-
-  // There are no fields.
-  return {}
-}
 
 export class Generator {
   /**
