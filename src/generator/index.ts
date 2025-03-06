@@ -927,11 +927,8 @@ export class Generator {
       return this.buildAbstractSelectionSet(type, selectionSet)
     }
 
-    // We should never actually end up here, as there is no selection set for enums, etc.
-    // However, just in case, let's return a scalar.
-    return IR.SCALAR({
-      tsType: 'any',
-    })
+    // We should never actually end up here, as there is no selection set for any other types.
+    throw new LogicError('Cannot build selection set for type: ' + type.name)
   }
 
   /**
@@ -964,7 +961,7 @@ export class Generator {
         // fragments and we are trying to generated the IR recursively.
         // As this is anyway not allowed in the spec, throw an error.
         throw new LogicError(
-          'Failed to generate IR for fragment: ' + fragmentName,
+          `Failed to generate IR for fragment: "${fragmentName}". There are likely circular dependencies between fragments.`,
         )
       }
       return item.map
