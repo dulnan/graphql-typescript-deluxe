@@ -334,7 +334,7 @@ export class Generator {
       source: result.source,
       graphqlName: result.graphqlName,
       identifier: result.identifier,
-      timestamp: performance.now(),
+      timestamp: Date.now(),
     })
     return result.typeName
   }
@@ -802,7 +802,7 @@ export class Generator {
       hasVariables,
       dependencies,
       filePath: this.dependencyTracker?.getCurrentFile() || NO_FILE_PATH,
-      timestamp: performance.now(),
+      timestamp: Date.now(),
     })
   }
 

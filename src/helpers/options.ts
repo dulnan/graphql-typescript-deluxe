@@ -10,6 +10,7 @@ import { makeComment } from './string'
 import type { DeepRequired } from './type'
 import { InvalidOptionError } from '../errors'
 import { pascalCase } from 'change-case'
+import type { GeneratedCode } from '../types'
 
 export function buildOperationTypeName(
   operationName: string,
@@ -94,7 +95,8 @@ export function buildOptions(
     debugMode: !!options?.debugMode,
     useCache: options?.useCache ?? false,
     dependencyTracking: options?.dependencyTracking ?? true,
-    additionalOutputCode: options?.additionalOutputCode ?? (() => []),
+    additionalOutputCode:
+      options?.additionalOutputCode ?? ((): GeneratedCode[] => []),
     buildOperationTypeName:
       options?.buildOperationTypeName ?? buildOperationTypeName,
     buildOperationVariablesTypeName:

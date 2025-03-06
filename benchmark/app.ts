@@ -6,6 +6,7 @@ import { type DocumentNode, parse, print } from 'graphql'
 import { Generator } from './../dist'
 import { format } from './../helpers/format.js'
 import { generateCodegen } from '../helpers/generateCodegen.js'
+import type { GeneratedCode } from '../src/types'
 
 const isProfiling = process.env.PROFILE === 'true'
 
@@ -13,10 +14,10 @@ const graphqlFolder = fileURLToPath(new URL('./graphql', import.meta.url))
 
 const outputFolder = fileURLToPath(new URL('./output', import.meta.url))
 
-const formatMemoryUsage = (data: number) =>
+const formatMemoryUsage = (data: number): string =>
   `${Math.round((data / 1024 / 1024) * 100) / 100} MB`
 
-function outputMemoryUsage(data: NodeJS.MemoryUsage) {
+function outputMemoryUsage(data: NodeJS.MemoryUsage): Record<string, string> {
   return {
     rss: `${formatMemoryUsage(data.rss)} -> Resident Set Size - total memory allocated for the process execution`,
     heapTotal: `${formatMemoryUsage(data.heapTotal)} -> total size of the allocated heap`,
@@ -31,7 +32,7 @@ function readFile(filePath: string): Promise<string> {
     .then((v) => v.toString())
 }
 
-export function mergeGraphQLFiles(directory: string) {
+export function mergeGraphQLFiles(directory: string): string {
   // Get an array of all files in the directory
   const files = readdirSync(directory)
 
@@ -131,7 +132,7 @@ async function main(): Promise<void> {
     debugMode: false,
     useCache: true,
     dependencyTracking: true,
-    additionalOutputCode: () => {
+    additionalOutputCode: (): GeneratedCode[] => {
       return [
         {
           type: 'type-helpers',
@@ -140,7 +141,7 @@ async function main(): Promise<void> {
         },
       ]
     },
-    buildScalarType: (type) => {
+    buildScalarType: (type): string | null => {
       if (type.name === 'MessengerMessage') {
         return 'MessengerMessage[]'
       }

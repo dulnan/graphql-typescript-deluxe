@@ -1,4 +1,4 @@
-import { NodeLocMissingError } from '../errors'
+import { NodeLocMissingError, LogicError } from '../errors'
 import { getCodeTypeLabel } from '../helpers/generator'
 import { notNullish } from '../helpers/type'
 import type {
@@ -8,6 +8,7 @@ import type {
 } from '../types/index'
 import { KEY_SEPARATOR } from './DependencyTracker'
 import { stripIgnoredCharacters } from 'graphql'
+import { MinifyVariableName } from './MinifyVariableName'
 
 const DEFAULT_SORTING: GeneratedCodeType[] = [
   'helpers',
@@ -25,7 +26,7 @@ const DEFAULT_SORTING: GeneratedCodeType[] = [
  * Escapes any "`" in the string so that the string can be used in "`${str}`".
  */
 function toValidString(str: string): string {
-  return stripIgnoredCharacters(str).replaceAll('`', '\\`')
+  return '`' + stripIgnoredCharacters(str).replaceAll('`', '\\`') + '`'
 }
 
 type MappedDependencyType = GeneratedCodeType | 'fragment-name'
@@ -171,34 +172,40 @@ export class GeneratorOutput {
    *
    * @returns The file contents.
    */
-  public getOperationsFile(): string {
-    const declarations: string[] = []
+  public getOperationsFile(options?: { minify?: boolean }): string {
+    const shouldMinify = options?.minify ?? true
+    const declarations: { name: string; value: string }[] = []
     const query: string[] = []
     const mutation: string[] = []
     const subscription: string[] = []
 
-    const addDeclaration = (name: string, code: string): void => {
-      declarations.push(`const ${name} = ` + '`' + toValidString(code) + '`;')
-    }
+    const variableMinifier = new MinifyVariableName(shouldMinify)
 
     for (const code of this.code) {
       if (code.type === 'fragment') {
         if (!notNullish(code.source)) {
           throw new NodeLocMissingError(code.graphqlName || code.name)
         }
-        addDeclaration('fragment_' + code.graphqlName, code.source)
+        if (!code.graphqlName) {
+          throw new LogicError('Missing graphqlName for fragment.')
+        }
+        const varName = variableMinifier.getVarName(code.graphqlName)
+        declarations.push({ name: varName, value: code.source })
       } else if (code.type === 'operation') {
         if (!notNullish(code.source)) {
           throw new NodeLocMissingError(code.graphqlName || code.name)
         }
-        const operationVarName = `${code.identifier!}_${code.graphqlName || code.name}`
-        addDeclaration(operationVarName, code.source)
 
         const fragmentDependencies = code.dependencies
           .filter((v) => v.type === 'fragment-name')
-          .map((v) => 'fragment_' + v.value)
+          .map((v) => variableMinifier.getVarName(v.value))
 
-        const parts = [operationVarName, ...fragmentDependencies].join(' + ')
+        let parts = [toValidString(code.source), ...fragmentDependencies].join(
+          ' + ',
+        )
+        if (parts.length > 80 && !shouldMinify) {
+          parts = '\n      ' + parts.replaceAll(' + ', ' +\n      ')
+        }
         const declaration = `'${code.graphqlName!}': ${parts},`
         if (code.identifier === 'query') {
           query.push(declaration)
@@ -210,8 +217,12 @@ export class GeneratorOutput {
       }
     }
 
-    return `
-${declarations.sort().join('\n')}
+    const sortedDeclarations = declarations
+      .sort((a, b) => a.value.localeCompare(b.value))
+      .map((v) => `const ${v.name} = ${toValidString(v.value)};`)
+      .join('\n')
+
+    return `${sortedDeclarations}
 
 export const operations = {
   query: {
@@ -223,7 +234,6 @@ export const operations = {
   subscription: {
     ${subscription.sort().join('\n    ')}
   }
-}
-`
+}`
   }
 }
