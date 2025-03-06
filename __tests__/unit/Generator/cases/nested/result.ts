@@ -41,7 +41,7 @@ export type Entity =
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -60,7 +60,7 @@ export type NodePageFragment = {
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -139,7 +139,7 @@ export type NestedQuery = {
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  */
 export type NestedQueryVariables = Exact<{ [key: string]: never }>

@@ -4,14 +4,14 @@ import { LogicError } from '../errors'
 export type IRNodeScalar = {
   kind: 'SCALAR'
   description?: string | null
-  nullable: boolean
+  nullable?: boolean
   tsType: string
 }
 
 export type IRNodeTypename = {
   kind: 'TYPENAME'
   description?: string | null
-  nullable: boolean
+  nullable?: boolean
 
   /**
    * The possible object types.
@@ -30,7 +30,7 @@ export type IRNodeTypename = {
 export type IRNodeObject = {
   kind: 'OBJECT'
   description?: string | null
-  nullable: boolean
+  nullable?: boolean
   /**
    * The GraphQL type name (like "User")
    */
@@ -41,7 +41,7 @@ export type IRNodeObject = {
 export type IRNodeArray = {
   kind: 'ARRAY'
   description?: string | null
-  nullable: boolean
+  nullable?: boolean
   nullableElement: boolean
   ofType: IRNode
 }
@@ -49,21 +49,21 @@ export type IRNodeArray = {
 export type IRNodeUnion = {
   kind: 'UNION'
   description?: string | null
-  nullable: boolean
+  nullable?: boolean
   types: IRNode[]
 }
 
 export type IRNodeIntersection = {
   kind: 'INTERSECTION'
   description?: string | null
-  nullable: boolean
+  nullable?: boolean
   types: IRNode[]
 }
 
 export type IRNodeFragmentSpread = {
   kind: 'FRAGMENT_SPREAD'
   description?: string | null
-  nullable: boolean
+  nullable?: boolean
 
   /**
    * The name of the fragment definition node.
@@ -131,7 +131,6 @@ export const IR = {
     return {
       kind: 'TYPENAME',
       types: Array.isArray(types) ? types : [types],
-      nullable: false,
       excludeType,
     }
   },
@@ -261,7 +260,6 @@ function mergeFragmentSpreadNodes(
   // else union
   return IR.UNION({
     types: [oldIR, newIR],
-    nullable: true,
     description: newIR.description || oldIR.description,
   })
 }
@@ -607,14 +605,6 @@ export function postProcessIR(ir: IRNode): IRNode {
 
   // @ts-expect-error Should never end up here.
   throw new LogicError('Unknown IR type: ' + ir.kind)
-}
-
-export function markNonNull<T extends IRNode>(ir: T): T {
-  const clone: T = {
-    ...ir,
-    nullable: false,
-  }
-  return clone
 }
 
 /**

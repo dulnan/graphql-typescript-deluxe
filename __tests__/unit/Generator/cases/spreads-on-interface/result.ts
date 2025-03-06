@@ -9,7 +9,7 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -27,7 +27,7 @@ export type AllBlocksFragment =
   | object
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -45,7 +45,7 @@ export type BlockContainerFragment = {
 }
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -59,7 +59,7 @@ export type BlockImageFragment = {
 }
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -73,7 +73,7 @@ export type BlockItemFragment = {
 }
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -87,7 +87,7 @@ export type BlockTextFragment = {
 }
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -113,7 +113,7 @@ export type NodePageFragment = {
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -133,7 +133,7 @@ export type SpreadsOnInterfaceQuery = {
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  */
 export type SpreadsOnInterfaceQueryVariables = Exact<{ [key: string]: never }>

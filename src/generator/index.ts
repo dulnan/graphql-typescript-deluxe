@@ -58,7 +58,6 @@ import {
   IR,
   hasTypenameField,
   isIdenticalIR,
-  markNonNull,
   mergeFragmentSpread,
   mergeIR,
   mergeObjectFields,
@@ -74,6 +73,7 @@ import { GeneratorOutput } from '../classes/GeneratorOutput'
 import { DependencyTracker } from '../classes/DependencyTracker'
 import type { DeepRequired } from '../helpers/type'
 import { NO_FILE_PATH, TYPENAME } from '../constants'
+import { formatCode } from '../helpers/format'
 
 function buildFragmentIRFields(ir: IRNode): Record<string, IRNode> {
   // If it's an OBJECT node, just return its fields.
@@ -272,6 +272,23 @@ export class Generator {
   }
 
   /**
+   * Apply code formatting.
+   *
+   * @param code - The code to format.
+   *
+   * @returns The formatted code.
+   */
+  private formatCode(code: string): string {
+    if (this.options.output.formatCode === true) {
+      return formatCode(code)
+    } else if (typeof this.options.output.formatCode === 'function') {
+      return this.options.output.formatCode(code)
+    }
+
+    return code
+  }
+
+  /**
    * Generates the code only once.
    *
    * @param generatedTypeType - The code type.
@@ -311,7 +328,7 @@ export class Generator {
     this.generatedCode.set(key, {
       type: generatedTypeType,
       name: result.typeName,
-      code,
+      code: this.formatCode(code),
       filePath: this.dependencyTracker?.getCurrentFile() || '',
       dependencies,
       source: result.source,
@@ -573,7 +590,6 @@ export class Generator {
 
       const obj = IR.OBJECT({
         fields,
-        nullable: false,
         graphQLTypeName: '',
         description: type.description,
       })
@@ -601,11 +617,6 @@ export class Generator {
    * @returns The name of the TS type.
    */
   private generateFragmentType(fragmentName: string): string {
-    const item = this.fragments.get(fragmentName)
-    if (!item) {
-      throw new FragmentNotFoundError(fragmentName)
-    }
-
     return this.generateCodeOnce('fragment', fragmentName, () => {
       const item = this.fragments.get(fragmentName)
 
@@ -738,7 +749,6 @@ export class Generator {
         rootType.name,
       )
       const merged = mergeSameFieldSelections(inlined)
-
       const source = getAstSource(operation)
 
       return {
@@ -819,7 +829,6 @@ export class Generator {
           })
           return acc
         }, {}),
-        nullable: false,
       }),
     )
   }
@@ -896,6 +905,13 @@ export class Generator {
   // AST/IR
   // ===========================================================================
 
+  /**
+   * Create an array from the given type string.
+   *
+   * @param type - The string containing a valid TS type.
+   *
+   * @returns The type as an array.
+   */
   private toArrayShape(type: string): string {
     const shape = this.options.output.arrayShape
     // We can directly pass in the type because the shape uses < and >.
@@ -935,7 +951,6 @@ export class Generator {
     // However, just in case, let's return a scalar.
     return IR.SCALAR({
       tsType: 'any',
-      nullable: false,
     })
   }
 
@@ -1028,7 +1043,6 @@ export class Generator {
               fragmentTypeName: fragTypeName,
               parentType: objectType.name,
               fragmentTypeCondition: condName,
-              nullable: false,
             }),
           )
         }
@@ -1043,7 +1057,6 @@ export class Generator {
     const result = IR.OBJECT({
       graphQLTypeName: objectType.name,
       fields,
-      nullable: true,
     })
 
     return result
@@ -1055,7 +1068,6 @@ export class Generator {
   private emptyObjectScalar(): IRNodeScalar {
     return IR.SCALAR({
       tsType: this.options.output.emptyObject,
-      nullable: false,
     })
   }
 
@@ -1184,7 +1196,6 @@ export class Generator {
             tsType: this.generateFragmentType(
               fragmentsForAbstract[0]!.name.value,
             ),
-            nullable: false,
           })
         }
       }
@@ -1204,7 +1215,6 @@ export class Generator {
           if (fragments.length === 1) {
             return IR.SCALAR({
               tsType: this.generateFragmentType(fragments[0]!.name.value),
-              nullable: false,
             })
           }
         } else {
@@ -1221,7 +1231,6 @@ export class Generator {
               const fragment = fragmentsByConcreteType[typeName]![0]!
               return IR.SCALAR({
                 tsType: this.generateFragmentType(fragment.name.value),
-                nullable: false,
               })
             })
             const totalTargets = concreteFragmentTypes.length
@@ -1233,7 +1242,6 @@ export class Generator {
             }
             return IR.UNION({
               types: unionTypes,
-              nullable: false,
             })
           }
         }
@@ -1317,7 +1325,6 @@ export class Generator {
               fragmentTypeName: fragTypeName,
               parentType: abstractType.name,
               fragmentTypeCondition: fragment.typeCondition.name.value,
-              nullable: false,
             }),
           )
           objectTypeMap.set(typeConditionType.name, existing)
@@ -1353,7 +1360,8 @@ export class Generator {
     const typesWithoutFragments = possibleTypes.filter(
       (v) => !typesWithFragments.has(v),
     )
-    const remainingCount = possibleTypes.length - typesWithFragments.size
+    const excludedTypeCount = typesWithFragments.size
+    const remainingCount = possibleTypes.length - excludedTypeCount
     const hasTypename = hasTypenameField(baseFields)
     let unionIrNode: IRNodeTypename | null = null
 
@@ -1381,7 +1389,11 @@ export class Generator {
           // Else we would be creating an exclude argument that is longer than the actual
           // remaining types.
           // Also cache the created node so we don't call it for every type iteration.
-          if (unionIrNode === null && remainingCount > 3) {
+          if (
+            unionIrNode === null &&
+            remainingCount > excludedTypeCount &&
+            remainingCount > 2
+          ) {
             // This is a fallback type (no inline fragments), and some types have fragments.
             // We can use Exclude<Interface, TypesWithFragments> to
             const excludedTypes = Array.from(typesWithFragments).map((name) =>
@@ -1405,7 +1417,6 @@ export class Generator {
         IR.OBJECT({
           graphQLTypeName: objectTypeName,
           fields: mergedFields,
-          nullable: true,
         }),
       )
     }
@@ -1415,7 +1426,6 @@ export class Generator {
       return IR.OBJECT({
         graphQLTypeName: abstractType.name,
         fields: {},
-        nullable: true,
       })
     } else if (branches.length === 1) {
       // Just one branch: We can return it directly.
@@ -1424,7 +1434,6 @@ export class Generator {
 
     return IR.UNION({
       types: branches,
-      nullable: false,
     })
   }
 
@@ -1602,17 +1611,10 @@ export class Generator {
     fieldNode: FieldNode,
   ): IRNode {
     const ir = this.buildOutputTypeIR(field.type, fieldNode.selectionSet)
-
-    const nullable = !isNonNullType(field.type)
-
-    // Always create a shallow clone, since the cache key we use excludes
-    // directives and description.
-    return {
-      ...ir,
-      // Either already nullable or nullable due to directive.
-      nullable: hasConditionalDirective(fieldNode) || ir.nullable || nullable,
-      description: field.description,
-    }
+    ir.nullable =
+      hasConditionalDirective(fieldNode) || !isNonNullType(field.type)
+    ir.description = field.description
+    return ir
   }
 
   /**
@@ -1630,13 +1632,12 @@ export class Generator {
     this.incrementDebugCount('buildOutputTypeIR')
 
     if (isNonNullType(type)) {
-      return markNonNull(this.buildOutputTypeIR(type.ofType, selectionSet))
+      return this.buildOutputTypeIR(type.ofType, selectionSet)
     } else if (isListType(type)) {
       const innerType = type.ofType
       const innerIR = this.buildOutputTypeIR(innerType, selectionSet)
       return IR.ARRAY({
         ofType: innerIR,
-        nullable: true,
         nullableElement:
           !isNonNullType(innerType) &&
           this.options.output.nullableArrayElements,
@@ -1646,7 +1647,6 @@ export class Generator {
         return IR.OBJECT({
           graphQLTypeName: type.name,
           fields: {},
-          nullable: true,
         })
       }
       return this.buildSelectionSet(type, selectionSet)
@@ -1655,22 +1655,19 @@ export class Generator {
         return IR.OBJECT({
           graphQLTypeName: type.name,
           fields: {},
-          nullable: true,
         })
       }
       return this.buildSelectionSet(type, selectionSet)
     } else if (isEnumType(type)) {
-      return IR.SCALAR({ tsType: this.getOrCreateEnum(type), nullable: true })
+      return IR.SCALAR({ tsType: this.getOrCreateEnum(type) })
     } else if (isInputObjectType(type)) {
       return IR.SCALAR({
         tsType: this.getOrCreateInputType(type),
-        nullable: false,
       })
     }
 
     return IR.SCALAR({
       tsType: this.options.buildScalarType(type) || 'any',
-      nullable: true,
     })
   }
 
@@ -1756,11 +1753,17 @@ export class Generator {
 
       case 'UNION': {
         const parts = ir.types.map((t) => this.IRToCode(t)).sort()
+        if (parts.length === 1) {
+          return parts[0]!
+        }
         return `(${parts.join(' | ')})`
       }
 
       case 'INTERSECTION': {
         const parts = ir.types.map((t) => this.IRToCode(t)).sort()
+        if (parts.length === 1) {
+          return parts[0]!
+        }
         return `(${parts.join(' & ')})`
       }
 

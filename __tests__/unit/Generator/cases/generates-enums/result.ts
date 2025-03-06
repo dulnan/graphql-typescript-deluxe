@@ -31,7 +31,7 @@ export type EntityType = (typeof EntityType)[keyof typeof EntityType]
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql

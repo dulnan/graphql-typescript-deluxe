@@ -41,7 +41,7 @@ export type ContactMethod = (typeof ContactMethod)[keyof typeof ContactMethod]
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -60,7 +60,7 @@ export type InputTypesMutation = {
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  */
 export type InputTypesMutationVariables = Exact<{

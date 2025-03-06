@@ -44,7 +44,7 @@ export type Entity =
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link fragment.user.graphql}
+ * @see {@link file://fragment.user.graphql}
  *
  * @example
  * ```graphql
@@ -62,7 +62,7 @@ export type UserFragment = {
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link query.foobar.graphql}
+ * @see {@link file://query.foobar.graphql}
  *
  * @example
  * ```graphql
@@ -114,7 +114,7 @@ export type FoobarQuery = {
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link query.foobar.graphql}
+ * @see {@link file://query.foobar.graphql}
  *
  */
 export type FoobarQueryVariables = Exact<{ [key: string]: never }>

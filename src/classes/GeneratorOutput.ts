@@ -21,6 +21,9 @@ const DEFAULT_SORTING: GeneratedCodeType[] = [
   'input',
 ]
 
+/**
+ * Escapes any "`" in the string so that the string can be used in "`${str}`".
+ */
 function toValidString(str: string): string {
   return stripIgnoredCharacters(str).replaceAll('`', '\\`')
 }
@@ -163,7 +166,8 @@ export class GeneratorOutput {
    * every operation type, containing all operations keyed by operation name.
    *
    * If the provided input document nodes were parsed with `noLocation: true` a
-   * NodeLocMissingError will be thrown.
+   * NodeLocMissingError will be thrown, as the source code is not available to
+   * generate the operations file.
    *
    * @returns The file contents.
    */

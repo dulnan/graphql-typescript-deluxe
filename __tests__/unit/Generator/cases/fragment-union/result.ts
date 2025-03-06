@@ -41,7 +41,7 @@ export type Entity =
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -56,7 +56,7 @@ export type MediaFragment = {
 }
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -75,7 +75,7 @@ export type NodeFragment = {
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -122,7 +122,7 @@ export type FragmentUnionQuery = {
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  */
 export type FragmentUnionQueryVariables = Exact<{ [key: string]: never }>

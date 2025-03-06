@@ -41,7 +41,7 @@ export type Entity =
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -65,7 +65,7 @@ export type QueryOneFragment = {
 }
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -97,7 +97,7 @@ export type QueryTwoFragment = {
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -139,7 +139,7 @@ export type QueryFragmentsQuery = {
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  */
 export type QueryFragmentsQueryVariables = Exact<{ [key: string]: never }>

@@ -41,7 +41,7 @@ export type Entity =
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -84,7 +84,7 @@ export type InlineFieldsQuery = {
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  */
 export type InlineFieldsQueryVariables = Exact<{ [key: string]: never }>

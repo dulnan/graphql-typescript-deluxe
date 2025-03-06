@@ -9,7 +9,7 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -39,7 +39,7 @@ export type NullabilityFragment = {
 }
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -82,7 +82,7 @@ export type NullabilityQueryFragment = {
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -125,7 +125,7 @@ export type NullabilityQuery = {
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  */
 export type NullabilityQueryVariables = Exact<{ [key: string]: never }>

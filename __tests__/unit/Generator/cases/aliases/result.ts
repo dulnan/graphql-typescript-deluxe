@@ -9,7 +9,7 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -28,7 +28,7 @@ export type NodePageFragment = {
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -63,7 +63,7 @@ export type InlineFieldsQuery = {
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  */
 export type InlineFieldsQueryVariables = Exact<{ [key: string]: never }>

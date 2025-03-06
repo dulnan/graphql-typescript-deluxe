@@ -55,7 +55,8 @@ export type GeneratorOptionsOutput = {
    * If false, both `[String]` and `[String!]` arrays produce `Array<string>`.
    *
    * Note that the array will contain `null` values unless explicitly removed
-   * by the GraphQL client. So only set this to `false` if this is the case.
+   * by the GraphQL client. So only set this to `false` if this is the case for
+   * you, or else your types won't match the actual data.
    *
    * @default true
    */
@@ -72,7 +73,7 @@ export type GeneratorOptionsOutput = {
   nonOptionalTypename?: boolean
 
   /**
-   * When enabled, object shapes that contain __typename are merged.
+   * When enabled, object shapes that only differ by __typename are merged.
    *
    * This would convert a type like this:
    * ```
@@ -91,8 +92,6 @@ export type GeneratorOptionsOutput = {
    * ```
    *
    * This is especially useful if you have interfaces with lots of implementing types.
-   * Note that this will create a string literal type for every GraphQL type and a
-   * union type for every GraphQL interface and union.
    *
    * @default true
    */
@@ -134,6 +133,21 @@ export type GeneratorOptionsOutput = {
    * @default true
    */
   sortProperties?: boolean
+
+  /**
+   * Apply formatting for the generated TypeScript code.
+   *
+   * If true, basic formatting (mainly indentation) is applied using TypeScript's
+   * compiler. Note that this will have an impact on performance.
+   *
+   * You can also provide a method that receives the code and should return
+   * the formatted code. The method will be called for every generated type
+   * separately and will be cached. When using incremental updates only the
+   * types that change will be re-formatted.
+   *
+   * @default false
+   */
+  formatCode?: boolean | ((code: string) => string)
 }
 
 export type GeneratorOptions = {
@@ -213,7 +227,8 @@ export type GeneratorOptions = {
    * document and their generated types.
    *
    * This allows incremental generation of types, for example when calling the
-   * `update()` method.
+   * `update()` method. It also allows you to determine all fragment spreads
+   * for a generated type.
    *
    * If you don't plan to use incremental generation you can disable this
    * feature.
@@ -295,7 +310,7 @@ export type GeneratorOptions = {
    *
    * @param type - The input object type from the schema.
    *
-   * @example Defaults to PascalCase of the type.
+   * @example Defaults to PascalCase of the type, e.g.:
    * ```graphqls
    * input ShippingAddress {
    *   street: String!

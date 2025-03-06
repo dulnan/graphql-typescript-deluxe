@@ -41,7 +41,7 @@ export type Entity =
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -74,7 +74,7 @@ export type NodeArticleOneFragment = {
 }
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -114,7 +114,7 @@ export type NodeArticleTwoFragment = {
 }
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -133,7 +133,7 @@ export type RelatedFragment = {
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -183,7 +183,7 @@ export type FieldMergingNestedComplexQuery = {
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  */
 export type FieldMergingNestedComplexQueryVariables = Exact<{

@@ -25,7 +25,7 @@ export type Url = DefaultEntityUrl | DefaultInternalUrl | DefaultUrl
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -58,7 +58,7 @@ export type RouteFragment = {
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -99,7 +99,7 @@ export type FieldMergingTypenameQuery = {
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  */
 export type FieldMergingTypenameQueryVariables = Exact<{ [key: string]: never }>

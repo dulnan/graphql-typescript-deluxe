@@ -12,21 +12,6 @@ export function makeComment(input: string): string {
   return `/** ${escapeStringForComment(input)} */`
 }
 
-/**
- * Converts a string to PascalCase.
- *
- * @see https://stackoverflow.com/a/53952925
- */
-export function toPascalCase(str: string): string {
-  return str
-    .replace(/([a-z])([A-Z])/g, '$1 $2') // Splits camelCase words into separate words
-    .replace(/([a-zA-Z])(\d)|(\d)([a-zA-Z])/g, '$1 $2$3 $4') // Add spaces between letters and numbers
-    .replace(/[-_]+|[^\p{L}\p{N}]/gu, ' ') // Replaces dashes, underscores, and special characters with spaces
-    .toLowerCase() // Converts the entire string to lowercase
-    .replace(/(?:^|\s)(\p{L})/gu, (_, letter) => letter.toUpperCase()) // Capitalizes first letter of each word
-    .replace(/\s+/g, '') // Removes all spaces
-}
-
 export function toTSComment(lines: string[]): string {
   if (lines.length === 0) {
     return '/**\n */'
@@ -45,7 +30,7 @@ export function makeTypeDoc(context: TypeContext): string {
     lines.push(context.type.description)
   }
   if (filePath && filePath !== NO_FILE_PATH) {
-    lines.push(`@see {@link ${filePath}}`, '')
+    lines.push(`@see {@link file://${filePath}}`, '')
   }
   if (context.definition?.loc) {
     const loc = context.definition.loc

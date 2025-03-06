@@ -496,10 +496,10 @@ query foobar {
         /** The label. */
         label: string;
         /** Related entities. */
-        related?: ({
+        related?: {
         /** The ID. */
         id: string;
-      })[];
+      }[];
         /** The URL for the category overview page. */
         url?: string;
       }[];
@@ -564,10 +564,10 @@ query foobar {
         /** The label. */
         label: string;
         /** Related entities. */
-        related?: ({
+        related?: {
         /** The ID. */
         id: string;
-      })[];
+      }[];
         /** The URL for the category overview page. */
         urlRenamed?: string;
       }[];

@@ -9,7 +9,7 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -35,7 +35,7 @@ export type NodeArticleOneFragment = {
 }
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -65,7 +65,7 @@ export type NodeArticleTwoFragment = {
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -87,7 +87,7 @@ export type FieldMergingNestedQuery = {
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  */
 export type FieldMergingNestedQueryVariables = Exact<{ [key: string]: never }>

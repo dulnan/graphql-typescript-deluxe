@@ -24,7 +24,7 @@ export type SearchResult = MediaVideo | NodeArticle
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  * @example
  * ```graphql
@@ -70,7 +70,7 @@ export type UnionTypesQuery = {
 // --------------------------------------------------------------------------------
 
 /**
- * @see {@link ./test.graphql}
+ * @see {@link file://./test.graphql}
  *
  */
 export type UnionTypesQueryVariables = Exact<{ [key: string]: never }>

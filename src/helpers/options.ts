@@ -6,15 +6,16 @@ import type {
   GraphQLNamedType,
 } from 'graphql'
 import type { GeneratorOptions } from '../types/options'
-import { makeComment, toPascalCase } from './string'
+import { makeComment } from './string'
 import type { DeepRequired } from './type'
 import { InvalidOptionError } from '../errors'
+import { pascalCase } from 'change-case'
 
 export function buildOperationTypeName(
   operationName: string,
   rootType: GraphQLNamedType,
 ): string {
-  return toPascalCase(operationName) + rootType.name
+  return pascalCase(operationName) + rootType.name
 }
 
 export function buildOperationVariablesTypeName(
@@ -25,15 +26,15 @@ export function buildOperationVariablesTypeName(
 }
 
 export function buildFragmentTypeName(node: FragmentDefinitionNode): string {
-  return toPascalCase(node.name.value) + 'Fragment'
+  return pascalCase(node.name.value) + 'Fragment'
 }
 
 export function buildInputTypeName(type: GraphQLInputObjectType): string {
-  return toPascalCase(type.name)
+  return pascalCase(type.name)
 }
 
 export function buildEnumTypeName(type: GraphQLEnumType): string {
-  return toPascalCase(type.name)
+  return pascalCase(type.name)
 }
 
 export function buildScalarType(
@@ -126,6 +127,7 @@ export function buildOptions(
       mergeTypenames: options?.output?.mergeTypenames ?? true,
       typeComment: options?.output?.typeComment ?? true,
       sortProperties: options?.output?.sortProperties ?? true,
+      formatCode: options?.output?.formatCode ?? false,
     },
   }
 }
