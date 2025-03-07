@@ -71,14 +71,19 @@ import {
   type IRNodeScalar,
   type IRNodeTypename,
 } from '../helpers/ir'
-import { getRootType } from '../helpers/schema'
 import { GeneratorOutput } from '../classes/GeneratorOutput'
 import { DependencyTracker } from '../classes/DependencyTracker'
 import type { DeepRequired } from '../helpers/type'
 import { NO_FILE_PATH, TYPENAME } from '../constants'
 import { formatCode } from '../helpers/format'
+import { SchemaProvider } from './SchemaProvider'
 
 export class Generator {
+  /**
+   * The SchemaProvider instance.
+   */
+  private readonly schema: SchemaProvider
+
   /**
    * The mapped options.
    */
@@ -116,16 +121,6 @@ export class Generator {
   > = new Map()
 
   /**
-   * Pre-computed ABSTRACT_CONCRETE implemenations.
-   */
-  private schemaImplementation: Set<string> = new Set()
-
-  /**
-   * Pre-computed possible types for abstract types.
-   */
-  private schemaPossibleTypes: Map<string, string[]> = new Map()
-
-  /**
    * The IRs of all fragments.
    */
   private fragmentIRs: Map<
@@ -151,15 +146,12 @@ export class Generator {
    *
    * @throws {@link InvalidOptionError} if the provided options are not valid.
    */
-  constructor(
-    private schema: GraphQLSchema,
-    options?: GeneratorOptions,
-  ) {
+  constructor(schema: GraphQLSchema, options?: GeneratorOptions) {
     this.options = buildOptions(options) as DeepRequired<GeneratorOptions>
     if (this.options.dependencyTracking) {
       this.dependencyTracker = new DependencyTracker()
     }
-    this.buildSchemaCache()
+    this.schema = new SchemaProvider(schema)
   }
 
   /**
@@ -377,26 +369,6 @@ export class Generator {
   // ===========================================================================
 
   /**
-   * Build the schema cache for quick look up.
-   */
-  private buildSchemaCache(): void {
-    const typeMap = this.schema.getTypeMap()
-
-    for (const type of Object.values(typeMap)) {
-      if (isAbstractType(type)) {
-        const possibleTypes = this.schema.getPossibleTypes(type)
-        for (const objectType of possibleTypes) {
-          this.schemaImplementation.add(
-            `implements:${type.name}---${objectType.name}`,
-          )
-        }
-        const names = possibleTypes.map((v) => v.name)
-        this.schemaPossibleTypes.set(type.name, names)
-      }
-    }
-  }
-
-  /**
    * Find the fragment node for the given name.
    *
    * @param name - The name of the fragment.
@@ -414,31 +386,6 @@ export class Generator {
     this.generateFragmentType(name)
 
     return item.node
-  }
-
-  /**
-   * Checks whether the given object type implements the given abstract type name.
-   *
-   * @param type - The name of the object type.
-   * @param abstractName - The name of the abstract type.
-   *
-   * @returns True if the type implements the abstract type.
-   */
-  private objectImplements(objectName: string, abstractName: string): boolean {
-    return this.schemaImplementation.has(
-      `implements:${abstractName}---${objectName}`,
-    )
-  }
-
-  /**
-   * Get the names of possible object types for the abstract type.
-   *
-   * @param abstractName - The name of the abstract type.
-   *
-   * @returns All object types that implement / are part of the union.
-   */
-  private getPossibleObjectTypeNames(abstractName: string): string[] {
-    return this.schemaPossibleTypes.get(abstractName) || []
   }
 
   /**
@@ -540,9 +487,6 @@ export class Generator {
           output = this.toArrayShape(element)
         } else if (type.kind === Kind.NAMED_TYPE) {
           const namedType = this.schema.getType(type.name.value)
-          if (!namedType) {
-            throw new TypeNotFoundError(type.name.value, this.getErrorContext())
-          }
           output = this.IRToCode(this.buildOutputTypeIR(namedType))
         }
 
@@ -626,9 +570,6 @@ export class Generator {
 
       const graphqlTypeName = item.node.typeCondition.name.value
       const type = this.schema.getType(graphqlTypeName)
-      if (!type) {
-        throw new TypeNotFoundError(typeName, this.getErrorContext())
-      }
 
       this.dependencyTracker?.start()
       this.dependencyTracker?.addFragment(fragmentName)
@@ -722,7 +663,7 @@ export class Generator {
       return
     }
 
-    const rootType = getRootType(this.schema, operation)
+    const rootType = this.schema.getRootType(operation)
     if (!rootType) {
       throw new MissingRootTypeError(
         operation.name.value,
@@ -853,10 +794,6 @@ export class Generator {
     const name = typeof arg === 'string' ? arg : arg.name
     return this.generateCodeOnce('typename-object', name, () => {
       const type = typeof arg === 'string' ? this.schema.getType(name) : arg
-
-      if (!type) {
-        throw new TypeNotFoundError(name, this.getErrorContext())
-      }
 
       if (!isObjectType(type)) {
         throw new LogicError(
@@ -1065,7 +1002,7 @@ export class Generator {
         const condName = fragDef.typeCondition.name.value
         if (
           condName === objectType.name ||
-          this.objectImplements(objectType.name, condName)
+          this.schema.objectImplements(objectType.name, condName)
         ) {
           const fragTypeName = this.options.buildFragmentTypeName(fragDef)
           mergeFragmentSpread(
@@ -1087,9 +1024,6 @@ export class Generator {
           )
         }
         const spreadType = this.schema.getType(typeConditionName)
-        if (!spreadType) {
-          throw new TypeNotFoundError(typeConditionName, this.getErrorContext())
-        }
         const ir = this.buildSelectionSet(spreadType, sel.selectionSet)
         if (ir.kind === 'OBJECT') {
           mergeObjectFields(fields, ir.fields)
@@ -1168,7 +1102,9 @@ export class Generator {
       : {}
 
     // Possible types that implement the interface/union.
-    const possibleTypes = this.getPossibleObjectTypeNames(abstractType.name)
+    const possibleTypes = this.schema.getPossibleObjectTypeNames(
+      abstractType.name,
+    )
     const totalPossibleTypes = possibleTypes.length
 
     // Fields requested on interface/union level.
@@ -1357,9 +1293,6 @@ export class Generator {
         }
 
         const spreadType = this.schema.getType(typeConditionName)
-        if (!spreadType) {
-          throw new TypeNotFoundError(typeConditionName, this.getErrorContext())
-        }
 
         // Build the IR node for the selection for this object type.
         const ir = this.buildSelectionSet(spreadType, sel.selectionSet)
@@ -1368,7 +1301,7 @@ export class Generator {
         for (const possibleTypeName of possibleTypes) {
           if (
             possibleTypeName === typeConditionName ||
-            this.objectImplements(possibleTypeName, typeConditionName)
+            this.schema.objectImplements(possibleTypeName, typeConditionName)
           ) {
             const type = this.schema.getType(possibleTypeName)!
             if (ir.kind === 'OBJECT') {
@@ -1399,9 +1332,6 @@ export class Generator {
 
         const typeConditionName = fragment.typeCondition.name.value
         const typeConditionType = this.schema.getType(typeConditionName)
-        if (!typeConditionType) {
-          throw new TypeNotFoundError(typeConditionName, this.getErrorContext())
-        }
 
         if (isObjectType(typeConditionType)) {
           const fragTypeName = this.options.buildFragmentTypeName(fragment)
@@ -1907,7 +1837,7 @@ export class Generator {
    * @returns Generator
    */
   public updateSchema(schema: GraphQLSchema): Generator {
-    this.schema = schema
+    this.schema.update(schema)
     return this.reset()
   }
 
