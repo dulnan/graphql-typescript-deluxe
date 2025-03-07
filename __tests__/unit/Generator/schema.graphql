@@ -323,6 +323,11 @@ input SubmitContactForm {
   address: Address!
 }
 
+type FormSubmission {
+  id: String!
+  timestamp: Int!
+}
+
 type MenuLink {
   label: String!
   url: String!
@@ -415,4 +420,8 @@ type Mutation {
   Submit a form.
   """
   submitForm(input: SubmitContactForm!, dryRun: Boolean): Boolean!
+}
+
+type Subscription {
+  formSubmitted: FormSubmission
 }

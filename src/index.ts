@@ -12,5 +12,7 @@ export {
   FieldNotFoundError,
   MissingRootTypeError,
   LogicError,
-  DuplicateInputDocumentError as DuplicateInputDocument,
+  DuplicateInputDocumentError,
+  NodeLocMissingError,
+  InvalidOptionError,
 } from './errors'

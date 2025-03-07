@@ -125,6 +125,13 @@ export type GeneratorOptionsOutput = {
   typeComment?: boolean
 
   /**
+   * Change how the file path of a document is displayed to the type comment.
+   *
+   * The method receives the filePath as an argument and should return a string.
+   */
+  buildTypeDocFilePath?: (filePath: string) => string
+
+  /**
    * If enabled, all object properties are sorted alphabetically.
    *
    * If disabled, the object properties are sorted in the same order as in the

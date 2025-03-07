@@ -1,8 +1,15 @@
+export type ErrorContext = {
+  filePath?: string
+}
+
 /**
  * Thrown when an abstract or object type is referenced that does not exist.
  */
 export class TypeNotFoundError extends Error {
-  constructor(type: string) {
+  constructor(
+    type: string,
+    public context?: ErrorContext,
+  ) {
     super('Type not found: ' + type)
     this.name = 'TypeNotFoundError'
     Object.setPrototypeOf(this, TypeNotFoundError.prototype)
@@ -13,7 +20,10 @@ export class TypeNotFoundError extends Error {
  * Thrown when a fragment is referenced that does not exist.
  */
 export class FragmentNotFoundError extends Error {
-  constructor(name: string) {
+  constructor(
+    name: string,
+    public context?: ErrorContext,
+  ) {
     super('Fragment not found: ' + name)
     this.name = 'FragmentNotFoundError'
     Object.setPrototypeOf(this, FragmentNotFoundError.prototype)
@@ -24,8 +34,12 @@ export class FragmentNotFoundError extends Error {
  * Thrown when a field does not exist.
  */
 export class FieldNotFoundError extends Error {
-  constructor(field: string, type: string) {
-    super(`Field "${field} not found on type "${type}"`)
+  constructor(
+    public fieldName: string,
+    public typeName: string,
+    public context?: ErrorContext,
+  ) {
+    super(`Field "${fieldName} not found on type "${typeName}"`)
     this.name = 'FieldNotFoundError'
     Object.setPrototypeOf(this, FieldNotFoundError.prototype)
   }
@@ -35,7 +49,10 @@ export class FieldNotFoundError extends Error {
  * Thrown when an unexpected root type is encountered.
  */
 export class MissingRootTypeError extends Error {
-  constructor(type: string) {
+  constructor(
+    type: string,
+    public context?: ErrorContext,
+  ) {
     super('Missing root type: ' + type)
     this.name = 'MissingRootTypeError'
     Object.setPrototypeOf(this, MissingRootTypeError.prototype)
@@ -47,7 +64,10 @@ export class MissingRootTypeError extends Error {
  * Likely a bug in the generator.
  */
 export class LogicError extends Error {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    public context?: ErrorContext,
+  ) {
     super(message)
     this.name = 'LogicError'
     Object.setPrototypeOf(this, LogicError.prototype)

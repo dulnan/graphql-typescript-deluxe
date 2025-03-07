@@ -53,6 +53,7 @@ import {
   LogicError,
   MissingRootTypeError,
   TypeNotFoundError,
+  type ErrorContext,
 } from '../errors'
 import {
   IR,
@@ -174,6 +175,16 @@ export class Generator {
     const generator = new Generator(schema, options)
     generator.add(docs)
     return generator.build().getEverything()
+  }
+
+  private getErrorContext(): ErrorContext {
+    const filePath = this.dependencyTracker?.getCurrentFile()
+    if (!filePath) {
+      return {}
+    }
+    return {
+      filePath,
+    }
   }
 
   // ===========================================================================
@@ -302,7 +313,13 @@ export class Generator {
 
     let comment = ''
     if (result.context && this.options.output.typeComment) {
-      comment = makeTypeDoc(result.context) + '\n'
+      comment =
+        makeTypeDoc({
+          ...result.context,
+          filePath: result.context.filePath
+            ? this.options.output.buildTypeDocFilePath(result.context.filePath)
+            : undefined,
+        }) + '\n'
     }
     const code = `${comment}${result.code}`
     this.generatedCode.set(key, {
@@ -399,7 +416,7 @@ export class Generator {
   private getFragmentNode(name: string): FragmentDefinitionNode {
     const item = this.fragments.get(name)
     if (!item) {
-      throw new FragmentNotFoundError(name)
+      throw new FragmentNotFoundError(name, this.getErrorContext())
     }
 
     this.generateFragmentType(name)
@@ -528,7 +545,7 @@ export class Generator {
         } else if (type.kind === Kind.NAMED_TYPE) {
           const namedType = this.schema.getType(type.name.value)
           if (!namedType) {
-            throw new TypeNotFoundError(type.name.value)
+            throw new TypeNotFoundError(type.name.value, this.getErrorContext())
           }
           output = this.IRToCode(this.buildOutputTypeIR(namedType))
         }
@@ -601,7 +618,7 @@ export class Generator {
       const item = this.fragments.get(fragmentName)
 
       if (!item) {
-        throw new FragmentNotFoundError(fragmentName)
+        throw new FragmentNotFoundError(fragmentName, this.getErrorContext())
       }
       const source = getAstSource(item.node)
       const typeName = this.options.buildFragmentTypeName(item.node)
@@ -609,7 +626,7 @@ export class Generator {
       const graphqlTypeName = item.node.typeCondition.name.value
       const type = this.schema.getType(graphqlTypeName)
       if (!type) {
-        throw new TypeNotFoundError(typeName)
+        throw new TypeNotFoundError(typeName, this.getErrorContext())
       }
 
       this.dependencyTracker?.start()
@@ -705,7 +722,10 @@ export class Generator {
 
     const rootType = getRootType(this.schema, operation)
     if (!rootType) {
-      throw new MissingRootTypeError(operation.name.value)
+      throw new MissingRootTypeError(
+        operation.name.value,
+        this.getErrorContext(),
+      )
     }
 
     const typeName = this.options.buildOperationTypeName(
@@ -830,13 +850,14 @@ export class Generator {
       const type = typeof arg === 'string' ? this.schema.getType(name) : arg
 
       if (!type) {
-        throw new TypeNotFoundError(name)
+        throw new TypeNotFoundError(name, this.getErrorContext())
       }
 
       if (!isObjectType(type)) {
         throw new LogicError(
           'Attempted to create object type string literal for non-object type: ' +
             name,
+          this.getErrorContext(),
         )
       }
 
@@ -928,7 +949,10 @@ export class Generator {
     }
 
     // We should never actually end up here, as there is no selection set for any other types.
-    throw new LogicError('Cannot build selection set for type: ' + type.name)
+    throw new LogicError(
+      'Cannot build selection set for type: ' + type.name,
+      this.getErrorContext(),
+    )
   }
 
   /**
@@ -962,6 +986,7 @@ export class Generator {
         // As this is anyway not allowed in the spec, throw an error.
         throw new LogicError(
           `Failed to generate IR for fragment: "${fragmentName}". There are likely circular dependencies between fragments.`,
+          this.getErrorContext(),
         )
       }
       return item.map
@@ -997,7 +1022,11 @@ export class Generator {
         const alias = sel.alias?.value || sel.name.value
         const fieldDef = objFields[sel.name.value]
         if (!fieldDef) {
-          throw new FieldNotFoundError(sel.name.value, objectType.name)
+          throw new FieldNotFoundError(
+            sel.name.value,
+            objectType.name,
+            this.getErrorContext(),
+          )
         }
         const fieldIR = this.buildFieldIRFromFieldDef(fieldDef, sel)
         const current = fields[alias]
@@ -1102,7 +1131,11 @@ export class Generator {
         else if (isInterfaceType(abstractType)) {
           const fieldDef = abstractTypeFields[fieldName]
           if (!fieldDef) {
-            throw new FieldNotFoundError(fieldName, abstractType.name)
+            throw new FieldNotFoundError(
+              fieldName,
+              abstractType.name,
+              this.getErrorContext(),
+            )
           }
           const fieldIR = this.buildFieldIRFromFieldDef(fieldDef, sel)
           const current = baseFields[aliasName]
@@ -1110,7 +1143,10 @@ export class Generator {
         }
       } else if (sel.kind === Kind.INLINE_FRAGMENT) {
         if (!sel.typeCondition) {
-          throw new LogicError('Missing type condition in inline fragment.')
+          throw new LogicError(
+            'Missing type condition in inline fragment.',
+            this.getErrorContext(),
+          )
         }
         const typeConditionName = sel.typeCondition?.name.value
         if (typeConditionName === abstractType.name) {
@@ -1242,12 +1278,15 @@ export class Generator {
       if (sel.kind === Kind.INLINE_FRAGMENT) {
         const typeConditionName = sel.typeCondition?.name.value
         if (!typeConditionName) {
-          throw new LogicError('Inline fragment has no type condition.')
+          throw new LogicError(
+            'Inline fragment has no type condition.',
+            this.getErrorContext(),
+          )
         }
 
         const spreadType = this.schema.getType(typeConditionName)
         if (!spreadType) {
-          throw new TypeNotFoundError(typeConditionName)
+          throw new TypeNotFoundError(typeConditionName, this.getErrorContext())
         }
 
         // Build the IR node for the selection for this object type.
@@ -1289,7 +1328,7 @@ export class Generator {
         const typeConditionName = fragment.typeCondition.name.value
         const typeConditionType = this.schema.getType(typeConditionName)
         if (!typeConditionType) {
-          throw new TypeNotFoundError(typeConditionName)
+          throw new TypeNotFoundError(typeConditionName, this.getErrorContext())
         }
 
         if (isObjectType(typeConditionType)) {

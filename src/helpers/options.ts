@@ -38,6 +38,10 @@ export function buildEnumTypeName(type: GraphQLEnumType): string {
   return pascalCase(type.name)
 }
 
+function buildTypeDocFilePath(filePath: string): string {
+  return filePath
+}
+
 export function buildScalarType(
   type: GraphQLScalarType,
 ): string | undefined | null {
@@ -128,6 +132,8 @@ export function buildOptions(
       nonOptionalTypename: options?.output?.nonOptionalTypename ?? false,
       mergeTypenames: options?.output?.mergeTypenames ?? true,
       typeComment: options?.output?.typeComment ?? true,
+      buildTypeDocFilePath:
+        options?.output?.buildTypeDocFilePath ?? buildTypeDocFilePath,
       sortProperties: options?.output?.sortProperties ?? true,
       formatCode: options?.output?.formatCode ?? false,
     },

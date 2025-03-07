@@ -1,5 +1,10 @@
 # graphql-typescript-deluxe
 
+## TODO
+
+- node engine
+- typescript dependency
+
 This is an **experimental** and **opiniated** code generator for generating
 TypeScript code for GraphQL operations and fragments.
 

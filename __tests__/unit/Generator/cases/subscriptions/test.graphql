@@ -1,0 +1,10 @@
+subscription subscriptions {
+  formSubmitted {
+    ...formSubmission
+  }
+}
+
+fragment formSubmission on FormSubmission {
+  id
+  timestamp
+}

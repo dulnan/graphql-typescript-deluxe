@@ -1,11 +1,8 @@
 {
   "name": "graphql-typescript-deluxe",
-  "version": "0.0.1",
+  "version": "0.0.4",
   "description": "Fast GraphQL TypeScript code generator",
   "sideEffects": false,
-  "engines": {
-    "node": ">= 18"
-  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -61,5 +58,8 @@
   "dependencies": {
     "change-case": "^5.4.4",
     "graphql": "^16.10.0"
+  },
+  "peerDependencies": {
+    "typescript": ">= 5.0.0"
   }
 }
