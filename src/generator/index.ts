@@ -47,6 +47,7 @@ import type {
 } from '../types'
 import { toInputDocuments } from '../helpers/generator'
 import {
+  DependencyTrackingError,
   DuplicateInputDocumentError,
   FieldNotFoundError,
   FragmentNotFoundError,
@@ -147,6 +148,8 @@ export class Generator {
    *
    * @param schema - The GraphQL schema.
    * @param options - The options.
+   *
+   * @throws {@link InvalidOptionError} if the provided options are not valid.
    */
   constructor(
     private schema: GraphQLSchema,
@@ -399,6 +402,8 @@ export class Generator {
    * @param name - The name of the fragment.
    *
    * @returns The fragment definition node.
+   *
+   * @throws {@link FragmentNotFoundError} if the fragment could not be found.
    */
   private getFragmentNode(name: string): FragmentDefinitionNode {
     const item = this.fragments.get(name)
@@ -464,6 +469,8 @@ export class Generator {
    * @param type - The type helper.
    *
    * @returns The name of the generated type helper.
+   *
+   * @throws {@link LogicError} if the helper type could not be found.
    */
   private getOrCreateTypeHelper(type: 'exact'): string {
     if (type === 'exact') {
@@ -516,6 +523,8 @@ export class Generator {
    * @param typeNode - The input type node.
    *
    * @returns The TS code.
+   *
+   * @throws {@link TypeNotFoundError} if the type could not be found.
    */
   private createInputTS(typeNode: TypeNode): string {
     return this.withCache(
@@ -552,6 +561,8 @@ export class Generator {
    * @param type - The input type.
    *
    * @returns The TS name of the type.
+   *
+   * @throws {@link LogicError} when the AST node is missing on the input field.
    */
   private getOrCreateInputType(type: GraphQLInputObjectType): string {
     return this.generateCodeOnce('input', type.name, () => {
@@ -599,6 +610,9 @@ export class Generator {
    * @param fragmentName - The name of the fragment.
    *
    * @returns The name of the TS type.
+   *
+   * @throws {@link FragmentNotFoundError} if the fragment does not exist.
+   * @throws {@link TypeNotFoundError} if the fragment's condition type does not exist.
    */
   private generateFragmentType(fragmentName: string): string {
     return this.generateCodeOnce('fragment', fragmentName, () => {
@@ -695,6 +709,8 @@ export class Generator {
    *
    * @param operation - The operation node.
    * @param input - The input document.
+   *
+   * @throws {@link MissingRootTypeError} If the root type is unsupported.
    */
   private generateOperationType(
     operation: OperationDefinitionNode,
@@ -829,6 +845,9 @@ export class Generator {
    * @param arg - The name of a type or the type itself.
    *
    * @returns The name of the generated TS type.
+   *
+   * @throws {@link TypeNotFoundError} if the type does not exist.
+   * @throws {@link LogicError} when attempting to create a object type name for an abstract type.
    */
   private getOrCreateObjectTypeName(arg: string | GraphQLObjectType): string {
     const name = typeof arg === 'string' ? arg : arg.name
@@ -936,6 +955,8 @@ export class Generator {
    * @param selectionSet - The selection set node.
    *
    * @returns The IR node for the selection.
+   *
+   * @throws {@link LogicError} if the provided type does not provide a selection set.
    */
   private buildSelectionSet(
     type: GraphQLNamedType,
@@ -966,6 +987,8 @@ export class Generator {
    * @param fragmentName - The name of the fragment.
    *
    * @returns The map, where the key is the name of the field and the value is the IR node.
+   *
+   * @throws {@link LogicError} if the IR for the fragment could not be built. This can happen when there are circular dependencies between fragments.
    */
   private getFragmentIRFields(fragmentName: string): Record<string, IRNode> {
     return this.withCache('getFragmentIRFields', fragmentName, () => {
@@ -999,6 +1022,10 @@ export class Generator {
    * @param selectionSet - The selection set node.
    *
    * @returns The IR for the selections.
+   *
+   * @throws {@link FieldNotFoundError} When a selected field does not exist on the type.
+   * @throws {@link LogicError} When an inline fragment has no type condition.
+   * @throws {@link TypeNotFoundError} When a type could not be found.
    */
   private buildObjectSelectionSet(
     objectType: GraphQLObjectType,
@@ -1125,6 +1152,10 @@ export class Generator {
    * @param selectionSet - The selection set node.
    *
    * @returns The IR node for the selection.
+   *
+   * @throws {@link FieldNotFoundError} When a field was selected that does not exist.
+   * @throws {@link LogicError} When an inline fragment is missing a type condition.
+   * @throws {@link TypeNotFoundError} When a type does not exist.
    */
   private buildAbstractSelectionSet(
     abstractType: GraphQLAbstractType,
@@ -1889,6 +1920,8 @@ export class Generator {
    * @param arg - The GeneratorInput or DocumentNode or an array of those.
    *
    * @returns Generator
+   *
+   * @throws {@link DuplicateInputDocumentError} When an input document already exists.
    */
   public add(arg: GeneratorInputArg): Generator {
     const docs = toInputDocuments(arg)
@@ -1910,6 +1943,8 @@ export class Generator {
    * @param arg - The GeneratorInput or DocumentNode or an array of those.
    *
    * @returns Generator
+   *
+   * @throws {@link LogicError} When attempting to update a document that does not exist.
    */
   public update(arg: GeneratorInputArg): Generator {
     const docs = toInputDocuments(arg)
@@ -1977,6 +2012,13 @@ export class Generator {
    * is rethrown.
    *
    * @returns The generator output.
+   *
+   * @throws {@link DependencyTrackingError} if there is an inconsistent dependency tracker state after the build phase.
+   * @throws {@link TypeNotFoundError} if a requested type could not be found.
+   * @throws {@link FragmentNotFoundError} if no fragment definition exists for a fragment spread.
+   * @throws {@link FieldNotFoundError} if a non-existing field was selected
+   * @throws {@link MissingRootTypeError} if the root type is unsupported.
+   * @throws {@link LogicError} if there is a logical error during building. This can hint at a bug in the Generator.
    */
   public build(): GeneratorOutput {
     try {
@@ -2017,7 +2059,7 @@ export class Generator {
     // If we still have a remaining dependency tracker stack item at this point,
     // the code has a bug. Better throw an error here so it doesn't go unnoticed.
     if (this.dependencyTracker?.hasStack()) {
-      throw new LogicError(
+      throw new DependencyTrackingError(
         'Finished processing documents, but there is still a dependency tracker stack. This is likely due to a bug in the library. Set "dependencyTracking: false" to disable dependency tracking.',
       )
     }

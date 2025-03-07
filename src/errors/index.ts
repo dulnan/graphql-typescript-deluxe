@@ -75,6 +75,17 @@ export class LogicError extends Error {
 }
 
 /**
+ * Thrown when the build phase finishes with an inconsistent dependency tracking state.
+ */
+export class DependencyTrackingError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'DependencyTrackingError'
+    Object.setPrototypeOf(this, DependencyTrackingError.prototype)
+  }
+}
+
+/**
  * Thrown when attempting to add an input document that already exists.
  */
 export class DuplicateInputDocumentError extends Error {

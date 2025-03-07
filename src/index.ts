@@ -8,12 +8,13 @@ export type { DependencyAware } from './classes/DependencyAware'
 export type { MinifyVariableName } from './classes/MinifyVariableName'
 
 export {
-  TypeNotFoundError,
-  FragmentNotFoundError,
-  FieldNotFoundError,
-  MissingRootTypeError,
-  LogicError,
+  DependencyTrackingError,
   DuplicateInputDocumentError,
-  NodeLocMissingError,
+  FieldNotFoundError,
+  FragmentNotFoundError,
   InvalidOptionError,
+  LogicError,
+  MissingRootTypeError,
+  NodeLocMissingError,
+  TypeNotFoundError,
 } from './errors'
