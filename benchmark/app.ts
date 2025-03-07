@@ -111,7 +111,8 @@ async function main(): Promise<void> {
     //   // path.resolve(graphqlFolder, './documents/merge-typenames.graphql'),
     // path.resolve(graphqlFolder, './documents/merge-fields-typename.graphql'),
     // path.resolve(graphqlFolder, './documents/nullability.graphql'),
-    path.resolve(graphqlFolder, './documents/dependencies.graphql'),
+    // path.resolve(graphqlFolder, './documents/dependencies.graphql'),
+    path.resolve(graphqlFolder, './documents/mutation.graphql'),
     //   path.resolve(graphqlFolder, './documents/spread-interface.graphql'),
   )
 

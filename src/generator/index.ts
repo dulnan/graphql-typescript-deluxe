@@ -1065,6 +1065,31 @@ export class Generator {
             }),
           )
         }
+      } else if (sel.kind === Kind.INLINE_FRAGMENT) {
+        const typeConditionName = sel.typeCondition?.name.value
+        if (!typeConditionName) {
+          throw new LogicError(
+            'Inline fragment has no type condition.',
+            this.getErrorContext(),
+          )
+        }
+        const spreadType = this.schema.getType(typeConditionName)
+        if (!spreadType) {
+          throw new TypeNotFoundError(typeConditionName, this.getErrorContext())
+        }
+        const ir = this.buildSelectionSet(spreadType, sel.selectionSet)
+        if (ir.kind === 'OBJECT') {
+          mergeObjectFields(fields, ir.fields)
+        } else if (ir.kind === 'UNION') {
+          for (const branch of ir.types) {
+            if (
+              branch.kind === 'OBJECT' &&
+              branch.graphQLTypeName === typeConditionName
+            ) {
+              mergeObjectFields(fields, branch.fields)
+            }
+          }
+        }
       }
     }
 

@@ -5,6 +5,9 @@
  * basically just iterate line by line and look at the presence of certain
  * characters.
  *
+ * Each object is guaranteed to have a "{" and "}" on separate lines, with
+ * each property on one separate line too.
+ *
  * @param code - The code to format.
  *
  * @returns The formatted TypeScript code.

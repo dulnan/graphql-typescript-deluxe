@@ -1,0 +1,26 @@
+mutation redundantFragmentSpread($email: String!) {
+  createUserInline: createUser(email: $email) {
+    ... on CreateUserResponse {
+      inlineErrors: errors
+    }
+  }
+
+  createUserInlineBoth: createUser(email: $email) {
+    ... on CreateUserResponse {
+      inlineErrors: errors
+      ...createUserResponse
+    }
+  }
+
+  createUserSpread: createUser(email: $email) {
+    ...createUserResponse
+  }
+}
+
+fragment createUserResponse on CreateUserResponse {
+  errors
+
+  ... on CreateUserResponse {
+    mergedErrors: errors
+  }
+}

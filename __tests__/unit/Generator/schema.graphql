@@ -415,11 +415,20 @@ type Nullability {
   nonNullableEntity: Entity!
 }
 
+type CreateUserResponse {
+  errors: [String]
+}
+
 type Mutation {
   """
   Submit a form.
   """
   submitForm(input: SubmitContactForm!, dryRun: Boolean): Boolean!
+
+  """
+  Create a user.
+  """
+  createUser(email: String!): CreateUserResponse!
 }
 
 type Subscription {
