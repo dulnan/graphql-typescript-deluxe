@@ -174,7 +174,7 @@ export class Generator {
     const docs = toInputDocuments(input)
     const generator = new Generator(schema, options)
     generator.add(docs)
-    return generator.build().getEverything()
+    return generator.build().getEverything().getSource()
   }
 
   private getErrorContext(): ErrorContext {
@@ -323,6 +323,7 @@ export class Generator {
     }
     const code = this.formatCode(result.code)
     this.generatedCode.set(key, {
+      id: DependencyTracker.toKey(generatedTypeType, result.typeName),
       type: generatedTypeType,
       name: result.typeName,
       code: `${comment}${code}`,

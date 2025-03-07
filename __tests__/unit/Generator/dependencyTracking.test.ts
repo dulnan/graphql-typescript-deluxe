@@ -395,7 +395,10 @@ query foobar {
 
     const result = generator.build().getOperationsFile()
     expect(result).toMatchInlineSnapshot(`
-      "const b = \`fragment category on Category{related{...relatedEntity}}\`;
+      GeneratorOutputFile {
+        "dependencyStrings": [],
+        "mappedDependencies": null,
+        "source": "const b = \`fragment category on Category{related{...relatedEntity}}\`;
       const c = \`fragment nodeArticle on NodeArticle{categories{...category}}\`;
       const a = \`fragment relatedEntity on Entity{id}\`;
 
@@ -409,7 +412,8 @@ query foobar {
         subscription: {
           
         }
-      }"
+      }",
+      }
     `)
   })
 
@@ -450,7 +454,8 @@ query foobar {
     const documents = [articleOne, articleTwo, queryFirst]
 
     generator.add(documents)
-    expect(generator.build().getEverything()).toMatchInlineSnapshot(`
+    expect(generator.build().getEverything().getSource())
+      .toMatchInlineSnapshot(`
       "// --------------------------------------------------------------------------------
       // Type Helpers
       // --------------------------------------------------------------------------------
@@ -518,7 +523,8 @@ query foobar {
       ),
     )
 
-    expect(generator.build().getEverything()).toMatchInlineSnapshot(`
+    expect(generator.build().getEverything().getSource())
+      .toMatchInlineSnapshot(`
       "// --------------------------------------------------------------------------------
       // Type Helpers
       // --------------------------------------------------------------------------------

@@ -63,6 +63,11 @@ export type GeneratedCodeType =
 
 export interface GeneratedCode {
   /**
+   * The ID.
+   */
+  id: string
+
+  /**
    * The type.
    */
   type: GeneratedCodeType

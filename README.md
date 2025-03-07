@@ -108,7 +108,7 @@ generator.add([
 ])
 
 // Build the initial output.
-console.log(generator.build().getEverything())
+console.log(generator.build().getEverything().getSource())
 
 // Add a new one.
 generator.add({
@@ -117,7 +117,7 @@ generator.add({
 })
 
 // Will only generate code for the new query and reuse all existing code.
-console.log(generator.build().getEverything())
+console.log(generator.build().getEverything().getSource())
 
 // Update a previously added document.
 generator.update({
@@ -126,7 +126,7 @@ generator.update({
 })
 
 // Will update both the fragment type *and* the existing query type (since it depends on it).
-console.log(generator.build().getEverything())
+console.log(generator.build().getEverything().getSource())
 ```
 
 ## Why?

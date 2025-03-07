@@ -9,6 +9,7 @@ export class GeneratorOutputCode
   extends DependencyAware
   implements Omit<GeneratedCode, 'dependencies'>
 {
+  public readonly id: string
   public readonly type: GeneratedCodeType
   public readonly name: string
   public readonly graphqlName: string | null | undefined
@@ -20,6 +21,7 @@ export class GeneratorOutputCode
 
   constructor(code: GeneratedCode) {
     super(code.dependencies || [])
+    this.id = code.id
     this.type = code.type
     this.name = code.name
     this.graphqlName = code.graphqlName

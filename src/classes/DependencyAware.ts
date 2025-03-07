@@ -3,7 +3,7 @@ import { KEY_SEPARATOR } from './DependencyTracker'
 
 type MappedDependencyType = GeneratedCodeType | 'fragment-name'
 
-type MappedDependency = {
+export type MappedDependency = {
   type: MappedDependencyType
   value: string
 }
@@ -24,7 +24,7 @@ function mapDependencies(dependencies?: string[]): MappedDependency[] {
 export class DependencyAware {
   private mappedDependencies: MappedDependency[] | null = null
 
-  constructor(private dependencies: string[]) {}
+  constructor(public readonly dependencyStrings: string[]) {}
 
   /**
    * Get the mapped dependencies.
@@ -37,7 +37,7 @@ export class DependencyAware {
     type?: MappedDependencyType,
   ): readonly MappedDependency[] {
     if (this.mappedDependencies === null) {
-      this.mappedDependencies = mapDependencies(this.dependencies)
+      this.mappedDependencies = mapDependencies(this.dependencyStrings)
     }
 
     if (type) {

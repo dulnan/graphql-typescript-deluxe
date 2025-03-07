@@ -135,6 +135,7 @@ async function main(): Promise<void> {
     additionalOutputCode: (): GeneratedCode[] => {
       return [
         {
+          id: 'type-helpers####MessengerMessage',
           type: 'type-helpers',
           name: 'MessengerMessage',
           code: `type MessengerMessage = { message: string; type: string }`,
@@ -162,7 +163,7 @@ async function main(): Promise<void> {
   await runWithDuration('custom-types.ts', () => {
     generator.add(documentCleaned)
     const output = generator.build()
-    return output.getEverything()
+    return output.getEverything().getSource()
   })
 
   await runWithDuration('codes.json', () => {
@@ -172,7 +173,7 @@ async function main(): Promise<void> {
 
   await runWithDuration('custom-operations.js', () => {
     const output = generator.build()
-    return output.getOperationsFile()
+    return output.getOperationsFile().getSource()
   })
 
   if (isProfiling) {
