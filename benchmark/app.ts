@@ -178,6 +178,15 @@ async function main(): Promise<void> {
     return output.getOperationsFile().getSource()
   })
 
+  await runWithDuration('operation-types.ts', () => {
+    const output = generator.build()
+    return output
+      .getOperationTypesFile({
+        importFrom: './custom-types',
+      })
+      .getSource()
+  })
+
   if (isProfiling) {
     return
   }
