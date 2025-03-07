@@ -2,7 +2,8 @@
 // Type Helpers
 // --------------------------------------------------------------------------------
 
-type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+
 
 // --------------------------------------------------------------------------------
 // Fragments
@@ -10,7 +11,7 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment nodePage on NodePage {
@@ -20,8 +21,9 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
  */
 export type NodePageFragment = {
   /** The title of the page. */
-  alias_title: string
-}
+  alias_title: string;
+};
+
 
 // --------------------------------------------------------------------------------
 // Operations
@@ -29,7 +31,7 @@ export type NodePageFragment = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * query inlineFields {
@@ -45,18 +47,17 @@ export type NodePageFragment = {
  */
 export type InlineFieldsQuery = {
   /** Get random entity. */
-  alias_getRandomEntity?:
-    | {
-        /** The ID. */
-        alias_id: string
-      }
-    | ({
-        /** The body text. */
-        alias_body?: string
-        /** The ID. */
-        alias_id: string
-      } & NodePageFragment)
-}
+  alias_getRandomEntity?: ({
+    /** The ID. */
+    alias_id: string;
+  } | {
+    /** The body text. */
+    alias_body?: string;
+    /** The ID. */
+    alias_id: string;
+  } & NodePageFragment);
+};
+
 
 // --------------------------------------------------------------------------------
 // Operation Variables
@@ -64,6 +65,6 @@ export type InlineFieldsQuery = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  */
-export type InlineFieldsQueryVariables = Exact<{ [key: string]: never }>
+export type InlineFieldsQueryVariables = Exact<{ [key: string]: never; }>;

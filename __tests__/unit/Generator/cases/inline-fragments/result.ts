@@ -2,7 +2,8 @@
 // Type Helpers
 // --------------------------------------------------------------------------------
 
-type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+
 
 // --------------------------------------------------------------------------------
 // Operations
@@ -10,7 +11,7 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * query inlineFragments {
@@ -24,9 +25,10 @@ export type InlineFragmentsQuery = {
   /** Get the homepage. */
   getHomepage?: {
     /** The title of the page. */
-    title: string
-  }
-}
+    title: string;
+  };
+};
+
 
 // --------------------------------------------------------------------------------
 // Operation Variables
@@ -34,6 +36,6 @@ export type InlineFragmentsQuery = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  */
-export type InlineFragmentsQueryVariables = Exact<{ [key: string]: never }>
+export type InlineFragmentsQueryVariables = Exact<{ [key: string]: never; }>;

@@ -58,8 +58,5 @@
   "dependencies": {
     "change-case": "^5.4.4",
     "graphql": "^16.10.0"
-  },
-  "peerDependencies": {
-    "typescript": ">= 5.0.0"
   }
 }

@@ -103,6 +103,7 @@ describe('Generator Options', () => {
       expect(options.output.nullableArrayElements).toEqual(true)
       expect(options.output.emptyObject).toEqual('object')
       expect(options.output.nullableField).toEqual('optional')
+      expect(options.output.formatCode).toEqual(true)
     })
 
     it('should merge provided options with defaults', () => {
@@ -120,6 +121,7 @@ describe('Generator Options', () => {
           nullableArrayElements: false,
           arrayShape: 'MyCustomArray<$T$>',
           nullableField: 'null',
+          formatCode: false,
         },
       })
 
@@ -134,6 +136,7 @@ describe('Generator Options', () => {
       expect(options.output.nullableArrayElements).toEqual(false)
       expect(options.output.arrayShape).toEqual('MyCustomArray<$T$>')
       expect(options.output.nullableField).toEqual('null')
+      expect(options.output.formatCode).toEqual(false)
     })
   })
 })

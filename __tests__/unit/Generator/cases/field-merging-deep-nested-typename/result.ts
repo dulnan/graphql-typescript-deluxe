@@ -2,29 +2,35 @@
 // Type Helpers
 // --------------------------------------------------------------------------------
 
-type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+
 
 // --------------------------------------------------------------------------------
 // Object Types
 // --------------------------------------------------------------------------------
 
-type DefaultEntityUrl = 'DefaultEntityUrl'
 
-type DefaultUrl = 'DefaultUrl'
+type DefaultEntityUrl = 'DefaultEntityUrl';
 
-type Image = 'Image'
+type DefaultUrl = 'DefaultUrl';
 
-type NodeArticle = 'NodeArticle'
+type Image = 'Image';
 
-type NodePage = 'NodePage'
+type NodeArticle = 'NodeArticle';
+
+type NodePage = 'NodePage';
+
 
 // --------------------------------------------------------------------------------
 // Interfaces & Unions
 // --------------------------------------------------------------------------------
 
-export type Entity = NodePage | NodeArticle | Image
 
-export type Url = DefaultEntityUrl | DefaultUrl
+export type Entity = NodePage | NodeArticle | Image;
+
+
+export type Url = DefaultEntityUrl | DefaultUrl;
+
 
 // --------------------------------------------------------------------------------
 // Fragments
@@ -32,7 +38,7 @@ export type Url = DefaultEntityUrl | DefaultUrl
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment route on Query {
@@ -47,14 +53,13 @@ export type Url = DefaultEntityUrl | DefaultUrl
  * ```
  */
 export type RouteFragment = {
-  route?:
-    | object
-    | {
-        entity?: {
-          id: string
-        }
-      }
-}
+  route?: (object | {
+    entity?: {
+      id: string;
+    };
+  });
+};
+
 
 // --------------------------------------------------------------------------------
 // Operations
@@ -62,7 +67,7 @@ export type RouteFragment = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * query fieldMergingDeepNested {
@@ -75,7 +80,7 @@ export type RouteFragment = {
  *         ... on NodePage {
  *           title
  *         }
- *
+ * 
  *         ... on NodeArticle {
  *           body
  *         }
@@ -86,29 +91,25 @@ export type RouteFragment = {
  * ```
  */
 export type FieldMergingDeepNestedQuery = {
-  route?:
-    | {
-        __typename: DefaultEntityUrl
-        entity?:
-          | {
-              __typename: Image
-              id: string
-            }
-          | {
-              __typename: NodeArticle
-              body: string
-              id: string
-            }
-          | {
-              __typename: NodePage
-              id: string
-              title: string
-            }
-      }
-    | {
-        __typename: DefaultUrl
-      }
-}
+  route?: ({
+    __typename: DefaultEntityUrl;
+    entity?: ({
+      __typename: Image;
+      id: string;
+    } | {
+      __typename: NodeArticle;
+      body: string;
+      id: string;
+    } | {
+      __typename: NodePage;
+      id: string;
+      title: string;
+    });
+  } | {
+    __typename: DefaultUrl;
+  });
+};
+
 
 // --------------------------------------------------------------------------------
 // Operation Variables
@@ -116,8 +117,6 @@ export type FieldMergingDeepNestedQuery = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  */
-export type FieldMergingDeepNestedQueryVariables = Exact<{
-  [key: string]: never
-}>
+export type FieldMergingDeepNestedQueryVariables = Exact<{ [key: string]: never; }>;

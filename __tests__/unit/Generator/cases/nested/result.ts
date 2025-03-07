@@ -2,39 +2,36 @@
 // Type Helpers
 // --------------------------------------------------------------------------------
 
-type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+
 
 // --------------------------------------------------------------------------------
 // Object Types
 // --------------------------------------------------------------------------------
 
 /** A comment by an external user. */
-type Comment = 'Comment'
+type Comment = 'Comment';
 /** A domain. */
-type Domain = 'Domain'
+type Domain = 'Domain';
 
-type MediaImage = 'MediaImage'
+type MediaImage = 'MediaImage';
 
-type MediaVideo = 'MediaVideo'
+type MediaVideo = 'MediaVideo';
 /** A blog post. */
-type NodeArticle = 'NodeArticle'
+type NodeArticle = 'NodeArticle';
 
-type NodePage = 'NodePage'
+type NodePage = 'NodePage';
 /** A user. */
-type User = 'User'
+type User = 'User';
+
 
 // --------------------------------------------------------------------------------
 // Interfaces & Unions
 // --------------------------------------------------------------------------------
 
-export type Entity =
-  | User
-  | Domain
-  | Comment
-  | MediaImage
-  | MediaVideo
-  | NodePage
-  | NodeArticle
+
+export type Entity = User | Domain | Comment | MediaImage | MediaVideo | NodePage | NodeArticle;
+
 
 // --------------------------------------------------------------------------------
 // Fragments
@@ -42,7 +39,7 @@ export type Entity =
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment nodePage on NodePage {
@@ -52,8 +49,9 @@ export type Entity =
  */
 export type NodePageFragment = {
   /** The title of the page. */
-  title: string
-}
+  title: string;
+};
+
 
 // --------------------------------------------------------------------------------
 // Operations
@@ -61,7 +59,7 @@ export type NodePageFragment = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * query nested {
@@ -95,44 +93,39 @@ export type NodePageFragment = {
  */
 export type NestedQuery = {
   /** Get random entity. */
-  getRandomEntity?:
-    | {
+  getRandomEntity?: ({
+    /** The ID. */
+    id: string;
+  } | {
+    /** The ID. */
+    id: string;
+  } & NodePageFragment | {
+    /** The body text of the article. */
+    body?: string;
+    /** Categories of this article. */
+    categories?: ({
+      /** The label. */
+      label: string;
+      /** Related entities. */
+      related?: (({
+        __typename: Exclude<Entity, NodeArticle>;
         /** The ID. */
-        id: string
-      }
-    | ({
-        /** The ID. */
-        id: string
-      } & NodePageFragment)
-    | {
+        id: string;
+      } | {
+        __typename: NodeArticle;
         /** The body text of the article. */
-        body?: string
-        /** Categories of this article. */
-        categories?: {
-          /** The label. */
-          label: string
-          /** Related entities. */
-          related?: (
-            | {
-                __typename: Exclude<Entity, NodeArticle>
-                /** The ID. */
-                id: string
-              }
-            | {
-                __typename: NodeArticle
-                /** The body text of the article. */
-                body?: string
-                /** The ID. */
-                id: string
-                /** The title of the article. */
-                title: string
-              }
-          )[]
-        }[]
+        body?: string;
         /** The ID. */
-        id: string
-      }
-}
+        id: string;
+        /** The title of the article. */
+        title: string;
+      }))[];
+    })[];
+    /** The ID. */
+    id: string;
+  });
+};
+
 
 // --------------------------------------------------------------------------------
 // Operation Variables
@@ -140,6 +133,6 @@ export type NestedQuery = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  */
-export type NestedQueryVariables = Exact<{ [key: string]: never }>
+export type NestedQueryVariables = Exact<{ [key: string]: never; }>;

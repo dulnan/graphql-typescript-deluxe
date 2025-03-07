@@ -2,39 +2,36 @@
 // Type Helpers
 // --------------------------------------------------------------------------------
 
-type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+
 
 // --------------------------------------------------------------------------------
 // Object Types
 // --------------------------------------------------------------------------------
 
 /** A comment by an external user. */
-type Comment = 'Comment'
+type Comment = 'Comment';
 /** A domain. */
-type Domain = 'Domain'
+type Domain = 'Domain';
 
-type MediaImage = 'MediaImage'
+type MediaImage = 'MediaImage';
 
-type MediaVideo = 'MediaVideo'
+type MediaVideo = 'MediaVideo';
 /** A blog post. */
-type NodeArticle = 'NodeArticle'
+type NodeArticle = 'NodeArticle';
 
-type NodePage = 'NodePage'
+type NodePage = 'NodePage';
 /** A user. */
-type User = 'User'
+type User = 'User';
+
 
 // --------------------------------------------------------------------------------
 // Interfaces & Unions
 // --------------------------------------------------------------------------------
 
-export type Entity =
-  | User
-  | Domain
-  | Comment
-  | MediaImage
-  | MediaVideo
-  | NodePage
-  | NodeArticle
+
+export type Entity = User | Domain | Comment | MediaImage | MediaVideo | NodePage | NodeArticle;
+
 
 // --------------------------------------------------------------------------------
 // Fragments
@@ -42,7 +39,7 @@ export type Entity =
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment nodeArticleOne on NodeArticle {
@@ -59,23 +56,20 @@ export type Entity =
  */
 export type NodeArticleOneFragment = {
   /** Categories of this article. */
-  categories?: {
+  categories?: ({
     /** Related entities. */
-    related?: (
-      | object
-      | {
-          /** The body text. */
-          body?: string
-          /** The title of the page. */
-          title: string
-        }
-    )[]
-  }[]
-}
+    related?: ((object | {
+      /** The body text. */
+      body?: string;
+      /** The title of the page. */
+      title: string;
+    }))[];
+  })[];
+};
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment nodeArticleTwo on NodeArticle {
@@ -94,28 +88,25 @@ export type NodeArticleOneFragment = {
  */
 export type NodeArticleTwoFragment = {
   /** Categories of this article. */
-  categories?: {
+  categories?: ({
     /** Related entities. */
-    related?: (
-      | {
-          /** The ID. */
-          id: string
-          /** The title of the page. */
-          title: string
-        }
-      | {
-          /** The ID. */
-          id: string
-        }
-    )[]
+    related?: (({
+      /** The ID. */
+      id: string;
+      /** The title of the page. */
+      title: string;
+    } | {
+      /** The ID. */
+      id: string;
+    }))[];
     /** The URL for the category overview page. */
-    url?: string
-  }[]
-}
+    url?: string;
+  })[];
+};
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment related on Entity {
@@ -125,8 +116,9 @@ export type NodeArticleTwoFragment = {
  */
 export type RelatedFragment = {
   /** The ID. */
-  id: string
-}
+  id: string;
+};
+
 
 // --------------------------------------------------------------------------------
 // Operations
@@ -134,7 +126,7 @@ export type RelatedFragment = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * query fieldMergingNestedComplex {
@@ -148,35 +140,31 @@ export type RelatedFragment = {
  */
 export type FieldMergingNestedComplexQuery = {
   /** Get an entity by ID. */
-  entityById?:
-    | ({
-        /** Categories of this article. */
-        categories?: {
-          /** Related entities. */
-          related?: (
-            | {
-                /** The ID. */
-                id: string
-              }
-            | {
-                /** The body text. */
-                body?: string
-                /** The ID. */
-                id: string
-                /** The title of the page. */
-                title: string
-              }
-          )[]
-          /** The URL for the category overview page. */
-          url?: string
-        }[]
-      } & {
-        __typename: NodeArticle
-      })
-    | {
-        __typename: Exclude<Entity, NodeArticle>
-      }
-}
+  entityById?: (({
+    /** Categories of this article. */
+    categories?: ({
+      /** Related entities. */
+      related?: (({
+        /** The ID. */
+        id: string;
+      } | {
+        /** The body text. */
+        body?: string;
+        /** The ID. */
+        id: string;
+        /** The title of the page. */
+        title: string;
+      }))[];
+      /** The URL for the category overview page. */
+      url?: string;
+    })[];
+  } & {
+    __typename: NodeArticle;
+  }) | {
+    __typename: Exclude<Entity, NodeArticle>;
+  });
+};
+
 
 // --------------------------------------------------------------------------------
 // Operation Variables
@@ -184,8 +172,6 @@ export type FieldMergingNestedComplexQuery = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  */
-export type FieldMergingNestedComplexQueryVariables = Exact<{
-  [key: string]: never
-}>
+export type FieldMergingNestedComplexQueryVariables = Exact<{ [key: string]: never; }>;

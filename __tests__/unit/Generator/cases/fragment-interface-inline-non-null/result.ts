@@ -2,7 +2,8 @@
 // Type Helpers
 // --------------------------------------------------------------------------------
 
-type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+
 
 // --------------------------------------------------------------------------------
 // Operations
@@ -10,7 +11,7 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * query fragmentInterface {
@@ -19,7 +20,7 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
  *       id
  *     }
  *   }
- *
+ * 
  *   withoutFragment: getNonNullEntity {
  *     id
  *   }
@@ -30,14 +31,15 @@ export type FragmentInterfaceQuery = {
   /** Always get an entity. */
   withFragment: {
     /** The ID. */
-    id: string
-  }
+    id: string;
+  };
   /** Always get an entity. */
   withoutFragment: {
     /** The ID. */
-    id: string
-  }
-}
+    id: string;
+  };
+};
+
 
 // --------------------------------------------------------------------------------
 // Operation Variables
@@ -45,6 +47,6 @@ export type FragmentInterfaceQuery = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  */
-export type FragmentInterfaceQueryVariables = Exact<{ [key: string]: never }>
+export type FragmentInterfaceQueryVariables = Exact<{ [key: string]: never; }>;

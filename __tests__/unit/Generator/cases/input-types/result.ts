@@ -2,7 +2,8 @@
 // Type Helpers
 // --------------------------------------------------------------------------------
 
-type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+
 
 // --------------------------------------------------------------------------------
 // Enums
@@ -20,7 +21,7 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
  *   Contact via phone.
  *   """
  *   PHONE
- *
+ * 
  *   """
  *   Contact via email.
  *   """
@@ -32,9 +33,10 @@ export const ContactMethod = {
   /** Contact via phone. */
   PHONE: 'PHONE',
   /** Contact via email. */
-  MAIL: 'MAIL',
-} as const
-export type ContactMethod = (typeof ContactMethod)[keyof typeof ContactMethod]
+  MAIL: 'MAIL'
+} as const;
+export type ContactMethod = (typeof ContactMethod)[keyof typeof ContactMethod];
+
 
 // --------------------------------------------------------------------------------
 // Operations
@@ -42,7 +44,7 @@ export type ContactMethod = (typeof ContactMethod)[keyof typeof ContactMethod]
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * mutation inputTypes($input: SubmitContactForm!, $dryRun: Boolean = false) {
@@ -52,8 +54,9 @@ export type ContactMethod = (typeof ContactMethod)[keyof typeof ContactMethod]
  */
 export type InputTypesMutation = {
   /** Submit a form. */
-  submitForm: boolean
-}
+  submitForm: boolean;
+};
+
 
 // --------------------------------------------------------------------------------
 // Operation Variables
@@ -61,12 +64,13 @@ export type InputTypesMutation = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  */
 export type InputTypesMutationVariables = Exact<{
-  dryRun?: boolean | null
-  input: SubmitContactForm
-}>
+  dryRun?: boolean | null;
+  input: SubmitContactForm;
+}>;
+
 
 // --------------------------------------------------------------------------------
 // Input Types
@@ -84,12 +88,12 @@ export type InputTypesMutationVariables = Exact<{
  *   The street, including number.
  *   """
  *   street: String!
- *
+ * 
  *   """
  *   The ZIP code.
  *   """
  *   zipCode: String!
- *
+ * 
  *   """
  *   The locality.
  *   """
@@ -99,12 +103,12 @@ export type InputTypesMutationVariables = Exact<{
  */
 export type Address = {
   /** The locality. */
-  locality: string
+  locality: string;
   /** The street, including number. */
-  street: string
+  street: string;
   /** The ZIP code. */
-  zipCode: string
-}
+  zipCode: string;
+};
 
 /**
  * @example
@@ -118,8 +122,8 @@ export type Address = {
  * ```
  */
 export type SubmitContactForm = {
-  address: Address
-  contactMethod?: ContactMethod | null
-  firstName: string
-  lastName: string
-}
+  address: Address;
+  contactMethod?: ContactMethod | null;
+  firstName: string;
+  lastName: string;
+};

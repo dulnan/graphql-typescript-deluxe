@@ -2,7 +2,8 @@
 // Type Helpers
 // --------------------------------------------------------------------------------
 
-type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+
 
 // --------------------------------------------------------------------------------
 // Operations
@@ -10,7 +11,7 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * query defaultValues(
@@ -31,9 +32,10 @@ export type DefaultValuesQuery = {
   /** With default values. */
   searchContent?: ({
     /** The title of the node. */
-    title: string
-  } | null)[]
-}
+    title: string;
+  } | null)[];
+};
+
 
 // --------------------------------------------------------------------------------
 // Operation Variables
@@ -41,10 +43,10 @@ export type DefaultValuesQuery = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  */
 export type DefaultValuesQueryVariables = Exact<{
-  bundle?: string | null
-  bundleRequired: string
-  text?: string | null
-}>
+  bundle?: string | null;
+  bundleRequired: string;
+  text?: string | null;
+}>;

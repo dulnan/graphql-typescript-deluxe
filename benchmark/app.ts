@@ -149,6 +149,7 @@ async function main(): Promise<void> {
       return null
     },
     output: {
+      formatCode: true,
       mergeTypenames: true,
       nonOptionalTypename: false,
       nullableArrayElements: false,

@@ -10,6 +10,9 @@ export function escapeStringForComment(input: string): string {
  * Creates a comment from a string, escaping any characters that might close the comment.
  */
 export function makeComment(input: string): string {
+  if (input.includes('\n')) {
+    return toTSComment(input.split('\n'))
+  }
   return `/** ${escapeStringForComment(input)} */`
 }
 
@@ -51,16 +54,8 @@ export function makeTypeDoc(context: TypeContext): string {
   return toTSComment(lines)
 }
 
-export function makeExport(
-  name: string,
-  type: string,
-  comment?: string | null,
-): string {
-  const code = `export type ${name} = ${type};`
-  if (comment) {
-    return `${makeComment(comment)}\n${code}`
-  }
-  return code
+export function makeExport(name: string, type: string): string {
+  return `export type ${name} = ${type};`
 }
 
 /**

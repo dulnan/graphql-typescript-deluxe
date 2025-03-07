@@ -10,7 +10,7 @@
  *   A node.
  *   """
  *   NODE
- *
+ * 
  *   """
  *   A media.
  *   """
@@ -22,9 +22,10 @@ export const EntityType = {
   /** A node. */
   NODE: 'NODE',
   /** A media. */
-  MEDIA: 'MEDIA',
-} as const
-export type EntityType = (typeof EntityType)[keyof typeof EntityType]
+  MEDIA: 'MEDIA'
+} as const;
+export type EntityType = (typeof EntityType)[keyof typeof EntityType];
+
 
 // --------------------------------------------------------------------------------
 // Fragments
@@ -32,7 +33,7 @@ export type EntityType = (typeof EntityType)[keyof typeof EntityType]
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment fragmentWithEnum on NodePage {
@@ -42,5 +43,5 @@ export type EntityType = (typeof EntityType)[keyof typeof EntityType]
  */
 export type FragmentWithEnumFragment = {
   /** The EntityType enum. */
-  entityType: EntityType
-}
+  entityType: EntityType;
+};

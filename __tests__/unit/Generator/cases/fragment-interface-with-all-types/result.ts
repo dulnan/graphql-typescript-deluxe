@@ -2,7 +2,8 @@
 // Type Helpers
 // --------------------------------------------------------------------------------
 
-type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+
 
 // --------------------------------------------------------------------------------
 // Fragments
@@ -10,7 +11,7 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment comment on Comment {
@@ -24,13 +25,13 @@ export type CommentFragment = {
   /** The author of the comment. */
   author: {
     /** Name of the author. */
-    name: string
-  }
-}
+    name: string;
+  };
+};
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment domain on Domain {
@@ -40,12 +41,12 @@ export type CommentFragment = {
  */
 export type DomainFragment = {
   /** The label for the domain. */
-  label: string
-}
+  label: string;
+};
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment entity on Entity {
@@ -60,39 +61,32 @@ export type DomainFragment = {
  * }
  * ```
  */
-export type EntityFragment =
-  | ({
-      /** The ID. */
-      id: string
-    } & CommentFragment)
-  | ({
-      /** The ID. */
-      id: string
-    } & DomainFragment)
-  | ({
-      /** The ID. */
-      id: string
-    } & MediaImageFragment)
-  | ({
-      /** The ID. */
-      id: string
-    } & MediaVideoFragment)
-  | ({
-      /** The ID. */
-      id: string
-    } & NodeArticleFragment)
-  | ({
-      /** The ID. */
-      id: string
-    } & NodePageFragment)
-  | ({
-      /** The ID. */
-      id: string
-    } & UserFragment)
+export type EntityFragment = ({
+  /** The ID. */
+  id: string;
+} & CommentFragment | {
+  /** The ID. */
+  id: string;
+} & DomainFragment | {
+  /** The ID. */
+  id: string;
+} & MediaImageFragment | {
+  /** The ID. */
+  id: string;
+} & MediaVideoFragment | {
+  /** The ID. */
+  id: string;
+} & NodeArticleFragment | {
+  /** The ID. */
+  id: string;
+} & NodePageFragment | {
+  /** The ID. */
+  id: string;
+} & UserFragment);
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment mediaImage on MediaImage {
@@ -102,12 +96,12 @@ export type EntityFragment =
  */
 export type MediaImageFragment = {
   /** The image URL. */
-  image?: string
-}
+  image?: string;
+};
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment mediaVideo on MediaVideo {
@@ -117,12 +111,12 @@ export type MediaImageFragment = {
  */
 export type MediaVideoFragment = {
   /** The URL of the video (external). */
-  videoUrl?: string
-}
+  videoUrl?: string;
+};
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment nodeArticle on NodeArticle {
@@ -136,13 +130,13 @@ export type NodeArticleFragment = {
   /** Categories of this article. */
   categories?: {
     /** The label. */
-    label: string
-  }[]
-}
+    label: string;
+  }[];
+};
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment nodePage on NodePage {
@@ -152,12 +146,12 @@ export type NodeArticleFragment = {
  */
 export type NodePageFragment = {
   /** The body text. */
-  body?: string
-}
+  body?: string;
+};
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment user on User {
@@ -167,8 +161,9 @@ export type NodePageFragment = {
  */
 export type UserFragment = {
   /** The name of the user. */
-  name?: string
-}
+  name?: string;
+};
+
 
 // --------------------------------------------------------------------------------
 // Operations
@@ -176,7 +171,7 @@ export type UserFragment = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * query test {
@@ -189,8 +184,9 @@ export type UserFragment = {
  */
 export type TestQuery = {
   /** Get random entity. */
-  getRandomEntity?: EntityFragment
-}
+  getRandomEntity?: EntityFragment;
+};
+
 
 // --------------------------------------------------------------------------------
 // Operation Variables
@@ -198,6 +194,6 @@ export type TestQuery = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  */
-export type TestQueryVariables = Exact<{ [key: string]: never }>
+export type TestQueryVariables = Exact<{ [key: string]: never; }>;

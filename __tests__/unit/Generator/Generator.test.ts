@@ -4,7 +4,6 @@ import { parse } from 'graphql'
 import fs from 'node:fs'
 import { Generator } from '../../../src/generator/index.js'
 import schemaContent from './schema.graphql?raw'
-import { format } from './../../../helpers/format.js'
 import { generateCodegen } from './../../../helpers/generateCodegen.js'
 import type { GeneratorOptions } from '../../../src/types/options.js'
 import { loadSchemaSync } from '@graphql-tools/load'
@@ -16,11 +15,11 @@ const defaultSchema = loadSchemaSync(schemaContent, {
 
 const isWatch = process.env.WATCH_MODE === 'true'
 
-async function generate(
+function generate(
   documents: string,
   customSchemaContents?: string | null,
   options?: GeneratorOptions,
-): Promise<string> {
+): string {
   const schema = customSchemaContents
     ? loadSchemaSync(customSchemaContents, { loaders: [] })
     : defaultSchema
@@ -33,7 +32,7 @@ async function generate(
     filePath: './test.graphql',
   })
   const output = generator.build()
-  return format(output.getEverything())
+  return output.getEverything()
 }
 
 describe('Generator', () => {
@@ -73,14 +72,14 @@ describe('Generator', () => {
       }
 
       // First generate without cache.
-      const resultWithoutCaching = await generate(query, customSchema, {
+      const resultWithoutCaching = generate(query, customSchema, {
         ...baseOptions,
         useCache: false,
       })
       await expect(resultWithoutCaching).toMatchFileSnapshot(fileSnapshotPath)
 
       // Now generate with cache.
-      const resultWithCaching = await generate(query, customSchema, {
+      const resultWithCaching = generate(query, customSchema, {
         ...baseOptions,
         useCache: true,
       })
@@ -94,10 +93,7 @@ describe('Generator', () => {
       if (isWatch) {
         const codegenSchemaContent = customSchema ?? schemaContent
         // Also generate an output with graphql-codegen for reference.
-        const resultCodegen = await generateCodegen(
-          codegenSchemaContent,
-          query,
-        ).then(format)
+        const resultCodegen = await generateCodegen(codegenSchemaContent, query)
         await expect(resultCodegen).toMatchFileSnapshot(codegenSnapshotPath)
       }
     })

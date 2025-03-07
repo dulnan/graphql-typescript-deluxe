@@ -2,39 +2,36 @@
 // Type Helpers
 // --------------------------------------------------------------------------------
 
-type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+
 
 // --------------------------------------------------------------------------------
 // Object Types
 // --------------------------------------------------------------------------------
 
 /** A comment by an external user. */
-type Comment = 'Comment'
+type Comment = 'Comment';
 /** A domain. */
-type Domain = 'Domain'
+type Domain = 'Domain';
 
-type MediaImage = 'MediaImage'
+type MediaImage = 'MediaImage';
 
-type MediaVideo = 'MediaVideo'
+type MediaVideo = 'MediaVideo';
 /** A blog post. */
-type NodeArticle = 'NodeArticle'
+type NodeArticle = 'NodeArticle';
 
-type NodePage = 'NodePage'
+type NodePage = 'NodePage';
 /** A user. */
-type User = 'User'
+type User = 'User';
+
 
 // --------------------------------------------------------------------------------
 // Interfaces & Unions
 // --------------------------------------------------------------------------------
 
-export type Entity =
-  | User
-  | Domain
-  | Comment
-  | MediaImage
-  | MediaVideo
-  | NodePage
-  | NodeArticle
+
+export type Entity = User | Domain | Comment | MediaImage | MediaVideo | NodePage | NodeArticle;
+
 
 // --------------------------------------------------------------------------------
 // Operations
@@ -42,7 +39,7 @@ export type Entity =
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * query inlineFields {
@@ -52,7 +49,7 @@ export type Entity =
  *       body_alias: body
  *     }
  *   }
- *
+ * 
  *   singleObject: getRandomEntity {
  *     __typename
  *     id
@@ -62,22 +59,21 @@ export type Entity =
  */
 export type InlineFieldsQuery = {
   /** Get random entity. */
-  foobar?:
-    | {
-        __typename: Exclude<Entity, NodePage>
-      }
-    | {
-        __typename: NodePage
-        /** The body text. */
-        body_alias?: string
-      }
+  foobar?: ({
+    __typename: Exclude<Entity, NodePage>;
+  } | {
+    __typename: NodePage;
+    /** The body text. */
+    body_alias?: string;
+  });
   /** Get random entity. */
   singleObject?: {
-    __typename: Entity
+    __typename: Entity;
     /** The ID. */
-    id: string
-  }
-}
+    id: string;
+  };
+};
+
 
 // --------------------------------------------------------------------------------
 // Operation Variables
@@ -85,6 +81,6 @@ export type InlineFieldsQuery = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  */
-export type InlineFieldsQueryVariables = Exact<{ [key: string]: never }>
+export type InlineFieldsQueryVariables = Exact<{ [key: string]: never; }>;

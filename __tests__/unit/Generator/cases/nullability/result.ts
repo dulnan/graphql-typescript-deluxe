@@ -2,7 +2,8 @@
 // Type Helpers
 // --------------------------------------------------------------------------------
 
-type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+
 
 // --------------------------------------------------------------------------------
 // Fragments
@@ -10,7 +11,7 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment nullability on Nullability {
@@ -28,19 +29,19 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
 export type NullabilityFragment = {
   nonNullableEntity: {
     /** The ID. */
-    id: string
-  }
-  nonNullableId: string
+    id: string;
+  };
+  nonNullableId: string;
   nullableEntity?: {
     /** The ID. */
-    id: string
-  }
-  nullableId?: string
-}
+    id: string;
+  };
+  nullableId?: string;
+};
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment nullabilityQuery on Query {
@@ -62,20 +63,21 @@ export type NullabilityFragment = {
 export type NullabilityQueryFragment = {
   /** Get a non-nullable array with non-nullable items. */
   fullyNonNullableArray: {
-    nonNullableId: string
-    nullableId?: string
-  }[]
+    nonNullableId: string;
+    nullableId?: string;
+  }[];
   /** Get a non-nullable array with nullable items. */
   nonNullableArray: ({
-    nonNullableId: string
-    nullableId?: string
-  } | null)[]
+    nonNullableId: string;
+    nullableId?: string;
+  } | null)[];
   /** Get a fully nullable array. */
   nullableArray?: ({
-    nonNullableId: string
-    nullableId?: string
-  } | null)[]
-}
+    nonNullableId: string;
+    nullableId?: string;
+  } | null)[];
+};
+
 
 // --------------------------------------------------------------------------------
 // Operations
@@ -83,7 +85,7 @@ export type NullabilityQueryFragment = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * query nullability {
@@ -105,20 +107,21 @@ export type NullabilityQueryFragment = {
 export type NullabilityQuery = {
   /** Get a non-nullable array with non-nullable items. */
   fullyNonNullableArray: {
-    nonNullableId: string
-    nullableId?: string
-  }[]
+    nonNullableId: string;
+    nullableId?: string;
+  }[];
   /** Get a non-nullable array with nullable items. */
   nonNullableArray: ({
-    nonNullableId: string
-    nullableId?: string
-  } | null)[]
+    nonNullableId: string;
+    nullableId?: string;
+  } | null)[];
   /** Get a fully nullable array. */
   nullableArray?: ({
-    nonNullableId: string
-    nullableId?: string
-  } | null)[]
-}
+    nonNullableId: string;
+    nullableId?: string;
+  } | null)[];
+};
+
 
 // --------------------------------------------------------------------------------
 // Operation Variables
@@ -126,6 +129,6 @@ export type NullabilityQuery = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  */
-export type NullabilityQueryVariables = Exact<{ [key: string]: never }>
+export type NullabilityQueryVariables = Exact<{ [key: string]: never; }>;

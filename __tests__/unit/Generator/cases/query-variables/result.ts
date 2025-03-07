@@ -2,7 +2,8 @@
 // Type Helpers
 // --------------------------------------------------------------------------------
 
-type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+
 
 // --------------------------------------------------------------------------------
 // Enums
@@ -16,7 +17,7 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
  *   A node.
  *   """
  *   NODE
- *
+ * 
  *   """
  *   A media.
  *   """
@@ -28,9 +29,10 @@ export const EntityType = {
   /** A node. */
   NODE: 'NODE',
   /** A media. */
-  MEDIA: 'MEDIA',
-} as const
-export type EntityType = (typeof EntityType)[keyof typeof EntityType]
+  MEDIA: 'MEDIA'
+} as const;
+export type EntityType = (typeof EntityType)[keyof typeof EntityType];
+
 
 // --------------------------------------------------------------------------------
 // Operations
@@ -38,7 +40,7 @@ export type EntityType = (typeof EntityType)[keyof typeof EntityType]
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * query inputTypes($entityType: EntityType!, $id: ID!) {
@@ -52,9 +54,10 @@ export type InputTypesQuery = {
   /** Get an entity by ID. */
   entityById?: {
     /** The ID. */
-    id: string
-  }
-}
+    id: string;
+  };
+};
+
 
 // --------------------------------------------------------------------------------
 // Operation Variables
@@ -62,9 +65,9 @@ export type InputTypesQuery = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  */
 export type InputTypesQueryVariables = Exact<{
-  entityType: EntityType
-  id: string | number
-}>
+  entityType: EntityType;
+  id: string | number;
+}>;

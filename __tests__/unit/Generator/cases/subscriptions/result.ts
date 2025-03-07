@@ -2,7 +2,8 @@
 // Type Helpers
 // --------------------------------------------------------------------------------
 
-type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+
 
 // --------------------------------------------------------------------------------
 // Fragments
@@ -10,7 +11,7 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment formSubmission on FormSubmission {
@@ -20,9 +21,10 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
  * ```
  */
 export type FormSubmissionFragment = {
-  id: string
-  timestamp: number
-}
+  id: string;
+  timestamp: number;
+};
+
 
 // --------------------------------------------------------------------------------
 // Operations
@@ -30,7 +32,7 @@ export type FormSubmissionFragment = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * subscription subscriptions {
@@ -41,8 +43,9 @@ export type FormSubmissionFragment = {
  * ```
  */
 export type SubscriptionsSubscription = {
-  formSubmitted?: FormSubmissionFragment
-}
+  formSubmitted?: FormSubmissionFragment;
+};
+
 
 // --------------------------------------------------------------------------------
 // Operation Variables
@@ -50,6 +53,6 @@ export type SubscriptionsSubscription = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  */
-export type SubscriptionsSubscriptionVariables = Exact<{ [key: string]: never }>
+export type SubscriptionsSubscriptionVariables = Exact<{ [key: string]: never; }>;

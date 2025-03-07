@@ -2,7 +2,8 @@
 // Type Helpers
 // --------------------------------------------------------------------------------
 
-type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+
 
 // --------------------------------------------------------------------------------
 // Fragments
@@ -10,7 +11,7 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment entity on Entity {
@@ -20,8 +21,9 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
  */
 export type EntityFragment = {
   /** The ID. */
-  id: string
-}
+  id: string;
+};
+
 
 // --------------------------------------------------------------------------------
 // Operations
@@ -29,7 +31,7 @@ export type EntityFragment = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * query test {
@@ -46,18 +48,17 @@ export type EntityFragment = {
  */
 export type TestQuery = {
   /** Get random entity. */
-  getRandomEntity?:
-    | {
-        /** The ID. */
-        id: string
-        /** The title of the page. */
-        title: string
-      }
-    | {
-        /** The ID. */
-        id: string
-      }
-}
+  getRandomEntity?: ({
+    /** The ID. */
+    id: string;
+    /** The title of the page. */
+    title: string;
+  } | {
+    /** The ID. */
+    id: string;
+  });
+};
+
 
 // --------------------------------------------------------------------------------
 // Operation Variables
@@ -65,6 +66,6 @@ export type TestQuery = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  */
-export type TestQueryVariables = Exact<{ [key: string]: never }>
+export type TestQueryVariables = Exact<{ [key: string]: never; }>;

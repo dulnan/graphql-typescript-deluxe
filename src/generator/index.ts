@@ -321,11 +321,11 @@ export class Generator {
             : undefined,
         }) + '\n'
     }
-    const code = `${comment}${result.code}`
+    const code = this.formatCode(result.code)
     this.generatedCode.set(key, {
       type: generatedTypeType,
       name: result.typeName,
-      code: this.formatCode(code),
+      code: `${comment}${code}`,
       filePath: this.dependencyTracker?.getCurrentFile() || '',
       dependencies,
       source: result.source,
@@ -631,16 +631,15 @@ export class Generator {
 
       this.dependencyTracker?.start()
       this.dependencyTracker?.addFragment(fragmentName)
-      const ir = postProcessIR(
-        this.buildSelectionSet(type, item.node.selectionSet),
-      )
+      const ir = this.buildSelectionSet(type, item.node.selectionSet)
+      const processedIR = postProcessIR(ir)
       const dependencies = this.dependencyTracker?.end() || []
       this.fragmentIRs.set(item.node.name.value, {
-        map: buildFragmentIRFields(ir),
+        map: buildFragmentIRFields(processedIR),
         dependencies,
         filePath: this.dependencyTracker?.getCurrentFile() || NO_FILE_PATH,
       })
-      const code = makeExport(typeName, this.IRToCode(ir))
+      const code = makeExport(typeName, this.IRToCode(processedIR))
 
       return {
         code,
@@ -1721,9 +1720,9 @@ export class Generator {
           : ''
       const field = `${fieldName}${propertySuffix} ${tsType}${valueSuffix};`
 
-      output += '\n  '
+      output += '\n'
       output += ir.description
-        ? `${makeComment(ir.description)}\n  ${field}`
+        ? `${makeComment(ir.description)}\n${field}`
         : field
     }
 

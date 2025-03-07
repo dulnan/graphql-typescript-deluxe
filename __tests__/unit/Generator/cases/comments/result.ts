@@ -2,7 +2,8 @@
 // Type Helpers
 // --------------------------------------------------------------------------------
 
-type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+
 
 // --------------------------------------------------------------------------------
 // Operations
@@ -10,7 +11,7 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * query comments {
@@ -19,13 +20,16 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
  * ```
  */
 export type CommentsQuery = {
-  /** A very complex and long description. // Contains JS style syntax.
-/* A full comment. *\/
-Another line.
-*\/ Another comment but broken /*
-*\//*\/*\/*\/*\/*\/**\////*\/**\/*\/*\/*\//*\/*\/*\/*\/**\/*\/*\/*\/*\/*\/***\/ *\/ *\/ *\/* *\/ */
-  isAvailable?: boolean
-}
+  /**
+   * A very complex and long description. // Contains JS style syntax.
+   * /* A full comment. *\/
+   * Another line.
+   * *\/ Another comment but broken /*
+   * *\//*\/*\/*\/*\/*\/**\////*\/**\/*\/*\/*\//*\/*\/*\/*\/**\/*\/*\/*\/*\/*\/***\/ *\/ *\/ *\/* *\/
+   */
+  isAvailable?: boolean;
+};
+
 
 // --------------------------------------------------------------------------------
 // Operation Variables
@@ -33,6 +37,6 @@ Another line.
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  */
-export type CommentsQueryVariables = Exact<{ [key: string]: never }>
+export type CommentsQueryVariables = Exact<{ [key: string]: never; }>;

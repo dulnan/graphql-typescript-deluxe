@@ -2,7 +2,8 @@
 // Type Helpers
 // --------------------------------------------------------------------------------
 
-type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+
 
 // --------------------------------------------------------------------------------
 // Fragments
@@ -10,7 +11,7 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment fieldMergingOne on Query {
@@ -24,13 +25,13 @@ export type FieldMergingOneFragment = {
   /** Get the homepage. */
   getHomepage?: {
     /** The title of the page. */
-    title: string
-  }
-}
+    title: string;
+  };
+};
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment fieldMergingTwo on Query {
@@ -44,9 +45,10 @@ export type FieldMergingTwoFragment = {
   /** Get the homepage. */
   getHomepage?: {
     /** The body text. */
-    body?: string
-  }
-}
+    body?: string;
+  };
+};
+
 
 // --------------------------------------------------------------------------------
 // Operations
@@ -54,13 +56,13 @@ export type FieldMergingTwoFragment = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * query fieldMerging {
  *   ...fieldMergingOne
  *   ...fieldMergingTwo
- *
+ * 
  *   getHomepage {
  *     id
  *   }
@@ -71,13 +73,14 @@ export type FieldMergingQuery = {
   /** Get the homepage. */
   getHomepage?: {
     /** The body text. */
-    body?: string
+    body?: string;
     /** The ID of the page. */
-    id: string
+    id: string;
     /** The title of the page. */
-    title: string
-  }
-}
+    title: string;
+  };
+};
+
 
 // --------------------------------------------------------------------------------
 // Operation Variables
@@ -85,6 +88,6 @@ export type FieldMergingQuery = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  */
-export type FieldMergingQueryVariables = Exact<{ [key: string]: never }>
+export type FieldMergingQueryVariables = Exact<{ [key: string]: never; }>;

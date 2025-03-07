@@ -135,7 +135,7 @@ export function buildOptions(
       buildTypeDocFilePath:
         options?.output?.buildTypeDocFilePath ?? buildTypeDocFilePath,
       sortProperties: options?.output?.sortProperties ?? true,
-      formatCode: options?.output?.formatCode ?? false,
+      formatCode: options?.output?.formatCode ?? true,
     },
   }
 }

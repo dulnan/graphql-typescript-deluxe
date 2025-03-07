@@ -2,7 +2,8 @@
 // Type Helpers
 // --------------------------------------------------------------------------------
 
-type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+
 
 // --------------------------------------------------------------------------------
 // Enums
@@ -16,7 +17,7 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
  *   A node.
  *   """
  *   NODE
- *
+ * 
  *   """
  *   A media.
  *   """
@@ -28,9 +29,10 @@ export const EntityType = {
   /** A node. */
   NODE: 'NODE',
   /** A media. */
-  MEDIA: 'MEDIA',
-} as const
-export type EntityType = (typeof EntityType)[keyof typeof EntityType]
+  MEDIA: 'MEDIA'
+} as const;
+export type EntityType = (typeof EntityType)[keyof typeof EntityType];
+
 
 // --------------------------------------------------------------------------------
 // Fragments
@@ -38,7 +40,7 @@ export type EntityType = (typeof EntityType)[keyof typeof EntityType]
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment category on Category {
@@ -49,14 +51,14 @@ export type EntityType = (typeof EntityType)[keyof typeof EntityType]
  */
 export type CategoryFragment = {
   /** The label. */
-  label: string
+  label: string;
   /** The URL for the category overview page. */
-  url?: string
-}
+  url?: string;
+};
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment entity on Entity {
@@ -67,14 +69,14 @@ export type CategoryFragment = {
  */
 export type EntityFragment = {
   /** The EntityType enum. */
-  entityType: EntityType
+  entityType: EntityType;
   /** The ID. */
-  id: string
-}
+  id: string;
+};
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment mediaImage on MediaImage {
@@ -84,33 +86,33 @@ export type EntityFragment = {
  */
 export type MediaImageFragment = {
   /** The image URL. */
-  image?: string
-}
+  image?: string;
+};
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment nodeArticle on NodeArticle {
  *   categories {
  *     ...category
  *   }
- *
+ * 
  *   tags
  * }
  * ```
  */
 export type NodeArticleFragment = {
   /** Categories of this article. */
-  categories?: CategoryFragment[]
+  categories?: CategoryFragment[];
   /** The tags. */
-  tags?: (string | null)[]
-}
+  tags?: (string | null)[];
+};
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment nodePage on NodePage {
@@ -120,8 +122,9 @@ export type NodeArticleFragment = {
  */
 export type NodePageFragment = {
   /** The body text. */
-  body?: string
-}
+  body?: string;
+};
+
 
 // --------------------------------------------------------------------------------
 // Operations
@@ -129,7 +132,7 @@ export type NodePageFragment = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * query fragmentInterface {
@@ -144,32 +147,29 @@ export type NodePageFragment = {
  */
 export type FragmentInterfaceQuery = {
   /** Get random entity. */
-  getRandomEntity?:
-    | {
-        /** The EntityType enum. */
-        entityType: EntityType
-        /** The ID. */
-        id: string
-      }
-    | ({
-        /** The EntityType enum. */
-        entityType: EntityType
-        /** The ID. */
-        id: string
-      } & MediaImageFragment)
-    | ({
-        /** The EntityType enum. */
-        entityType: EntityType
-        /** The ID. */
-        id: string
-      } & NodeArticleFragment)
-    | ({
-        /** The EntityType enum. */
-        entityType: EntityType
-        /** The ID. */
-        id: string
-      } & NodePageFragment)
-}
+  getRandomEntity?: ({
+    /** The EntityType enum. */
+    entityType: EntityType;
+    /** The ID. */
+    id: string;
+  } | {
+    /** The EntityType enum. */
+    entityType: EntityType;
+    /** The ID. */
+    id: string;
+  } & MediaImageFragment | {
+    /** The EntityType enum. */
+    entityType: EntityType;
+    /** The ID. */
+    id: string;
+  } & NodeArticleFragment | {
+    /** The EntityType enum. */
+    entityType: EntityType;
+    /** The ID. */
+    id: string;
+  } & NodePageFragment);
+};
+
 
 // --------------------------------------------------------------------------------
 // Operation Variables
@@ -177,6 +177,6 @@ export type FragmentInterfaceQuery = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  */
-export type FragmentInterfaceQueryVariables = Exact<{ [key: string]: never }>
+export type FragmentInterfaceQueryVariables = Exact<{ [key: string]: never; }>;

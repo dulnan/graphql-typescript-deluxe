@@ -2,39 +2,36 @@
 // Type Helpers
 // --------------------------------------------------------------------------------
 
-type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+
 
 // --------------------------------------------------------------------------------
 // Object Types
 // --------------------------------------------------------------------------------
 
 /** A comment by an external user. */
-type Comment = 'Comment'
+type Comment = 'Comment';
 /** A domain. */
-type Domain = 'Domain'
+type Domain = 'Domain';
 
-type MediaImage = 'MediaImage'
+type MediaImage = 'MediaImage';
 
-type MediaVideo = 'MediaVideo'
+type MediaVideo = 'MediaVideo';
 /** A blog post. */
-type NodeArticle = 'NodeArticle'
+type NodeArticle = 'NodeArticle';
 
-type NodePage = 'NodePage'
+type NodePage = 'NodePage';
 /** A user. */
-type User = 'User'
+type User = 'User';
+
 
 // --------------------------------------------------------------------------------
 // Interfaces & Unions
 // --------------------------------------------------------------------------------
 
-export type Entity =
-  | User
-  | Domain
-  | Comment
-  | MediaImage
-  | MediaVideo
-  | NodePage
-  | NodeArticle
+
+export type Entity = User | Domain | Comment | MediaImage | MediaVideo | NodePage | NodeArticle;
+
 
 // --------------------------------------------------------------------------------
 // Operations
@@ -42,7 +39,7 @@ export type Entity =
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * query typenamesComplex {
@@ -57,16 +54,15 @@ export type Entity =
  */
 export type TypenamesComplexQuery = {
   /** Get random entity. */
-  one?:
-    | {
-        __typename: Exclude<Entity, NodePage>
-      }
-    | {
-        __typename: NodePage
-        /** The body text. */
-        body_alias?: string
-      }
-}
+  one?: ({
+    __typename: Exclude<Entity, NodePage>;
+  } | {
+    __typename: NodePage;
+    /** The body text. */
+    body_alias?: string;
+  });
+};
+
 
 // --------------------------------------------------------------------------------
 // Operation Variables
@@ -74,6 +70,6 @@ export type TypenamesComplexQuery = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  */
-export type TypenamesComplexQueryVariables = Exact<{ [key: string]: never }>
+export type TypenamesComplexQueryVariables = Exact<{ [key: string]: never; }>;

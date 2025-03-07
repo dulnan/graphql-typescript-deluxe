@@ -2,23 +2,28 @@
 // Type Helpers
 // --------------------------------------------------------------------------------
 
-type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+
 
 // --------------------------------------------------------------------------------
 // Object Types
 // --------------------------------------------------------------------------------
 
-type DefaultEntityUrl = 'DefaultEntityUrl'
 
-type DefaultInternalUrl = 'DefaultInternalUrl'
+type DefaultEntityUrl = 'DefaultEntityUrl';
 
-type DefaultUrl = 'DefaultUrl'
+type DefaultInternalUrl = 'DefaultInternalUrl';
+
+type DefaultUrl = 'DefaultUrl';
+
 
 // --------------------------------------------------------------------------------
 // Interfaces & Unions
 // --------------------------------------------------------------------------------
 
-export type Url = DefaultEntityUrl | DefaultInternalUrl | DefaultUrl
+
+export type Url = DefaultEntityUrl | DefaultInternalUrl | DefaultUrl;
+
 
 // --------------------------------------------------------------------------------
 // Fragments
@@ -26,7 +31,7 @@ export type Url = DefaultEntityUrl | DefaultInternalUrl | DefaultUrl
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment route on Query {
@@ -41,17 +46,16 @@ export type Url = DefaultEntityUrl | DefaultInternalUrl | DefaultUrl
  * ```
  */
 export type RouteFragment = {
-  route?:
-    | {
-        __typename: DefaultEntityUrl | DefaultInternalUrl
-        foobar?: string
-        path: string
-      }
-    | {
-        __typename: DefaultUrl
-        foobar?: string
-      }
-}
+  route?: ({
+    __typename: DefaultEntityUrl | DefaultInternalUrl;
+    foobar?: string;
+    path: string;
+  } | {
+    __typename: DefaultUrl;
+    foobar?: string;
+  });
+};
+
 
 // --------------------------------------------------------------------------------
 // Operations
@@ -59,12 +63,12 @@ export type RouteFragment = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * query fieldMergingTypename {
  *   ...route
- *
+ * 
  *   route(path: "Foobar") {
  *     foobar: path
  *     __typename
@@ -76,23 +80,21 @@ export type RouteFragment = {
  * ```
  */
 export type FieldMergingTypenameQuery = {
-  route?:
-    | {
-        __typename: DefaultEntityUrl
-        foobar?: string
-        path: string
-        routeName: string
-      }
-    | {
-        __typename: DefaultInternalUrl
-        foobar?: string
-        path: string
-      }
-    | {
-        __typename: DefaultUrl
-        foobar?: string
-      }
-}
+  route?: ({
+    __typename: DefaultEntityUrl;
+    foobar?: string;
+    path: string;
+    routeName: string;
+  } | {
+    __typename: DefaultInternalUrl;
+    foobar?: string;
+    path: string;
+  } | {
+    __typename: DefaultUrl;
+    foobar?: string;
+  });
+};
+
 
 // --------------------------------------------------------------------------------
 // Operation Variables
@@ -100,6 +102,6 @@ export type FieldMergingTypenameQuery = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  */
-export type FieldMergingTypenameQueryVariables = Exact<{ [key: string]: never }>
+export type FieldMergingTypenameQueryVariables = Exact<{ [key: string]: never; }>;

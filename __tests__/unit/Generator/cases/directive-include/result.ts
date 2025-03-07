@@ -2,7 +2,8 @@
 // Type Helpers
 // --------------------------------------------------------------------------------
 
-type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+
 
 // --------------------------------------------------------------------------------
 // Operations
@@ -10,7 +11,7 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * query directivesInclude(
@@ -23,12 +24,12 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
  *         name
  *         email
  *       }
- *
+ * 
  *       authorRequired: author {
  *         name
  *         email
  *       }
- *
+ * 
  *       categories @include(if: $withCategories) {
  *         label
  *       }
@@ -39,30 +40,29 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
  */
 export type DirectivesIncludeQuery = {
   /** Get random entity. */
-  getRandomEntity?:
-    | object
-    | {
-        /** The author of the article. */
-        authorOptional?: {
-          /** Email address of the author. */
-          email?: string
-          /** Name of the author. */
-          name: string
-        }
-        /** The author of the article. */
-        authorRequired: {
-          /** Email address of the author. */
-          email?: string
-          /** Name of the author. */
-          name: string
-        }
-        /** Categories of this article. */
-        categories?: {
-          /** The label. */
-          label: string
-        }[]
-      }
-}
+  getRandomEntity?: (object | {
+    /** The author of the article. */
+    authorOptional?: {
+      /** Email address of the author. */
+      email?: string;
+      /** Name of the author. */
+      name: string;
+    };
+    /** The author of the article. */
+    authorRequired: {
+      /** Email address of the author. */
+      email?: string;
+      /** Name of the author. */
+      name: string;
+    };
+    /** Categories of this article. */
+    categories?: {
+      /** The label. */
+      label: string;
+    }[];
+  });
+};
+
 
 // --------------------------------------------------------------------------------
 // Operation Variables
@@ -70,9 +70,9 @@ export type DirectivesIncludeQuery = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  */
 export type DirectivesIncludeQueryVariables = Exact<{
-  withAuthor?: boolean | null
-  withCategories?: boolean | null
-}>
+  withAuthor?: boolean | null;
+  withCategories?: boolean | null;
+}>;

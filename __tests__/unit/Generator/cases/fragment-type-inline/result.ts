@@ -2,7 +2,8 @@
 // Type Helpers
 // --------------------------------------------------------------------------------
 
-type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+
 
 // --------------------------------------------------------------------------------
 // Operations
@@ -10,7 +11,7 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * query test {
@@ -18,12 +19,12 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
  *     ... on Node {
  *       title
  *     }
- *
+ * 
  *     ... on NodePage {
  *       id
  *       body
  *     }
- *
+ * 
  *     ... on NodeArticle {
  *       categories {
  *         label
@@ -35,26 +36,24 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
  */
 export type TestQuery = {
   /** Get random entity. */
-  getRandomEntity?:
-    | object
-    | {
-        /** Categories of this article. */
-        categories?: {
-          /** The label. */
-          label: string
-        }[]
-        /** The title of the node. */
-        title: string
-      }
-    | {
-        /** The body text. */
-        body?: string
-        /** The ID of the page. */
-        id: string
-        /** The title of the node. */
-        title: string
-      }
-}
+  getRandomEntity?: (object | {
+    /** Categories of this article. */
+    categories?: {
+      /** The label. */
+      label: string;
+    }[];
+    /** The title of the node. */
+    title: string;
+  } | {
+    /** The body text. */
+    body?: string;
+    /** The ID of the page. */
+    id: string;
+    /** The title of the node. */
+    title: string;
+  });
+};
+
 
 // --------------------------------------------------------------------------------
 // Operation Variables
@@ -62,6 +61,6 @@ export type TestQuery = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  */
-export type TestQueryVariables = Exact<{ [key: string]: never }>
+export type TestQueryVariables = Exact<{ [key: string]: never; }>;

@@ -2,7 +2,8 @@
 // Type Helpers
 // --------------------------------------------------------------------------------
 
-type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+
 
 // --------------------------------------------------------------------------------
 // Enums
@@ -16,7 +17,7 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
  *   A node.
  *   """
  *   NODE
- *
+ * 
  *   """
  *   A media.
  *   """
@@ -28,9 +29,10 @@ export const EntityType = {
   /** A node. */
   NODE: 'NODE',
   /** A media. */
-  MEDIA: 'MEDIA',
-} as const
-export type EntityType = (typeof EntityType)[keyof typeof EntityType]
+  MEDIA: 'MEDIA'
+} as const;
+export type EntityType = (typeof EntityType)[keyof typeof EntityType];
+
 
 // --------------------------------------------------------------------------------
 // Fragments
@@ -38,7 +40,7 @@ export type EntityType = (typeof EntityType)[keyof typeof EntityType]
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment nodeArticleOne on NodeArticle {
@@ -56,20 +58,20 @@ export type NodeArticleOneFragment = {
   /** Categories of this article. */
   categories?: {
     /** The label. */
-    label: string
+    label: string;
     /** Related entities. */
     related?: {
       /** The ID. */
-      id: string
-    }[]
-  }[]
+      id: string;
+    }[];
+  }[];
   /** The title of the article. */
-  title: string
-}
+  title: string;
+};
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment nodeArticleTwo on NodeArticle {
@@ -89,14 +91,15 @@ export type NodeArticleTwoFragment = {
     /** Related entities. */
     related?: {
       /** The EntityType enum. */
-      entityType: EntityType
-    }[]
+      entityType: EntityType;
+    }[];
     /** The URL for the category overview page. */
-    url?: string
-  }[]
+    url?: string;
+  }[];
   /** The tags. */
-  tags?: (string | null)[]
-}
+  tags?: (string | null)[];
+};
+
 
 // --------------------------------------------------------------------------------
 // Operations
@@ -104,14 +107,14 @@ export type NodeArticleTwoFragment = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * query fieldMergingNested {
  *   entityById(id: "1", entityType: NODE) {
  *     ...nodeArticleOne
  *     ...nodeArticleTwo
- *
+ * 
  *     ... on NodeArticle {
  *       categories {
  *         related {
@@ -125,26 +128,24 @@ export type NodeArticleTwoFragment = {
  */
 export type FieldMergingNestedQuery = {
   /** Get an entity by ID. */
-  entityById?:
-    | ({
-        /** Categories of this article. */
-        categories?: {
-          /** The label. */
-          label: string
-          /** Related entities. */
-          related?: {
-            /** The EntityType enum. */
-            entityType: EntityType
-            /** The ID. */
-            id: string
-          }[]
-          /** The URL for the category overview page. */
-          url?: string
-        }[]
-      } & Omit<NodeArticleOneFragment, 'categories'> &
-        Omit<NodeArticleTwoFragment, 'categories'>)
-    | object
-}
+  entityById?: (({
+    /** Categories of this article. */
+    categories?: {
+      /** The label. */
+      label: string;
+      /** Related entities. */
+      related?: {
+        /** The EntityType enum. */
+        entityType: EntityType;
+        /** The ID. */
+        id: string;
+      }[];
+      /** The URL for the category overview page. */
+      url?: string;
+    }[];
+  } & Omit<NodeArticleOneFragment, "categories"> & Omit<NodeArticleTwoFragment, "categories">) | object);
+};
+
 
 // --------------------------------------------------------------------------------
 // Operation Variables
@@ -152,6 +153,6 @@ export type FieldMergingNestedQuery = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  */
-export type FieldMergingNestedQueryVariables = Exact<{ [key: string]: never }>
+export type FieldMergingNestedQueryVariables = Exact<{ [key: string]: never; }>;

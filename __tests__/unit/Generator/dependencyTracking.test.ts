@@ -455,7 +455,7 @@ query foobar {
       // Type Helpers
       // --------------------------------------------------------------------------------
 
-      type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }; 
+      type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 
 
       // --------------------------------------------------------------------------------
@@ -465,9 +465,9 @@ query foobar {
       export type ArticleOneFragment = {
         /** Categories of this article. */
         categories?: {
-        /** The label. */
-        label: string;
-      }[];
+          /** The label. */
+          label: string;
+        }[];
         /** The title of the article. */
         title: string;
       };
@@ -475,9 +475,9 @@ query foobar {
       export type ArticleTwoFragment = {
         /** Categories of this article. */
         categories?: {
-        /** The URL for the category overview page. */
-        url?: string;
-      }[];
+          /** The URL for the category overview page. */
+          url?: string;
+        }[];
       };
 
 
@@ -488,19 +488,19 @@ query foobar {
       export type QueryFirstQuery = {
         /** Get random entity. */
         getRandomEntity?: (({
-        /** Categories of this article. */
-        categories?: {
-        /** The label. */
-        label: string;
-        /** Related entities. */
-        related?: {
-        /** The ID. */
-        id: string;
-      }[];
-        /** The URL for the category overview page. */
-        url?: string;
-      }[];
-      } & Omit<ArticleOneFragment, "categories">) | object);
+          /** Categories of this article. */
+          categories?: {
+            /** The label. */
+            label: string;
+            /** Related entities. */
+            related?: {
+              /** The ID. */
+              id: string;
+            }[];
+            /** The URL for the category overview page. */
+            url?: string;
+          }[];
+        } & Omit<ArticleOneFragment, "categories">) | object);
       };
 
 
@@ -523,7 +523,7 @@ query foobar {
       // Type Helpers
       // --------------------------------------------------------------------------------
 
-      type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }; 
+      type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 
 
       // --------------------------------------------------------------------------------
@@ -533,9 +533,9 @@ query foobar {
       export type ArticleOneFragment = {
         /** Categories of this article. */
         categories?: {
-        /** The label. */
-        label: string;
-      }[];
+          /** The label. */
+          label: string;
+        }[];
         /** The title of the article. */
         title: string;
       };
@@ -543,9 +543,9 @@ query foobar {
       export type ArticleTwoFragment = {
         /** Categories of this article. */
         categories?: {
-        /** The URL for the category overview page. */
-        urlRenamed?: string;
-      }[];
+          /** The URL for the category overview page. */
+          urlRenamed?: string;
+        }[];
       };
 
 
@@ -556,19 +556,19 @@ query foobar {
       export type QueryFirstQuery = {
         /** Get random entity. */
         getRandomEntity?: (({
-        /** Categories of this article. */
-        categories?: {
-        /** The label. */
-        label: string;
-        /** Related entities. */
-        related?: {
-        /** The ID. */
-        id: string;
-      }[];
-        /** The URL for the category overview page. */
-        urlRenamed?: string;
-      }[];
-      } & Omit<ArticleOneFragment, "categories">) | object);
+          /** Categories of this article. */
+          categories?: {
+            /** The label. */
+            label: string;
+            /** Related entities. */
+            related?: {
+              /** The ID. */
+              id: string;
+            }[];
+            /** The URL for the category overview page. */
+            urlRenamed?: string;
+          }[];
+        } & Omit<ArticleOneFragment, "categories">) | object);
       };
 
 

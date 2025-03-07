@@ -2,7 +2,8 @@
 // Type Helpers
 // --------------------------------------------------------------------------------
 
-type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+
 
 // --------------------------------------------------------------------------------
 // Fragments
@@ -10,7 +11,7 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment categoryRelatedNode on Node {
@@ -23,20 +24,19 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
  * }
  * ```
  */
-export type CategoryRelatedNodeFragment =
-  | {
-      /** Categories of this article. */
-      categories?: {
-        /** The URL for the category overview page. */
-        url?: string
-      }[]
-      /** The title of the node. */
-      title: string
-    }
-  | {
-      /** The title of the node. */
-      title: string
-    }
+export type CategoryRelatedNodeFragment = ({
+  /** Categories of this article. */
+  categories?: {
+    /** The URL for the category overview page. */
+    url?: string;
+  }[];
+  /** The title of the node. */
+  title: string;
+} | {
+  /** The title of the node. */
+  title: string;
+});
+
 
 // --------------------------------------------------------------------------------
 // Operations
@@ -44,7 +44,7 @@ export type CategoryRelatedNodeFragment =
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * query stressTest {
@@ -61,24 +61,22 @@ export type CategoryRelatedNodeFragment =
  */
 export type StressTestQuery = {
   /** Get an entity by ID. */
-  entityById?:
-    | object
-    | {
-        /** Categories of this article. */
-        categories?: {
-          /** The label. */
-          label: string
-          /** The URL for the category overview page. */
-          url?: string
-        }[]
-        /** The title of the node. */
-        title: string
-      }
-    | {
-        /** The title of the node. */
-        title: string
-      }
-}
+  entityById?: (object | {
+    /** Categories of this article. */
+    categories?: {
+      /** The label. */
+      label: string;
+      /** The URL for the category overview page. */
+      url?: string;
+    }[];
+    /** The title of the node. */
+    title: string;
+  } | {
+    /** The title of the node. */
+    title: string;
+  });
+};
+
 
 // --------------------------------------------------------------------------------
 // Operation Variables
@@ -86,6 +84,6 @@ export type StressTestQuery = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  */
-export type StressTestQueryVariables = Exact<{ [key: string]: never }>
+export type StressTestQueryVariables = Exact<{ [key: string]: never; }>;

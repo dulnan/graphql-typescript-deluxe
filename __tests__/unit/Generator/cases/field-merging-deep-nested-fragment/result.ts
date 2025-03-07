@@ -2,23 +2,28 @@
 // Type Helpers
 // --------------------------------------------------------------------------------
 
-type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+
 
 // --------------------------------------------------------------------------------
 // Object Types
 // --------------------------------------------------------------------------------
 
-type DefaultEntityUrl = 'DefaultEntityUrl'
 
-type DefaultInternalUrl = 'DefaultInternalUrl'
+type DefaultEntityUrl = 'DefaultEntityUrl';
 
-type DefaultUrl = 'DefaultUrl'
+type DefaultInternalUrl = 'DefaultInternalUrl';
+
+type DefaultUrl = 'DefaultUrl';
+
 
 // --------------------------------------------------------------------------------
 // Interfaces & Unions
 // --------------------------------------------------------------------------------
 
-export type Url = DefaultEntityUrl | DefaultInternalUrl | DefaultUrl
+
+export type Url = DefaultEntityUrl | DefaultInternalUrl | DefaultUrl;
+
 
 // --------------------------------------------------------------------------------
 // Fragments
@@ -26,7 +31,7 @@ export type Url = DefaultEntityUrl | DefaultInternalUrl | DefaultUrl
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment metatagAttribute on MetatagAttribute {
@@ -36,13 +41,13 @@ export type Url = DefaultEntityUrl | DefaultInternalUrl | DefaultUrl
  * ```
  */
 export type MetatagAttributeFragment = {
-  key: string
-  value: string
-}
+  key: string;
+  value: string;
+};
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment metatag on Metatag {
@@ -55,14 +60,14 @@ export type MetatagAttributeFragment = {
  * ```
  */
 export type MetatagFragment = {
-  attributes: MetatagAttributeFragment[]
-  id: string
-  tag: string
-}
+  attributes: MetatagAttributeFragment[];
+  id: string;
+  tag: string;
+};
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment routeEntity on EntityUrl {
@@ -78,15 +83,15 @@ export type MetatagFragment = {
  */
 export type RouteEntityFragment = {
   entity?: {
-    id: string
-  }
-  metatags: MetatagFragment[]
-  routeName: string
-}
+    id: string;
+  };
+  metatags: MetatagFragment[];
+  routeName: string;
+};
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment route on Query {
@@ -95,11 +100,11 @@ export type RouteEntityFragment = {
  * }
  * ```
  */
-export type RouteFragment = RouteOneFragment & RouteTwoFragment
+export type RouteFragment = RouteOneFragment & RouteTwoFragment;
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment routeInternal on InternalUrl {
@@ -111,13 +116,13 @@ export type RouteFragment = RouteOneFragment & RouteTwoFragment
  * ```
  */
 export type RouteInternalFragment = {
-  metatags: MetatagFragment[]
-  routeName: string
-}
+  metatags: MetatagFragment[];
+  routeName: string;
+};
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment routeOne on Query {
@@ -129,12 +134,12 @@ export type RouteInternalFragment = {
  * ```
  */
 export type RouteOneFragment = {
-  route?: RouteEntityFragment | RouteInternalFragment | object
-}
+  route?: (RouteEntityFragment | RouteInternalFragment | object);
+};
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment routeTwo on Query {
@@ -152,17 +157,16 @@ export type RouteOneFragment = {
  * ```
  */
 export type RouteTwoFragment = {
-  route?:
-    | {
-        __typename: DefaultEntityUrl
-        entity?: {
-          title: string
-        }
-      }
-    | {
-        __typename: DefaultInternalUrl | DefaultUrl
-      }
-}
+  route?: ({
+    __typename: DefaultEntityUrl;
+    entity?: {
+      title: string;
+    };
+  } | {
+    __typename: DefaultInternalUrl | DefaultUrl;
+  });
+};
+
 
 // --------------------------------------------------------------------------------
 // Operations
@@ -170,12 +174,12 @@ export type RouteTwoFragment = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * query fieldMergingDeepNested {
  *   ...route
- *
+ * 
  *   route(path: "Foobar") {
  *     __typename
  *     ... on EntityUrl {
@@ -190,25 +194,23 @@ export type RouteTwoFragment = {
  * ```
  */
 export type FieldMergingDeepNestedQuery = {
-  route?:
-    | {
-        __typename: DefaultEntityUrl
-        entity?: {
-          id: string
-          title: string
-        }
-        metatags: MetatagFragment[]
-        routeName: string
-      }
-    | {
-        __typename: DefaultInternalUrl
-        metatags: MetatagFragment[]
-        routeName: string
-      }
-    | {
-        __typename: DefaultUrl
-      }
-}
+  route?: ({
+    __typename: DefaultEntityUrl;
+    entity?: {
+      id: string;
+      title: string;
+    };
+    metatags: MetatagFragment[];
+    routeName: string;
+  } | {
+    __typename: DefaultInternalUrl;
+    metatags: MetatagFragment[];
+    routeName: string;
+  } | {
+    __typename: DefaultUrl;
+  });
+};
+
 
 // --------------------------------------------------------------------------------
 // Operation Variables
@@ -216,8 +218,6 @@ export type FieldMergingDeepNestedQuery = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  */
-export type FieldMergingDeepNestedQueryVariables = Exact<{
-  [key: string]: never
-}>
+export type FieldMergingDeepNestedQueryVariables = Exact<{ [key: string]: never; }>;

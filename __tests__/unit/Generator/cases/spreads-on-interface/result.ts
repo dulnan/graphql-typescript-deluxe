@@ -2,7 +2,8 @@
 // Type Helpers
 // --------------------------------------------------------------------------------
 
-type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+
 
 // --------------------------------------------------------------------------------
 // Fragments
@@ -10,7 +11,7 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment allBlocks on Block {
@@ -20,15 +21,11 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
  * }
  * ```
  */
-export type AllBlocksFragment =
-  | BlockContainerFragment
-  | BlockImageFragment
-  | BlockTextFragment
-  | object
+export type AllBlocksFragment = (BlockContainerFragment | BlockImageFragment | BlockTextFragment | object);
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment blockContainer on BlockContainer {
@@ -40,13 +37,13 @@ export type AllBlocksFragment =
  */
 export type BlockContainerFragment = {
   blocks?: ({
-    id: string
-  } | null)[]
-}
+    id: string;
+  } | null)[];
+};
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment blockImage on BlockImage {
@@ -55,12 +52,12 @@ export type BlockContainerFragment = {
  * ```
  */
 export type BlockImageFragment = {
-  imageUrl?: string
-}
+  imageUrl?: string;
+};
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment blockItem on Block {
@@ -69,12 +66,12 @@ export type BlockImageFragment = {
  * ```
  */
 export type BlockItemFragment = {
-  id: string
-}
+  id: string;
+};
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment blockText on BlockText {
@@ -83,12 +80,12 @@ export type BlockItemFragment = {
  * ```
  */
 export type BlockTextFragment = {
-  text?: string
-}
+  text?: string;
+};
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment nodePage on NodePage {
@@ -103,10 +100,11 @@ export type BlockTextFragment = {
  */
 export type NodePageFragment = {
   blocks?: ({
-    id: string
-    props: AllBlocksFragment
-  } | null)[]
-}
+    id: string;
+    props: AllBlocksFragment;
+  } | null)[];
+};
+
 
 // --------------------------------------------------------------------------------
 // Operations
@@ -114,7 +112,7 @@ export type NodePageFragment = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * query spreadsOnInterface {
@@ -125,8 +123,9 @@ export type NodePageFragment = {
  * ```
  */
 export type SpreadsOnInterfaceQuery = {
-  getPage?: NodePageFragment
-}
+  getPage?: NodePageFragment;
+};
+
 
 // --------------------------------------------------------------------------------
 // Operation Variables
@@ -134,6 +133,6 @@ export type SpreadsOnInterfaceQuery = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  */
-export type SpreadsOnInterfaceQueryVariables = Exact<{ [key: string]: never }>
+export type SpreadsOnInterfaceQueryVariables = Exact<{ [key: string]: never; }>;

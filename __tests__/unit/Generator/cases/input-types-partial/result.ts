@@ -2,7 +2,8 @@
 // Type Helpers
 // --------------------------------------------------------------------------------
 
-type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+
 
 // --------------------------------------------------------------------------------
 // Operations
@@ -10,7 +11,7 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * mutation inputTypesPartial(
@@ -26,8 +27,9 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
  */
 export type InputTypesPartialMutation = {
   /** Submit a form. */
-  submitForm: boolean
-}
+  submitForm: boolean;
+};
+
 
 // --------------------------------------------------------------------------------
 // Operation Variables
@@ -35,13 +37,14 @@ export type InputTypesPartialMutation = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  */
 export type InputTypesPartialMutationVariables = Exact<{
-  address: Address
-  firstName: string
-  lastName: string
-}>
+  address: Address;
+  firstName: string;
+  lastName: string;
+}>;
+
 
 // --------------------------------------------------------------------------------
 // Input Types
@@ -59,12 +62,12 @@ export type InputTypesPartialMutationVariables = Exact<{
  *   The street, including number.
  *   """
  *   street: String!
- *
+ * 
  *   """
  *   The ZIP code.
  *   """
  *   zipCode: String!
- *
+ * 
  *   """
  *   The locality.
  *   """
@@ -74,9 +77,9 @@ export type InputTypesPartialMutationVariables = Exact<{
  */
 export type Address = {
   /** The locality. */
-  locality: string
+  locality: string;
   /** The street, including number. */
-  street: string
+  street: string;
   /** The ZIP code. */
-  zipCode: string
-}
+  zipCode: string;
+};

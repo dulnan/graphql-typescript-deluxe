@@ -144,15 +144,24 @@ export type GeneratorOptionsOutput = {
   /**
    * Apply formatting for the generated TypeScript code.
    *
-   * If true, basic formatting (mainly indentation) is applied using TypeScript's
-   * compiler. Note that this will have an impact on performance.
+   * If true, basic formatting (mainly indentation) is being applied.
+   * If false, the output will be unformatted without any indentations, etc.
    *
    * You can also provide a method that receives the code and should return
    * the formatted code. The method will be called for every generated type
    * separately and will be cached. When using incremental updates only the
    * types that change will be re-formatted.
    *
-   * @default false
+   * Note that, depending on the kind of formatting you apply, this can have a
+   * noticeable effect on performance. Depending on your exact setup, you may
+   * want to format the final type file in its entirety instead, as this might
+   * be faster than formatting every type block separately.
+   *
+   * If you want to use prettier, you'll have to do that yourself on the final
+   * type file, since it's not possible to use async formatting in this method
+   * (and prettier only exposes an async way of formatting).
+   *
+   * @default true
    */
   formatCode?: boolean | ((code: string) => string)
 }

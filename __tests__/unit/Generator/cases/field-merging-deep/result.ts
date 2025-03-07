@@ -2,7 +2,8 @@
 // Type Helpers
 // --------------------------------------------------------------------------------
 
-type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+
 
 // --------------------------------------------------------------------------------
 // Fragments
@@ -10,7 +11,7 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment menuLinkTreeElement on MenuLinkTreeElement {
@@ -23,10 +24,11 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
  */
 export type MenuLinkTreeElementFragment = {
   link: {
-    label: string
-    url: string
-  }
-}
+    label: string;
+    url: string;
+  };
+};
+
 
 // --------------------------------------------------------------------------------
 // Operations
@@ -34,7 +36,7 @@ export type MenuLinkTreeElementFragment = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * query fieldMergingDeep {
@@ -66,14 +68,15 @@ export type FieldMergingDeepQuery = {
       subtree: ({
         subtree: ({
           subtree: ({
-            subtree: MenuLinkTreeElementFragment[]
-          } & MenuLinkTreeElementFragment)[]
-        } & MenuLinkTreeElementFragment)[]
-      } & MenuLinkTreeElementFragment)[]
-    } & MenuLinkTreeElementFragment)[]
-    name: string
-  }
-}
+            subtree: MenuLinkTreeElementFragment[];
+          } & MenuLinkTreeElementFragment)[];
+        } & MenuLinkTreeElementFragment)[];
+      } & MenuLinkTreeElementFragment)[];
+    } & MenuLinkTreeElementFragment)[];
+    name: string;
+  };
+};
+
 
 // --------------------------------------------------------------------------------
 // Operation Variables
@@ -81,6 +84,6 @@ export type FieldMergingDeepQuery = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  */
-export type FieldMergingDeepQueryVariables = Exact<{ [key: string]: never }>
+export type FieldMergingDeepQueryVariables = Exact<{ [key: string]: never; }>;

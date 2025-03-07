@@ -1,26 +1,52 @@
-import ts from 'typescript'
-
 /**
- * Formats a string of TypeScript code.
+ * Very basic and primitive formatting.
  *
- * @param code - A string containing valid TypeScript code.
+ * This works because we know exactly how the input is going to be, so we can
+ * basically just iterate line by line and look at the presence of certain
+ * characters.
+ *
+ * @param code - The code to format.
+ *
  * @returns The formatted TypeScript code.
  */
-export function formatCode(code: string): string {
-  // Create a source file from the input code
-  const sourceFile = ts.createSourceFile(
-    'temp.ts',
-    code,
-    ts.ScriptTarget.Latest,
-    true,
-  )
+export function formatCode(input: string): string {
+  const lines = input.split('\n')
+  let output = ''
+  let level = 0
 
-  const printer = ts.createPrinter({
-    newLine: ts.NewLineKind.LineFeed,
-    removeComments: false,
-    omitTrailingSemicolon: false,
-    noEmitHelpers: true,
-  })
+  const add = (line: string): void => {
+    const spaces = ' '.repeat(level * 2)
+    output += `${spaces}${line}\n`
+  }
 
-  return printer.printFile(sourceFile)
+  const increment = (): void => {
+    level++
+  }
+
+  const decrement = (): void => {
+    level = Math.max(0, level - 1)
+  }
+
+  for (const line of lines) {
+    if (line.startsWith(' * ')) {
+      add(line)
+    } else if (line.startsWith('/**') || line.endsWith('*/')) {
+      add(line)
+    } else if (line.includes('}') && line.includes('{')) {
+      decrement()
+      add(line)
+      increment()
+    } else if (line.includes('{')) {
+      add(line)
+      increment()
+    } else if (line.includes('}')) {
+      decrement()
+      add(line)
+    } else {
+      add(line)
+    }
+  }
+
+  // Removes trailing new lines and spaces.
+  return output.trim()
 }

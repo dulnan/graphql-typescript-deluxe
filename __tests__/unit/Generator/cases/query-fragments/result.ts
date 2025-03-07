@@ -2,39 +2,36 @@
 // Type Helpers
 // --------------------------------------------------------------------------------
 
-type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+
 
 // --------------------------------------------------------------------------------
 // Object Types
 // --------------------------------------------------------------------------------
 
 /** A comment by an external user. */
-type Comment = 'Comment'
+type Comment = 'Comment';
 /** A domain. */
-type Domain = 'Domain'
+type Domain = 'Domain';
 
-type MediaImage = 'MediaImage'
+type MediaImage = 'MediaImage';
 
-type MediaVideo = 'MediaVideo'
+type MediaVideo = 'MediaVideo';
 /** A blog post. */
-type NodeArticle = 'NodeArticle'
+type NodeArticle = 'NodeArticle';
 
-type NodePage = 'NodePage'
+type NodePage = 'NodePage';
 /** A user. */
-type User = 'User'
+type User = 'User';
+
 
 // --------------------------------------------------------------------------------
 // Interfaces & Unions
 // --------------------------------------------------------------------------------
 
-export type Entity =
-  | User
-  | Domain
-  | Comment
-  | MediaImage
-  | MediaVideo
-  | NodePage
-  | NodeArticle
+
+export type Entity = User | Domain | Comment | MediaImage | MediaVideo | NodePage | NodeArticle;
+
 
 // --------------------------------------------------------------------------------
 // Fragments
@@ -42,7 +39,7 @@ export type Entity =
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment queryOne on Query {
@@ -56,17 +53,15 @@ export type Entity =
  */
 export type QueryOneFragment = {
   /** Get random entity. */
-  getRandomEntity?:
-    | object
-    | {
-        /** The title of the page. */
-        title: string
-      }
-}
+  getRandomEntity?: (object | {
+    /** The title of the page. */
+    title: string;
+  });
+};
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment queryTwo on Query {
@@ -81,16 +76,15 @@ export type QueryOneFragment = {
  */
 export type QueryTwoFragment = {
   /** Get random entity. */
-  getRandomEntity?:
-    | {
-        __typename: Exclude<Entity, NodeArticle>
-      }
-    | {
-        __typename: NodeArticle
-        /** The body text of the article. */
-        body?: string
-      }
-}
+  getRandomEntity?: ({
+    __typename: Exclude<Entity, NodeArticle>;
+  } | {
+    __typename: NodeArticle;
+    /** The body text of the article. */
+    body?: string;
+  });
+};
+
 
 // --------------------------------------------------------------------------------
 // Operations
@@ -98,7 +92,7 @@ export type QueryTwoFragment = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * query queryFragments {
@@ -112,27 +106,25 @@ export type QueryTwoFragment = {
  */
 export type QueryFragmentsQuery = {
   /** Get random entity. */
-  getRandomEntity?:
-    | {
-        __typename: Exclude<Entity, NodeArticle | NodePage>
-        /** The ID. */
-        id: string
-      }
-    | {
-        __typename: NodeArticle
-        /** The body text of the article. */
-        body?: string
-        /** The ID. */
-        id: string
-      }
-    | {
-        __typename: NodePage
-        /** The ID. */
-        id: string
-        /** The title of the page. */
-        title: string
-      }
-}
+  getRandomEntity?: ({
+    __typename: Exclude<Entity, NodeArticle | NodePage>;
+    /** The ID. */
+    id: string;
+  } | {
+    __typename: NodeArticle;
+    /** The body text of the article. */
+    body?: string;
+    /** The ID. */
+    id: string;
+  } | {
+    __typename: NodePage;
+    /** The ID. */
+    id: string;
+    /** The title of the page. */
+    title: string;
+  });
+};
+
 
 // --------------------------------------------------------------------------------
 // Operation Variables
@@ -140,6 +132,6 @@ export type QueryFragmentsQuery = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  */
-export type QueryFragmentsQueryVariables = Exact<{ [key: string]: never }>
+export type QueryFragmentsQueryVariables = Exact<{ [key: string]: never; }>;

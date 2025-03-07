@@ -2,39 +2,36 @@
 // Type Helpers
 // --------------------------------------------------------------------------------
 
-type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+
 
 // --------------------------------------------------------------------------------
 // Object Types
 // --------------------------------------------------------------------------------
 
 /** A comment by an external user. */
-type Comment = 'Comment'
+type Comment = 'Comment';
 /** A domain. */
-type Domain = 'Domain'
+type Domain = 'Domain';
 
-type MediaImage = 'MediaImage'
+type MediaImage = 'MediaImage';
 
-type MediaVideo = 'MediaVideo'
+type MediaVideo = 'MediaVideo';
 /** A blog post. */
-type NodeArticle = 'NodeArticle'
+type NodeArticle = 'NodeArticle';
 
-type NodePage = 'NodePage'
+type NodePage = 'NodePage';
 /** A user. */
-type User = 'User'
+type User = 'User';
+
 
 // --------------------------------------------------------------------------------
 // Interfaces & Unions
 // --------------------------------------------------------------------------------
 
-export type Entity =
-  | User
-  | Domain
-  | Comment
-  | MediaImage
-  | MediaVideo
-  | NodePage
-  | NodeArticle
+
+export type Entity = User | Domain | Comment | MediaImage | MediaVideo | NodePage | NodeArticle;
+
 
 // --------------------------------------------------------------------------------
 // Fragments
@@ -42,7 +39,7 @@ export type Entity =
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment media on Media {
@@ -52,12 +49,12 @@ export type Entity =
  */
 export type MediaFragment = {
   /** The media provider. */
-  provider?: string
-}
+  provider?: string;
+};
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * fragment node on Node {
@@ -67,8 +64,9 @@ export type MediaFragment = {
  */
 export type NodeFragment = {
   /** The title of the node. */
-  title: string
-}
+  title: string;
+};
+
 
 // --------------------------------------------------------------------------------
 // Operations
@@ -76,7 +74,7 @@ export type NodeFragment = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  * @example
  * ```graphql
  * query fragmentUnion {
@@ -84,7 +82,7 @@ export type NodeFragment = {
  *     __typename
  *     ...node
  *     ...media
- *
+ * 
  *     ... on NodePage {
  *       body
  *     }
@@ -94,28 +92,25 @@ export type NodeFragment = {
  */
 export type FragmentUnionQuery = {
   /** Always get an entity. */
-  getNonNullEntity:
-    | {
-        __typename: Comment | Domain | User
-      }
-    | {
-        __typename: MediaImage | MediaVideo
-        /** The media provider. */
-        provider?: string
-      }
-    | {
-        __typename: NodeArticle
-        /** The title of the node. */
-        title: string
-      }
-    | {
-        __typename: NodePage
-        /** The body text. */
-        body?: string
-        /** The title of the node. */
-        title: string
-      }
-}
+  getNonNullEntity: ({
+    __typename: Comment | Domain | User;
+  } | {
+    __typename: MediaImage | MediaVideo;
+    /** The media provider. */
+    provider?: string;
+  } | {
+    __typename: NodeArticle;
+    /** The title of the node. */
+    title: string;
+  } | {
+    __typename: NodePage;
+    /** The body text. */
+    body?: string;
+    /** The title of the node. */
+    title: string;
+  });
+};
+
 
 // --------------------------------------------------------------------------------
 // Operation Variables
@@ -123,6 +118,6 @@ export type FragmentUnionQuery = {
 
 /**
  * @see {@link file://./test.graphql}
- *
+ * 
  */
-export type FragmentUnionQueryVariables = Exact<{ [key: string]: never }>
+export type FragmentUnionQueryVariables = Exact<{ [key: string]: never; }>;
