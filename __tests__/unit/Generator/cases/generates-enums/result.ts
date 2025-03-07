@@ -1,4 +1,11 @@
 // --------------------------------------------------------------------------------
+// Type Helpers
+// --------------------------------------------------------------------------------
+
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+
+
+// --------------------------------------------------------------------------------
 // Enums
 // --------------------------------------------------------------------------------
 
@@ -45,3 +52,36 @@ export type FragmentWithEnumFragment = {
   /** The EntityType enum. */
   entityType: EntityType;
 };
+
+
+// --------------------------------------------------------------------------------
+// Operations
+// --------------------------------------------------------------------------------
+
+/**
+ * @see {@link file://./test.graphql}
+ * 
+ * @example
+ * ```graphql
+ * query generatesEnums {
+ *   getRandomEntity {
+ *     ...fragmentWithEnum
+ *   }
+ * }
+ * ```
+ */
+export type GeneratesEnumsQuery = {
+  /** Get random entity. */
+  getRandomEntity?: FragmentWithEnumFragment;
+};
+
+
+// --------------------------------------------------------------------------------
+// Operation Variables
+// --------------------------------------------------------------------------------
+
+/**
+ * @see {@link file://./test.graphql}
+ * 
+ */
+export type GeneratesEnumsQueryVariables = Exact<{ [key: string]: never; }>;

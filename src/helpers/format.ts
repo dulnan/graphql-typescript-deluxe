@@ -8,6 +8,8 @@
  * Each object is guaranteed to have a "{" and "}" on separate lines, with
  * each property on one separate line too.
  *
+ * Unions of objects always have "} | {" on a separate line.
+ *
  * @param code - The code to format.
  *
  * @returns The formatted TypeScript code.

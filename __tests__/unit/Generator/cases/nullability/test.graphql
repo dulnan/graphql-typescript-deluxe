@@ -13,6 +13,10 @@ query nullability {
   }
 }
 
+query nullabilityFragment {
+  ...nullabilityQuery
+}
+
 fragment nullabilityQuery on Query {
   nullableArray {
     nullableId

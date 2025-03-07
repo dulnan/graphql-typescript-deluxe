@@ -3,3 +3,9 @@
 fragment fragmentWithEnum on NodePage {
   entityType
 }
+
+query generatesEnums {
+  getRandomEntity {
+    ...fragmentWithEnum
+  }
+}

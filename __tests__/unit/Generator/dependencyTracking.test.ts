@@ -526,64 +526,64 @@ query foobar {
 
     expect(generator.build().getEverything().getSource())
       .toMatchInlineSnapshot(`
-      "// --------------------------------------------------------------------------------
-      // Type Helpers
-      // --------------------------------------------------------------------------------
+        "// --------------------------------------------------------------------------------
+        // Type Helpers
+        // --------------------------------------------------------------------------------
 
-      type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
-
-
-      // --------------------------------------------------------------------------------
-      // Fragments
-      // --------------------------------------------------------------------------------
-
-      export type ArticleOneFragment = {
-        /** Categories of this article. */
-        categories?: {
-          /** The label. */
-          label: string;
-        }[];
-        /** The title of the article. */
-        title: string;
-      };
-
-      export type ArticleTwoFragment = {
-        /** Categories of this article. */
-        categories?: {
-          /** The URL for the category overview page. */
-          urlRenamed?: string;
-        }[];
-      };
+        type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 
 
-      // --------------------------------------------------------------------------------
-      // Operations
-      // --------------------------------------------------------------------------------
+        // --------------------------------------------------------------------------------
+        // Fragments
+        // --------------------------------------------------------------------------------
 
-      export type QueryFirstQuery = {
-        /** Get random entity. */
-        getRandomEntity?: (({
+        export type ArticleOneFragment = {
           /** Categories of this article. */
           categories?: {
             /** The label. */
             label: string;
-            /** Related entities. */
-            related?: {
-              /** The ID. */
-              id: string;
-            }[];
+          }[];
+          /** The title of the article. */
+          title: string;
+        };
+
+        export type ArticleTwoFragment = {
+          /** Categories of this article. */
+          categories?: {
             /** The URL for the category overview page. */
             urlRenamed?: string;
           }[];
-        } & Omit<ArticleOneFragment, "categories">) | object);
-      };
+        };
 
 
-      // --------------------------------------------------------------------------------
-      // Operation Variables
-      // --------------------------------------------------------------------------------
+        // --------------------------------------------------------------------------------
+        // Operations
+        // --------------------------------------------------------------------------------
 
-      export type QueryFirstQueryVariables = Exact<{ [key: string]: never; }>;"
-    `)
+        export type QueryFirstQuery = {
+          /** Get random entity. */
+          getRandomEntity?: (({
+            /** Categories of this article. */
+            categories?: {
+              /** The label. */
+              label: string;
+              /** Related entities. */
+              related?: {
+                /** The ID. */
+                id: string;
+              }[];
+              /** The URL for the category overview page. */
+              urlRenamed?: string;
+            }[];
+          } & Omit<ArticleOneFragment, "categories">) | object);
+        };
+
+
+        // --------------------------------------------------------------------------------
+        // Operation Variables
+        // --------------------------------------------------------------------------------
+
+        export type QueryFirstQueryVariables = Exact<{ [key: string]: never; }>;"
+      `)
   })
 })

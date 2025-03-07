@@ -88,6 +88,7 @@ describe('Generator Options', () => {
       expect(options.debugMode).toEqual(false)
       expect(options.useCache).toEqual(false)
       expect(options.dependencyTracking).toEqual(true)
+      expect(options.skipUnusedFragments).toEqual(false)
       expect(options.buildOperationTypeName).toEqual(buildOperationTypeName)
       expect(options.buildOperationVariablesTypeName).toEqual(
         buildOperationVariablesTypeName,
@@ -112,6 +113,7 @@ describe('Generator Options', () => {
         debugMode: true,
         useCache: false,
         dependencyTracking: false,
+        skipUnusedFragments: true,
         buildOperationTypeName: customBuildOperationTypeName,
         output: {
           emptyObject: 'type',
@@ -128,6 +130,7 @@ describe('Generator Options', () => {
       expect(options.debugMode).toEqual(true)
       expect(options.useCache).toEqual(false)
       expect(options.dependencyTracking).toEqual(false)
+      expect(options.skipUnusedFragments).toEqual(true)
 
       expect(options.output.emptyObject).toEqual('type')
       expect(options.output.typeComment).toEqual(false)

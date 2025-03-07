@@ -53,7 +53,6 @@ import {
   FragmentNotFoundError,
   LogicError,
   MissingRootTypeError,
-  TypeNotFoundError,
   type ErrorContext,
 } from '../errors'
 import {
@@ -383,6 +382,7 @@ export class Generator {
       throw new FragmentNotFoundError(name, this.getErrorContext())
     }
 
+    // We have to call this.
     this.generateFragmentType(name)
 
     return item.node
@@ -484,7 +484,7 @@ export class Generator {
 
         if (type.kind === Kind.LIST_TYPE) {
           const element = this.createInputTS(type.type)
-          output = this.toArrayShape(element)
+          output = this.toArrayString(element)
         } else if (type.kind === Kind.NAMED_TYPE) {
           const namedType = this.schema.getType(type.name.value)
           output = this.IRToCode(this.buildOutputTypeIR(namedType))
@@ -854,7 +854,7 @@ export class Generator {
    *
    * @returns The type as an array.
    */
-  private toArrayShape(type: string): string {
+  private toArrayString(type: string): string {
     const shape = this.options.output.arrayShape
     // We can directly pass in the type because the shape uses < and >.
     if (shape.includes('<') && shape.includes('>')) {
@@ -1752,7 +1752,7 @@ export class Generator {
           ir.nullableElement && this.options.output.nullableArrayElements
             ? `${elemTS} | null`
             : elemTS
-        return this.toArrayShape(finalElem)
+        return this.toArrayString(finalElem)
       }
 
       case 'UNION': {
@@ -1946,9 +1946,14 @@ export class Generator {
         })
       })
 
-      this.forEachDefinitionKind(Kind.FRAGMENT_DEFINITION, (def) => {
-        this.generateFragmentType(def.name.value)
-      })
+      // If false, always generate types for all fragments.
+      // If true, the fragment type is only generated when it is first
+      // encountered in an operation.
+      if (!this.options.skipUnusedFragments) {
+        this.forEachDefinitionKind(Kind.FRAGMENT_DEFINITION, (def) => {
+          this.generateFragmentType(def.name.value)
+        })
+      }
 
       this.forEachDefinitionKind(Kind.OPERATION_DEFINITION, (def, input) => {
         this.generateOperationType(def, input)

@@ -71,6 +71,7 @@ export type RouteFragment = {
  * @example
  * ```graphql
  * query fieldMergingDeepNested {
+ *   ...route
  *   route(path: "Foobar") {
  *     __typename
  *     ... on DefaultEntityUrl {

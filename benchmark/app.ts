@@ -133,6 +133,7 @@ async function main(): Promise<void> {
     debugMode: false,
     useCache: true,
     dependencyTracking: true,
+    skipUnusedFragments: true,
     additionalOutputCode: (): GeneratedCode[] => {
       return [
         {

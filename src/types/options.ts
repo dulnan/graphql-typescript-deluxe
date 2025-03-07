@@ -180,6 +180,16 @@ export type GeneratorOptions = {
   output?: GeneratorOptionsOutput
 
   /**
+   * Skip generating unused fragments.
+   *
+   * If true, types for fragments that are not used in any operation (either
+   * directly or indirectly) are not generated.
+   *
+   * @default false
+   */
+  skipUnusedFragments?: boolean
+
+  /**
    * Provide additional, static output code.
    *
    * The method is executed once when the class is initialised. You can add

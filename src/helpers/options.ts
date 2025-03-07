@@ -99,6 +99,7 @@ export function buildOptions(
     debugMode: !!options?.debugMode,
     useCache: options?.useCache ?? false,
     dependencyTracking: options?.dependencyTracking ?? true,
+    skipUnusedFragments: options?.skipUnusedFragments ?? false,
     additionalOutputCode:
       options?.additionalOutputCode ?? ((): GeneratedCode[] => []),
     buildOperationTypeName:
