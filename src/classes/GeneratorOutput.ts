@@ -9,7 +9,7 @@ import type {
 import { MinifyVariableName } from './MinifyVariableName'
 import { GeneratorOutputCode } from './GeneratorOutputCode'
 import { GeneratorOutputOperation } from './GeneratorOutputOperation'
-import { graphqlToString } from '../helpers/string'
+import { generateHeaderComment, graphqlToString } from '../helpers/string'
 import { GeneratorOutputFile } from './GeneratorOutputFile'
 
 const DEFAULT_SORTING: GeneratedCodeType[] = [
@@ -59,6 +59,25 @@ export class GeneratorOutput {
   }
 
   /**
+   * Generates the final string of all generated code for the given type.
+   *
+   * @param type - The generated code type.
+   *
+   * @returns The code as a single string or null if it would result in an empty string.
+   */
+  public buildCodeGroupString(type: GeneratedCodeType): string | null {
+    const items = this.code.filter((v) => v.type === type)
+    const code = items
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((v) => v.code)
+      .join(type === 'typename-object' ? '\n' : '\n\n')
+
+    return code
+      ? `${generateHeaderComment(getCodeTypeLabel(type))}\n\n${code}`.trim()
+      : null
+  }
+
+  /**
    * Build a TypeScript file containing the given code types.
    *
    * @param types - The code types to include.
@@ -70,9 +89,6 @@ export class GeneratorOutput {
     types: GeneratedCodeType[] = [],
     options?: GeneratorOutputOptions,
   ): GeneratorOutputFile {
-    const grouped: Partial<Record<GeneratedCodeType, GeneratorOutputCode[]>> =
-      {}
-
     // All collected dependencies of all code items.
     const allDependencies: Set<string> = new Set()
 
@@ -84,45 +100,24 @@ export class GeneratorOutput {
       for (const key of dependencies) {
         allDependencies.add(key)
       }
+
       if (!types.includes(code.type)) {
         continue
       }
-      if (!grouped[code.type]) {
-        grouped[code.type] = []
-      }
 
-      grouped[code.type]!.push(code)
       included.push(code.id)
     }
 
-    const sorting = options?.sorting || DEFAULT_SORTING
+    const groupOrder = options?.sorting || DEFAULT_SORTING
+    const groups = [...types].sort(
+      (a, b) => groupOrder.indexOf(a) - groupOrder.indexOf(b),
+    )
 
-    const source = Object.entries(grouped)
-      .sort(
-        (a, b) => sorting.indexOf(a[0] as any) - sorting.indexOf(b[0] as any),
-      )
-      .map((group) => {
-        const type = group[0] as GeneratedCodeType
-        const join = type === 'typename-object' ? '\n' : '\n\n'
-        const comment = [
-          '// ' + '-'.repeat(80),
-          '// ' + getCodeTypeLabel(type),
-          '// ' + '-'.repeat(80),
-        ].join('\n')
-
-        const code = group[1]
-          .sort((a, b) => a.name.localeCompare(b.name))
-          .map((v) => v.code)
-          .join(join)
-
-        if (!code) {
-          return null
-        }
-
-        return `${comment}\n\n${code}`
-      })
+    const source = groups
+      .map((type) => this.buildCodeGroupString(type))
       .filter(notNullish)
       .join('\n\n\n')
+      .trim()
 
     return new GeneratorOutputFile(
       source,

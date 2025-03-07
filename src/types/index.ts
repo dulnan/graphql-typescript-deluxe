@@ -52,14 +52,14 @@ export type GeneratedCodeIdentifier =
 
 export type GeneratedCodeType =
   | 'enum'
-  | 'input'
   | 'fragment'
+  | 'helpers'
+  | 'input'
   | 'operation'
   | 'operation-variables'
+  | 'type-helpers'
   | 'typename-object'
   | 'typename-union'
-  | 'helpers'
-  | 'type-helpers'
 
 export interface GeneratedCode {
   /**

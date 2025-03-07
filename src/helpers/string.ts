@@ -64,3 +64,9 @@ export function makeExport(name: string, type: string): string {
 export function graphqlToString(str: string): string {
   return '`' + stripIgnoredCharacters(str).replaceAll('`', '\\`') + '`'
 }
+
+export function generateHeaderComment(title: string): string {
+  return ['// ' + '-'.repeat(80), '// ' + title, '// ' + '-'.repeat(80)].join(
+    '\n',
+  )
+}
