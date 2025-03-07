@@ -711,10 +711,23 @@ export class Generator {
 
     this.generateCodeOnce('operation-variables', opName + '-variables', () => {
       const exact = this.getOrCreateTypeHelper('exact')
-      const code = makeExport(
-        variablesTypeName,
-        `${exact}<${this.generateVariablesType(operation)}>`,
-      )
+      const typeCode = operation.variableDefinitions?.length
+        ? this.objectNodeToCode(
+            IR.OBJECT({
+              graphQLTypeName: '',
+              fields: operation.variableDefinitions.reduce<
+                Record<string, IRNode>
+              >((acc, vd) => {
+                acc[vd.variable.name.value] = IR.SCALAR({
+                  tsType: this.createInputTS(vd.type),
+                  nullable: vd.type.kind !== Kind.NON_NULL_TYPE,
+                })
+                return acc
+              }, {}),
+            }),
+          )
+        : `{ [key: string]: never; }`
+      const code = makeExport(variablesTypeName, `${exact}<${typeCode}>`)
       return {
         code,
         typeName: variablesTypeName,
@@ -747,33 +760,6 @@ export class Generator {
       filePath: this.dependencyTracker?.getCurrentFile() || NO_FILE_PATH,
       timestamp: Date.now(),
     })
-  }
-
-  /**
-   * Generate the variable type for an operation.
-   *
-   * @param operation - The operation.
-   *
-   * @returns The TS code.
-   */
-  private generateVariablesType(operation: OperationDefinitionNode): string {
-    const definitions = operation.variableDefinitions
-    if (!definitions?.length) {
-      return `{ [key: string]: never; }`
-    }
-
-    return this.objectNodeToCode(
-      IR.OBJECT({
-        graphQLTypeName: '',
-        fields: definitions.reduce<Record<string, IRNode>>((acc, vd) => {
-          acc[vd.variable.name.value] = IR.SCALAR({
-            tsType: this.createInputTS(vd.type),
-            nullable: vd.type.kind !== Kind.NON_NULL_TYPE,
-          })
-          return acc
-        }, {}),
-      }),
-    )
   }
 
   // ===========================================================================
