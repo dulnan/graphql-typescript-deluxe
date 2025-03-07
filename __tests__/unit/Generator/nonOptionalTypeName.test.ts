@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import schemaContent from './schema.graphql?raw'
-import { Generator } from '../../../src/generator/index.js'
+import { Generator } from '../../../src/classes/Generator'
 import { loadSchemaSync } from '@graphql-tools/load'
 import { parse } from 'graphql'
-import { format } from './../../../helpers/format.js'
+import { format } from './../../../helpers/format'
 import type { GeneratorInput } from '../../../src/types'
 
 const schema = loadSchemaSync(schemaContent, { loaders: [] })

@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { fileURLToPath } from 'node:url'
 import { parse } from 'graphql'
 import fs from 'node:fs'
-import { Generator } from '../../../src/generator/index.js'
+import { Generator } from '../../../src/classes/Generator'
 import schemaContent from './schema.graphql?raw'
-import { generateCodegen } from './../../../helpers/generateCodegen.js'
-import type { GeneratorOptions } from '../../../src/types/options.js'
+import { generateCodegen } from './../../../helpers/generateCodegen'
+import type { GeneratorOptions } from '../../../src/types/options'
 import { loadSchemaSync } from '@graphql-tools/load'
 
 const defaultSchema = loadSchemaSync(schemaContent, {

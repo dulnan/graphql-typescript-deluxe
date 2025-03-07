@@ -1,4 +1,4 @@
-export { Generator } from './generator'
+export { Generator } from './classes/Generator'
 export type { GeneratorOptions, GeneratorOptionsOutput } from './types/options'
 export type { GeneratorOutput } from './classes/GeneratorOutput'
 export type { GeneratorOutputCode } from './classes/GeneratorOutputCode'

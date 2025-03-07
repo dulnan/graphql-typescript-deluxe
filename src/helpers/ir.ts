@@ -442,7 +442,7 @@ export function unifyObjectsDifferingOnlyInTypename(
   // Collect all literal values from each object’s __typename
   for (const obj of objects) {
     anyNullable = !anyNullable || !obj.nullable
-    const tnField = obj.fields['__typename']
+    const tnField = obj.fields[TYPENAME]
     if (tnField && tnField.kind === 'TYPENAME' && !tnField.excludeType) {
       hasTypenameField = true
       tnField.types.forEach((name) => typenames.add(name))
@@ -451,7 +451,7 @@ export function unifyObjectsDifferingOnlyInTypename(
 
   // If we have a __typename field, unify them
   if (hasTypenameField) {
-    mergedFields['__typename'] = IR.TYPENAME([...typenames.values()])
+    mergedFields[TYPENAME] = IR.TYPENAME([...typenames.values()])
   }
 
   return IR.OBJECT({
@@ -462,7 +462,7 @@ export function unifyObjectsDifferingOnlyInTypename(
 }
 
 /**
- * Create
+ * Create a key from an IR node.
  */
 export function buildNodeKeyWithoutTypename(ir: IRNode): string {
   let key = ir.kind
@@ -479,7 +479,7 @@ export function buildNodeKeyWithoutTypename(ir: IRNode): string {
         key += k
         // watch out for infinite recursion in large shapes,
         // but typically it's safe to do the same approach:
-        if (k === '__typename' && child.kind === 'TYPENAME') {
+        if (k === TYPENAME && child.kind === 'TYPENAME') {
           key += '__TYPENAME_PLACEHOLDER__'
         } else {
           key += buildNodeKeyWithoutTypename(child)
@@ -504,6 +504,15 @@ export function buildNodeKeyWithoutTypename(ir: IRNode): string {
   return key
 }
 
+/**
+ * If we do the "full" selection building in Generator.buildAbstractSelectionSet,
+ * we end up with a lot of object shapes in the union that are basically identical,
+ * except for the value of __typename.
+ *
+ * This method will merge such identical shapes into one.
+ *
+ * @TODO: This could already be handled in buildAbstractSelectionSet.
+ */
 export function mergeUnionBranchesThatDifferOnlyInTypename(
   branches: IRNode[],
 ): IRNode[] {
@@ -521,7 +530,7 @@ export function mergeUnionBranchesThatDifferOnlyInTypename(
   // Group OBJECT branches by “shapeSignature” ignoring the literal __typename.
   // shapeSignature is basically a stable string that describes all fields except
   // for the literal part of __typename. For example, if __typename is `'Foo' | 'Bar'`,
-  // we treat that as a placeholder.
+  // it's replaced by a placeholder.
   const groups = new Map<string, IRNodeObject[]>()
 
   for (const obj of objectBranches) {
