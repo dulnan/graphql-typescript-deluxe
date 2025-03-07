@@ -32,8 +32,8 @@ export type GeneratorOutputOptions = {
 }
 
 export class GeneratorOutput {
-  private code: GeneratorOutputCode[]
-  private operations: GeneratorOutputOperation[]
+  private readonly code: GeneratorOutputCode[]
+  private readonly operations: GeneratorOutputOperation[]
 
   constructor(codes: GeneratedCode[], operations: CollectedOperation[]) {
     this.code = codes.map((v) => new GeneratorOutputCode(v))
@@ -45,7 +45,7 @@ export class GeneratorOutput {
    *
    * @returns The generated code items.
    */
-  public getGeneratedCode(): GeneratorOutputCode[] {
+  public getGeneratedCode(): readonly GeneratorOutputCode[] {
     return this.code
   }
 
@@ -54,7 +54,7 @@ export class GeneratorOutput {
    *
    * @returns All collected oeprations.
    */
-  public getCollectedOperations(): GeneratorOutputOperation[] {
+  public getCollectedOperations(): readonly GeneratorOutputOperation[] {
     return this.operations
   }
 
@@ -171,6 +171,28 @@ export class GeneratorOutput {
    * @param options.minify Whether to minify the variable names.
    *
    * @returns The file contents.
+   *
+   * @example Output:
+   * ```javascript
+   * const category = `fragment category on Category{related{...relatedEntity}}`;
+   * const nodeArticle = `fragment nodeArticle on NodeArticle{categories{...category}}`;
+   * const relatedEntity = `fragment relatedEntity on Entity{id}`;
+   *
+   * export const operations = {
+   *  query: {
+   *    'foobar':
+   *      `query foobar{getRandomEntity{...nodeArticle}}` +
+   *      relatedEntity +
+   *      category +
+   *      nodeArticle,
+   *  },
+   *  mutation: {},
+   *  subscription: {}
+   * }
+   * ```
+   *
+   * Importing `operations` and accessing `operations.query.foobar` will give you
+   * the full operation, including all fragments needed for the operation.
    */
   public getOperationsFile(options?: {
     minify?: boolean
@@ -184,6 +206,27 @@ export class GeneratorOutput {
    *
    * @param options - The options.
    * @param options.importFrom - The path from which the types can be imported from.
+   *
+   * @returns The output file.
+   *
+   * @example Output:
+   * ```ts
+   * import { FoobarQuery, FoobarQueryVariables } from './operation-types'
+   *
+   * export type Query = {
+   *   foobar: { response: FoobarQuery, variables: FoobarQueryVariables, needsVariables: false }
+   * }
+   *
+   * export type Mutation = {}
+   *
+   * export type Subscription = {}
+   *
+   * export type Operations = {
+   *   query: Query,
+   *   mutation: Mutation,
+   *   subscription: Subscription,
+   * }
+   * ```
    */
   public getOperationTypesFile(options?: {
     importFrom?: string

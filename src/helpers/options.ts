@@ -5,7 +5,7 @@ import type {
   FragmentDefinitionNode,
   GraphQLNamedType,
 } from 'graphql'
-import type { GeneratorOptions } from '../types/options'
+import type { GeneratorOptions, TypeCommentOptions } from '../types/options'
 import { makeComment } from './string'
 import type { DeepRequired } from './type'
 import { InvalidOptionError } from '../errors'
@@ -138,5 +138,24 @@ export function buildOptions(
       sortProperties: options?.output?.sortProperties ?? true,
       formatCode: options?.output?.formatCode ?? true,
     },
+  }
+}
+
+export function mapTypeCommentOptions(
+  option: TypeCommentOptions[] | boolean = true,
+): Record<TypeCommentOptions, boolean> {
+  if (typeof option === 'boolean') {
+    return {
+      typeDescription: !!option,
+      fieldDescription: !!option,
+      link: !!option,
+      source: !!option,
+    }
+  }
+  return {
+    typeDescription: option.includes('typeDescription'),
+    fieldDescription: option.includes('fieldDescription'),
+    link: option.includes('link'),
+    source: option.includes('source'),
   }
 }

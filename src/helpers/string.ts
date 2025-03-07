@@ -1,6 +1,7 @@
 import { NO_FILE_PATH } from '../constants'
 import type { TypeContext } from '../types'
 import { stripIgnoredCharacters } from 'graphql'
+import type { TypeCommentOptions } from '../types/options'
 
 export function escapeStringForComment(input: string): string {
   return input.replace(/\*\//g, '*\\/')
@@ -27,16 +28,19 @@ export function toTSComment(lines: string[]): string {
   return ['/**', ...commentLines, ' */'].join('\n')
 }
 
-export function makeTypeDoc(context: TypeContext): string {
+export function makeTypeDoc(
+  context: TypeContext,
+  options: Record<TypeCommentOptions, boolean>,
+): string {
   const lines: string[] = []
   const filePath = context.input?.filePath || context.filePath
-  if (context.type?.description) {
+  if (context.type?.description && options.typeDescription) {
     lines.push(context.type.description)
   }
-  if (filePath && filePath !== NO_FILE_PATH) {
+  if (filePath && filePath !== NO_FILE_PATH && options.link) {
     lines.push(`@see {@link file://${filePath}}`, '')
   }
-  if (context.definition?.loc) {
+  if (context.definition?.loc && options.source) {
     const loc = context.definition.loc
     const source = loc.source.body.slice(loc.start, loc.end)
     if (source) {

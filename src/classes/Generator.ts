@@ -33,8 +33,8 @@ import {
   mergeSameFieldSelections,
   unwrapNonNull,
 } from '../helpers/ast'
-import type { GeneratorOptions } from '../types/options'
-import { buildOptions } from '../helpers/options'
+import type { GeneratorOptions, TypeCommentOptions } from '../types/options'
+import { buildOptions, mapTypeCommentOptions } from '../helpers/options'
 import { makeComment, makeExport, makeTypeDoc } from '../helpers/string'
 import type {
   GeneratedCode,
@@ -87,6 +87,8 @@ export class Generator {
    * The mapped options.
    */
   public readonly options: DeepRequired<GeneratorOptions>
+
+  private readonly typeCommentOptions: Record<TypeCommentOptions, boolean>
 
   /**
    * The input documents.
@@ -150,6 +152,10 @@ export class Generator {
     if (this.options.dependencyTracking) {
       this.dependencyTracker = new DependencyTracker()
     }
+
+    this.typeCommentOptions = mapTypeCommentOptions(
+      options?.output?.typeComment,
+    )
     this.schema = new SchemaProvider(schema)
   }
 
@@ -294,12 +300,17 @@ export class Generator {
     let comment = ''
     if (result.context && this.options.output.typeComment) {
       comment =
-        makeTypeDoc({
-          ...result.context,
-          filePath: result.context.filePath
-            ? this.options.output.buildTypeDocFilePath(result.context.filePath)
-            : undefined,
-        }) + '\n'
+        makeTypeDoc(
+          {
+            ...result.context,
+            filePath: result.context.filePath
+              ? this.options.output.buildTypeDocFilePath(
+                  result.context.filePath,
+                )
+              : undefined,
+          },
+          this.typeCommentOptions,
+        ) + '\n'
     }
     const code = this.formatCode(result.code)
     this.generatedCode.set(key, {
@@ -1617,7 +1628,9 @@ export class Generator {
     const ir = this.buildOutputTypeIR(field.type, fieldNode.selectionSet)
     ir.nullable =
       hasConditionalDirective(fieldNode) || !isNonNullType(field.type)
-    ir.description = field.description
+    if (this.typeCommentOptions.fieldDescription) {
+      ir.description = field.description
+    }
     return ir
   }
 

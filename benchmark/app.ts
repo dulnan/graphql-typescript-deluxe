@@ -157,7 +157,7 @@ async function main(): Promise<void> {
       nonOptionalTypename: false,
       nullableArrayElements: false,
       sortProperties: false,
-      typeComment: true,
+      typeComment: ['link'],
       arrayShape: '$T$[]',
     },
   })

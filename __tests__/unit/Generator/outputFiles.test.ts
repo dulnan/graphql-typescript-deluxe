@@ -94,16 +94,11 @@ query foobar {
       // --------------------------------------------------------------------------------
 
       export type FoobarQuery = {
-        /** Get random entity. */
         getRandomEntity?: ({
-          /** The EntityType enum. */
           entityType: EntityType;
-          /** The ID. */
           id: string;
         } | {
-          /** The EntityType enum. */
           entityType: EntityType;
-          /** The ID. */
           id: string;
         } & UserFragment);
       };"

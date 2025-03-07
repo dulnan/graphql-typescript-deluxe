@@ -8,6 +8,20 @@ import type {
 } from 'graphql'
 import type { GeneratedCode } from '.'
 
+/**
+ * Possible type comment options.
+ *
+ * - link: Adds a link to the file where the fragment/operation originates from
+ * - source: Adds a @example code block containing the source code of the fragment/operation
+ * - typeDescription: Adds the description of a type from the schema
+ * - fieldDescription: Adds the field description from the schema.
+ */
+export type TypeCommentOptions =
+  | 'link'
+  | 'source'
+  | 'typeDescription'
+  | 'fieldDescription'
+
 export type GeneratorOptionsOutput = {
   /**
    * How an "empty object" should be represented.
@@ -66,7 +80,8 @@ export type GeneratorOptionsOutput = {
    * Force a __typename field on every type.
    *
    * Note that this will significantly increase the size of the file.
-   * Ideally this should be used together with the enableTypenameMerging option.
+   * Ideally this should be used together with the mergeTypenames option to merge
+   * identical object shapes that only differ by __typename.
    *
    * @default false
    */
@@ -122,12 +137,18 @@ export type GeneratorOptionsOutput = {
    *
    * @default true
    */
-  typeComment?: boolean
+  typeComment?: boolean | TypeCommentOptions[]
 
   /**
    * Change how the file path of a document is displayed to the type comment.
    *
-   * The method receives the filePath as an argument and should return a string.
+   * The method receives the filePath from your input document as an argument
+   * and should return a string.
+   *
+   * For example, if you provide an absolute filePath in your documents, you can
+   * build a path here that is relative to where the types file is located. That
+   * way, the path can be clicked in the IDE to quickly jump to the file
+   * containing the operation / fragment.
    */
   buildTypeDocFilePath?: (filePath: string) => string
 
@@ -135,7 +156,8 @@ export type GeneratorOptionsOutput = {
    * If enabled, all object properties are sorted alphabetically.
    *
    * If disabled, the object properties are sorted in the same order as in the
-   * document.
+   * document. Note that even when disabled, the sort order is not guaranteed to
+   * be the same as in the source.
    *
    * @default true
    */
@@ -144,7 +166,8 @@ export type GeneratorOptionsOutput = {
   /**
    * Apply formatting for the generated TypeScript code.
    *
-   * If true, basic formatting (mainly indentation) is being applied.
+   * If true, basic formatting (mainly indentation) is applied without impacting
+   * performance.
    * If false, the output will be unformatted without any indentations, etc.
    *
    * You can also provide a method that receives the code and should return
@@ -170,9 +193,27 @@ export type GeneratorOptions = {
   /**
    * Enable debug mode.
    *
+   * Does not affect the output, only logs some debug info to the console.
+   *
    * @default false
    */
   debugMode?: boolean
+
+  /**
+   * Enable caching for intermediate representations of documents.
+   *
+   * Depending on the size and complexity of the operations and fragments this
+   * can make subsequent incremental updates faster. For initial generation it
+   * has barely any impact.
+   *
+   * Use at your own risk. It's recommended to compare the output of both cached
+   * and uncached generations to make sure they produce the same output.
+   *
+   * @experimental
+   *
+   * @default false
+   */
+  useCache?: boolean
 
   /**
    * Output options.
@@ -229,22 +270,6 @@ export type GeneratorOptions = {
    * @default () => []
    */
   additionalOutputCode?: () => GeneratedCode[]
-
-  /**
-   * Enable caching for intermediate representations of documents.
-   *
-   * Depending on the size and complexity of the operations and fragments this
-   * can make subsequent incremental updates faster. For initial generation it
-   * has barely any impact.
-   *
-   * Use at your own risk. It's recommended to compare the output of both cached
-   * and uncached generations to make sure they produce the same output.
-   *
-   * @experimental
-   *
-   * @default false
-   */
-  useCache?: boolean
 
   /**
    * Enables dependency tracking.
@@ -394,7 +419,8 @@ export type GeneratorOptions = {
   /**
    * Build the TS output for a scalar type.
    *
-   * If the method doesn't return anything, the fallback fill be `any`.
+   * Your method should return a single string that is valid TypeScript code.
+   * If you return undefined|null, the internal fallback is used:
    *
    * Defaults to:
    * - String => string
