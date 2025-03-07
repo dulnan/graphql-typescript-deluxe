@@ -16,7 +16,7 @@ export class DependencyTracker {
   private stack: Set<string>[] = []
 
   /**
-   * The current stack depth.
+   * The current stack index.
    */
   private currentIndex = -1
 
@@ -66,11 +66,11 @@ export class DependencyTracker {
       this.addFileDependency(data.filePath)
     }
 
+    // Also bubble the dependencies to all upper stacks.
     if (data.dependencies) {
       for (let i = 0; i <= this.currentIndex; i++) {
         for (let j = 0; j < data.dependencies.length; j++) {
           this.stack[i]?.add(data.dependencies[j]!)
-          // this.addToCurrent(data.dependencies[i]!)
         }
       }
     }

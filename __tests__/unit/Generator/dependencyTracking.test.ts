@@ -413,6 +413,7 @@ query foobar {
           
         }
       }",
+        "type": "js",
       }
     `)
   })

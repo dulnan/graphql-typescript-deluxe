@@ -40,18 +40,28 @@ export class GeneratorOutput {
     this.operations = operations.map((v) => new GeneratorOutputOperation(v))
   }
 
+  /**
+   * Returns all generated code items.
+   *
+   * @returns The generated code items.
+   */
   public getGeneratedCode(): GeneratorOutputCode[] {
     return this.code
   }
 
+  /**
+   * Returns all collected operations.
+   *
+   * @returns All collected oeprations.
+   */
   public getCollectedOperations(): GeneratorOutputOperation[] {
     return this.operations
   }
 
   /**
-   * Build a file containing the given types.
+   * Build a TypeScript file containing the given code types.
    *
-   * @param types - The types to include.
+   * @param types - The code types to include.
    * @param options - The options.
    *
    * @return The output file.
@@ -153,7 +163,7 @@ export class GeneratorOutput {
   }
 
   /**
-   * Builds the operations export file.
+   * Builds the operations export file as a valid JS file.
    *
    * The file contains a single exported object named "operations", with properties for
    * every operation type, containing all operations keyed by operation name.
@@ -161,6 +171,9 @@ export class GeneratorOutput {
    * If the provided input document nodes were parsed with `noLocation: true` a
    * NodeLocMissingError will be thrown, as the source code is not available to
    * generate the operations file.
+   *
+   * @param options The options.
+   * @param options.minify Whether to minify the variable names.
    *
    * @returns The file contents.
    */
@@ -231,6 +244,6 @@ export const operations = {
   }
 }`
 
-    return new GeneratorOutputFile(source)
+    return new GeneratorOutputFile(source, [], 'js')
   }
 }

@@ -177,6 +177,11 @@ export class Generator {
     return generator.build().getEverything().getSource()
   }
 
+  /**
+   * Build the error context.
+   *
+   * @returns The error context.
+   */
   private getErrorContext(): ErrorContext {
     const filePath = this.dependencyTracker?.getCurrentFile()
     if (!filePath) {
@@ -195,11 +200,9 @@ export class Generator {
    * Logs the given arguments to the console when debug mode is enabled.
    */
   private logDebug(...args: any[]): void {
-    if (!this.options.debugMode) {
-      return
+    if (this.options.debugMode) {
+      console.log(...args)
     }
-
-    console.log(...args)
   }
 
   /**
@@ -260,23 +263,6 @@ export class Generator {
       dependencies,
     })
     return result
-  }
-
-  /**
-   * Apply code formatting.
-   *
-   * @param code - The code to format.
-   *
-   * @returns The formatted code.
-   */
-  private formatCode(code: string): string {
-    if (this.options.output.formatCode === true) {
-      return formatCode(code)
-    } else if (typeof this.options.output.formatCode === 'function') {
-      return this.options.output.formatCode(code)
-    }
-
-    return code
   }
 
   /**
@@ -1107,6 +1093,23 @@ export class Generator {
   }
 
   /**
+   * Apply code formatting.
+   *
+   * @param code - The code to format.
+   *
+   * @returns The formatted code.
+   */
+  private formatCode(code: string): string {
+    if (this.options.output.formatCode === true) {
+      return formatCode(code)
+    } else if (typeof this.options.output.formatCode === 'function') {
+      return this.options.output.formatCode(code)
+    }
+
+    return code
+  }
+
+  /**
    * Return a scalar node for an empty object.
    */
   private emptyObjectScalar(): IRNodeScalar {
@@ -1866,7 +1869,7 @@ export class Generator {
   /**
    * Update the schema.
    *
-   * Note that this will also reset the state.
+   * Note that this will also reset the enire state.
    *
    * @param schema - The schema object.
    *
@@ -1879,6 +1882,9 @@ export class Generator {
 
   /**
    * Add one or more documents or generator inputs.
+   *
+   * The documents must not have been previously been added. This is determined
+   * by the provided filePath.
    *
    * @param arg - The GeneratorInput or DocumentNode or an array of those.
    *
@@ -1896,35 +1902,6 @@ export class Generator {
     }
 
     return this
-  }
-
-  /**
-   * Reset all caches and dependency tracker state.
-   *
-   * This keeps all added documents.
-   */
-  public resetCaches(): Generator {
-    this.fragments.clear()
-    this.operations.clear()
-    this.generatedCode.clear()
-    this.cache.clear()
-    this.fragmentIRs.clear()
-    this.dependencyTracker?.reset()
-    return this
-  }
-
-  /**
-   * Resets the entire state. This is equal to creating a new instance.
-   *
-   * - Remove all added input documents
-   * - Remove all generated code
-   * - Purge all caches.
-   *
-   * @returns Generator
-   */
-  public reset(): Generator {
-    this.inputDocuments.clear()
-    return this.resetCaches()
   }
 
   /**
@@ -1964,9 +1941,42 @@ export class Generator {
   }
 
   /**
+   * Reset all caches and dependency tracker state.
+   *
+   * This keeps all added documents.
+   */
+  public resetCaches(): Generator {
+    this.fragments.clear()
+    this.operations.clear()
+    this.generatedCode.clear()
+    this.cache.clear()
+    this.fragmentIRs.clear()
+    this.dependencyTracker?.reset()
+    return this
+  }
+
+  /**
+   * Resets the entire state. This is equal to creating a new instance.
+   *
+   * - Remove all added input documents
+   * - Remove all generated code
+   * - Purge all caches.
+   *
+   * @returns Generator
+   */
+  public reset(): Generator {
+    this.inputDocuments.clear()
+    return this.resetCaches()
+  }
+
+  /**
    * Build the output from the current state.
    *
-   * @returns GeneratorOutput
+   * If any error happens during the build phase, the entire state (excluding
+   * input documents) is reset, so that the state stays consistent. Any error
+   * is rethrown.
+   *
+   * @returns The generator output.
    */
   public build(): GeneratorOutput {
     try {
