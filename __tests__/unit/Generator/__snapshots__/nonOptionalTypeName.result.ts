@@ -31,13 +31,13 @@ type User = 'User'
 // --------------------------------------------------------------------------------
 
 export type Entity =
-  | User
-  | Domain
   | Comment
+  | Domain
   | MediaImage
   | MediaVideo
-  | NodePage
   | NodeArticle
+  | NodePage
+  | User
 
 // --------------------------------------------------------------------------------
 // Fragments

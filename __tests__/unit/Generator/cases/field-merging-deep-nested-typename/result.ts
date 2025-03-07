@@ -26,7 +26,7 @@ type NodePage = 'NodePage';
 // --------------------------------------------------------------------------------
 
 
-export type Entity = NodePage | NodeArticle | Image;
+export type Entity = Image | NodeArticle | NodePage;
 
 
 export type Url = DefaultEntityUrl | DefaultUrl;

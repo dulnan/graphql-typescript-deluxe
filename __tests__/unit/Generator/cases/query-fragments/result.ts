@@ -30,7 +30,14 @@ type User = 'User';
 // --------------------------------------------------------------------------------
 
 
-export type Entity = User | Domain | Comment | MediaImage | MediaVideo | NodePage | NodeArticle;
+export type Entity = 
+  | Comment
+  | Domain
+  | MediaImage
+  | MediaVideo
+  | NodeArticle
+  | NodePage
+  | User;
 
 
 // --------------------------------------------------------------------------------

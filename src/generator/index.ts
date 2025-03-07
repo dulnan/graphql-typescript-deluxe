@@ -883,10 +883,23 @@ export class Generator {
   ): string {
     return this.generateCodeOnce('typename-union', type.name, () => {
       const implementingTypes = this.schema.getPossibleTypes(type)
-      const union =
+      let union =
         implementingTypes
           .map((v) => this.getOrCreateObjectTypeName(v))
+          .sort()
           .join(' | ') || 'never'
+
+      const totalLength = `export type ${type.name} =`.length + union.length
+
+      // If we exceed 80 chars, switch to a union where each type is on a new line.
+      if (totalLength > 80) {
+        union = union
+          .split(' | ')
+          .map((v) => {
+            return `\n  | ${v}`
+          })
+          .join('')
+      }
 
       return {
         code: makeExport(type.name, union),
