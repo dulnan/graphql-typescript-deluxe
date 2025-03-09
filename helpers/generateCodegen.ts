@@ -6,24 +6,15 @@ import * as PluginTypescript from '@graphql-codegen/typescript'
 import { type TypeScriptDocumentsPluginConfig } from '@graphql-codegen/typescript-operations'
 
 const config: TypeScriptDocumentsPluginConfig = {
+  exportFragmentSpreadSubTypes: true,
+  preResolveTypes: false,
+  skipTypeNameForRoot: true,
+  skipTypename: true,
   useTypeImports: true,
   onlyOperationTypes: true,
   namingConvention: {
     enumValues: 'change-case-all#upperCaseFirst',
   },
-
-  enumPrefix: true,
-  avoidOptionals: false,
-  preResolveTypes: true,
-  maybeValue: 'T',
-  flattenGeneratedTypes: false,
-  exportFragmentSpreadSubTypes: false,
-  extractAllFieldsToTypes: false,
-  skipTypeNameForRoot: true,
-  inlineFragmentTypes: 'combine',
-  dedupeFragments: false,
-  nonOptionalTypename: false,
-  skipTypename: true,
 }
 
 export async function generateCodegen(

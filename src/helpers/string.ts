@@ -65,8 +65,9 @@ export function makeExport(name: string, type: string): string {
 /**
  * Transforms the given GraphQl source to a full JavaScript string.
  */
-export function graphqlToString(str: string): string {
-  return '`' + stripIgnoredCharacters(str).replaceAll('`', '\\`') + '`'
+export function graphqlToString(str: string, minify = false): string {
+  const strStripped = minify ? stripIgnoredCharacters(str) : str
+  return '`' + strStripped.replaceAll('`', '\\`') + (minify ? '`' : '\n\n`')
 }
 
 export function generateHeaderComment(title: string): string {

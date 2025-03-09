@@ -5,10 +5,17 @@ import { LogicError, NodeLocMissingError } from '../../errors'
 import { graphqlToString } from './../string'
 import { notNullish } from './../type'
 
+export type GenerateOperationsFileOptions = {
+  minify?: boolean
+  exportName?: string
+}
+
 export function generateOperationsFile(
   codes: GeneratorOutputCode[],
-  shouldMinify = false,
+  options?: GenerateOperationsFileOptions,
 ): GeneratorOutputFile {
+  const shouldMinify = options?.minify ?? true
+  const exportName = options?.exportName ?? 'operations'
   const declarations: { name: string; value: string }[] = []
   const query: string[] = []
   const mutation: string[] = []
@@ -35,9 +42,10 @@ export function generateOperationsFile(
         .getGraphQLFragmentDependencies()
         .map((v) => variableMinifier.getVarName(v))
 
-      let parts = [graphqlToString(code.source), ...fragmentDependencies].join(
-        ' + ',
-      )
+      let parts = [
+        graphqlToString(code.source, shouldMinify),
+        ...fragmentDependencies,
+      ].join(' + ')
       if (parts.length > 80 && !shouldMinify) {
         parts = '\n      ' + parts.replaceAll(' + ', ' +\n      ')
       }
@@ -54,12 +62,12 @@ export function generateOperationsFile(
 
   const sortedDeclarations = declarations
     .sort((a, b) => a.value.localeCompare(b.value))
-    .map((v) => `const ${v.name} = ${graphqlToString(v.value)};`)
+    .map((v) => `const ${v.name} = ${graphqlToString(v.value, shouldMinify)};`)
     .join('\n')
 
   const source = `${sortedDeclarations}
 
-export const operations = {
+export const ${exportName} = {
   query: {
     ${query.sort().join('\n    ')}
   },

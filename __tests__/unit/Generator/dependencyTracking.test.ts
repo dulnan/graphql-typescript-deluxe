@@ -398,17 +398,13 @@ query foobar {
       GeneratorOutputFile {
         "dependencyStrings": [],
         "mappedDependencies": null,
-        "source": "const category = \`fragment category on Category{related{...relatedEntity}}\`;
-      const nodeArticle = \`fragment nodeArticle on NodeArticle{categories{...category}}\`;
-      const relatedEntity = \`fragment relatedEntity on Entity{id}\`;
+        "source": "const b = \`fragment category on Category{related{...relatedEntity}}\`;
+      const c = \`fragment nodeArticle on NodeArticle{categories{...category}}\`;
+      const a = \`fragment relatedEntity on Entity{id}\`;
 
       export const operations = {
         query: {
-          'foobar': 
-            \`query foobar{getRandomEntity{...nodeArticle}}\` +
-            relatedEntity +
-            category +
-            nodeArticle,
+          'foobar': \`query foobar{getRandomEntity{...nodeArticle}}\` + a + b + c,
         },
         mutation: {
           

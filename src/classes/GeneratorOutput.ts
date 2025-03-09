@@ -9,7 +9,10 @@ import { GeneratorOutputCode } from './GeneratorOutputCode'
 import { GeneratorOutputOperation } from './GeneratorOutputOperation'
 import { generateHeaderComment } from '../helpers/string'
 import { GeneratorOutputFile } from './GeneratorOutputFile'
-import { generateOperationsFile } from '../helpers/output/generateOperationsFile'
+import {
+  generateOperationsFile,
+  type GenerateOperationsFileOptions,
+} from '../helpers/output/generateOperationsFile'
 import { generateOperationTypes } from '../helpers/output/generateOperationTypes'
 
 const DEFAULT_SORTING: GeneratedCodeType[] = [
@@ -194,10 +197,10 @@ export class GeneratorOutput {
    * Importing `operations` and accessing `operations.query.foobar` will give you
    * the full operation, including all fragments needed for the operation.
    */
-  public getOperationsFile(options?: {
-    minify?: boolean
-  }): GeneratorOutputFile {
-    return generateOperationsFile(this.code, options?.minify)
+  public getOperationsFile(
+    options?: GenerateOperationsFileOptions,
+  ): GeneratorOutputFile {
+    return generateOperationsFile(this.code, options)
   }
 
   /**
