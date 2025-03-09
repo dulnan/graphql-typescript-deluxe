@@ -24,10 +24,7 @@ export type MappedDependency = {
  *
  * @returns The mapped dependencies.
  */
-function mapDependencies(dependencies?: string[]): MappedDependency[] {
-  if (!dependencies) {
-    return []
-  }
+function mapDependencies(dependencies: string[]): MappedDependency[] {
   return dependencies.map((dependency) => {
     const [type, value] = dependency.split(KEY_SEPARATOR)
     return {
