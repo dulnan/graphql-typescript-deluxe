@@ -1,8 +1,8 @@
 import { NO_FILE_PATH } from '../constants'
 import type {
   GeneratedCodeType,
-  GeneratorInputArg,
   GeneratorInput,
+  GeneratorInputArgs,
 } from '../types'
 import { parse } from 'graphql'
 
@@ -13,7 +13,7 @@ import { parse } from 'graphql'
  *
  * @returns The array of generator inputs.
  */
-export function toInputDocuments(input: GeneratorInputArg): GeneratorInput[] {
+export function toInputDocuments(input: GeneratorInputArgs): GeneratorInput[] {
   const inputArray = Array.isArray(input) ? input : [input]
 
   return inputArray.map((v) => {

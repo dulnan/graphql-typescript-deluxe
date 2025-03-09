@@ -22,15 +22,12 @@ type GeneratorInputString = {
  * Possible types for adding or updating a document in the Generator.
  */
 export type GeneratorInputArg =
-  | GeneratorInput[]
   | GeneratorInput
   | Omit<GeneratorInput, 'filePath'>
-  | Omit<GeneratorInput, 'filePath'>[]
   | GeneratorInputString
-  | GeneratorInputString[]
   | DocumentNode
-  | DocumentNode[]
   | string
+export type GeneratorInputArgs = GeneratorInputArg | GeneratorInputArg[]
 
 export type TypeContext = {
   input?: GeneratorInput

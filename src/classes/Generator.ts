@@ -39,11 +39,11 @@ import { makeComment, makeExport, makeTypeDoc } from '../helpers/string'
 import type {
   GeneratedCode,
   GeneratedCodeType,
-  GeneratorInputArg,
   GeneratorInput,
   TypeContext,
   GeneratedCodeIdentifier,
   CollectedOperation,
+  GeneratorInputArgs,
 } from '../types'
 import { toInputDocuments } from '../helpers/generator'
 import {
@@ -168,7 +168,7 @@ export class Generator {
    */
   static generateOnce(
     schema: GraphQLSchema,
-    input: GeneratorInputArg,
+    input: GeneratorInputArgs,
     options?: GeneratorOptions,
   ): string {
     const docs = toInputDocuments(input)
@@ -1879,7 +1879,7 @@ export class Generator {
    *
    * @throws {@link DuplicateInputDocumentError} When an input document already exists.
    */
-  public add(arg: GeneratorInputArg): Generator {
+  public add(arg: GeneratorInputArgs): Generator {
     const docs = toInputDocuments(arg)
 
     for (let i = 0; i < docs.length; i++) {
@@ -1902,7 +1902,7 @@ export class Generator {
    *
    * @throws {@link LogicError} When attempting to update a document that does not exist.
    */
-  public update(arg: GeneratorInputArg): Generator {
+  public update(arg: GeneratorInputArgs): Generator {
     const docs = toInputDocuments(arg)
 
     for (let i = 0; i < docs.length; i++) {
