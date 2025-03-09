@@ -35,8 +35,5 @@ export type CommentsQuery = {
 // Operation Variables
 // --------------------------------------------------------------------------------
 
-/**
- * @see {@link file://./test.graphql}
- * 
- */
+/** @see {@link file://./test.graphql} */
 export type CommentsQueryVariables = Exact<{ [key: string]: never; }>;

@@ -113,8 +113,5 @@ export type FoobarQuery = {
 // Operation Variables
 // --------------------------------------------------------------------------------
 
-/**
- * @see {@link file://query.foobar.graphql}
- *
- */
+/** @see {@link file://query.foobar.graphql} */
 export type FoobarQueryVariables = Exact<{ [key: string]: never }>

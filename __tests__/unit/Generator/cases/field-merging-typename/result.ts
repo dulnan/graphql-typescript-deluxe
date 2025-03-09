@@ -100,8 +100,5 @@ export type FieldMergingTypenameQuery = {
 // Operation Variables
 // --------------------------------------------------------------------------------
 
-/**
- * @see {@link file://./test.graphql}
- * 
- */
+/** @see {@link file://./test.graphql} */
 export type FieldMergingTypenameQueryVariables = Exact<{ [key: string]: never; }>;

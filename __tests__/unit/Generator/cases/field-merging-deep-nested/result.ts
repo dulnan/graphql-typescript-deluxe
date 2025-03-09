@@ -173,8 +173,5 @@ export type FieldMergingDeepNestedQuery = {
 // Operation Variables
 // --------------------------------------------------------------------------------
 
-/**
- * @see {@link file://./test.graphql}
- * 
- */
+/** @see {@link file://./test.graphql} */
 export type FieldMergingDeepNestedQueryVariables = Exact<{ [key: string]: never; }>;

@@ -142,8 +142,5 @@ export type TypenameMergingQuery = {
 // Operation Variables
 // --------------------------------------------------------------------------------
 
-/**
- * @see {@link file://./test.graphql}
- * 
- */
+/** @see {@link file://./test.graphql} */
 export type TypenameMergingQueryVariables = Exact<{ [key: string]: never; }>;

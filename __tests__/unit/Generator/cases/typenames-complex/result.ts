@@ -75,8 +75,5 @@ export type TypenamesComplexQuery = {
 // Operation Variables
 // --------------------------------------------------------------------------------
 
-/**
- * @see {@link file://./test.graphql}
- * 
- */
+/** @see {@link file://./test.graphql} */
 export type TypenamesComplexQueryVariables = Exact<{ [key: string]: never; }>;

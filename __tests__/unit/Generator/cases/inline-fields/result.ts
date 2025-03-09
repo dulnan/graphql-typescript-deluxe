@@ -83,8 +83,5 @@ export type InlineFieldsQuery = {
 // Operation Variables
 // --------------------------------------------------------------------------------
 
-/**
- * @see {@link file://./test.graphql}
- * 
- */
+/** @see {@link file://./test.graphql} */
 export type InlineFieldsQueryVariables = Exact<{ [key: string]: never; }>;

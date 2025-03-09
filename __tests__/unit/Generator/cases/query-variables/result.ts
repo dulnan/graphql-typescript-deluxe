@@ -63,10 +63,7 @@ export type InputTypesQuery = {
 // Operation Variables
 // --------------------------------------------------------------------------------
 
-/**
- * @see {@link file://./test.graphql}
- * 
- */
+/** @see {@link file://./test.graphql} */
 export type InputTypesQueryVariables = Exact<{
   entityType: EntityType;
   id: string | number;

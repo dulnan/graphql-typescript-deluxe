@@ -177,8 +177,5 @@ export type FieldMergingNestedComplexQuery = {
 // Operation Variables
 // --------------------------------------------------------------------------------
 
-/**
- * @see {@link file://./test.graphql}
- * 
- */
+/** @see {@link file://./test.graphql} */
 export type FieldMergingNestedComplexQueryVariables = Exact<{ [key: string]: never; }>;

@@ -51,8 +51,5 @@ export type FragmentInterfaceQuery = {
 // Operation Variables
 // --------------------------------------------------------------------------------
 
-/**
- * @see {@link file://./test.graphql}
- * 
- */
+/** @see {@link file://./test.graphql} */
 export type FragmentInterfaceQueryVariables = Exact<{ [key: string]: never; }>;

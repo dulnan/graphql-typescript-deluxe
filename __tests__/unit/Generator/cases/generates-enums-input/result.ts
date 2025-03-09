@@ -63,10 +63,7 @@ export type EnumFromInputQuery = {
 // Operation Variables
 // --------------------------------------------------------------------------------
 
-/**
- * @see {@link file://./test.graphql}
- * 
- */
+/** @see {@link file://./test.graphql} */
 export type EnumFromInputQueryVariables = Exact<{
   entityType: EntityType;
   id: string | number;

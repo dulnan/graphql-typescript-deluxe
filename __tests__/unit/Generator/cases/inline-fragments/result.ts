@@ -34,8 +34,5 @@ export type InlineFragmentsQuery = {
 // Operation Variables
 // --------------------------------------------------------------------------------
 
-/**
- * @see {@link file://./test.graphql}
- * 
- */
+/** @see {@link file://./test.graphql} */
 export type InlineFragmentsQueryVariables = Exact<{ [key: string]: never; }>;

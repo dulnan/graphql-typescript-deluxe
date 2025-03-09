@@ -68,10 +68,7 @@ export type DirectivesIncludeQuery = {
 // Operation Variables
 // --------------------------------------------------------------------------------
 
-/**
- * @see {@link file://./test.graphql}
- * 
- */
+/** @see {@link file://./test.graphql} */
 export type DirectivesIncludeQueryVariables = Exact<{
   withAuthor?: boolean | null;
   withCategories?: boolean | null;

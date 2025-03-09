@@ -71,8 +71,5 @@ export type UnionTypesQuery = {
 // Operation Variables
 // --------------------------------------------------------------------------------
 
-/**
- * @see {@link file://./test.graphql}
- * 
- */
+/** @see {@link file://./test.graphql} */
 export type UnionTypesQueryVariables = Exact<{ [key: string]: never; }>;

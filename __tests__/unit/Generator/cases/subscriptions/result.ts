@@ -51,8 +51,5 @@ export type SubscriptionsSubscription = {
 // Operation Variables
 // --------------------------------------------------------------------------------
 
-/**
- * @see {@link file://./test.graphql}
- * 
- */
+/** @see {@link file://./test.graphql} */
 export type SubscriptionsSubscriptionVariables = Exact<{ [key: string]: never; }>;

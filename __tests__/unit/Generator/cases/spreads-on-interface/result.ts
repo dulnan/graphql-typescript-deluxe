@@ -131,8 +131,5 @@ export type SpreadsOnInterfaceQuery = {
 // Operation Variables
 // --------------------------------------------------------------------------------
 
-/**
- * @see {@link file://./test.graphql}
- * 
- */
+/** @see {@link file://./test.graphql} */
 export type SpreadsOnInterfaceQueryVariables = Exact<{ [key: string]: never; }>;

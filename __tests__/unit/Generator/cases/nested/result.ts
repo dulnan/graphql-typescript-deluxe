@@ -138,8 +138,5 @@ export type NestedQuery = {
 // Operation Variables
 // --------------------------------------------------------------------------------
 
-/**
- * @see {@link file://./test.graphql}
- * 
- */
+/** @see {@link file://./test.graphql} */
 export type NestedQueryVariables = Exact<{ [key: string]: never; }>;

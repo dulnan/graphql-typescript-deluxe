@@ -155,14 +155,8 @@ export type NullabilityQuery = {
 // Operation Variables
 // --------------------------------------------------------------------------------
 
-/**
- * @see {@link file://./test.graphql}
- * 
- */
+/** @see {@link file://./test.graphql} */
 export type NullabilityFragmentQueryVariables = Exact<{ [key: string]: never; }>;
 
-/**
- * @see {@link file://./test.graphql}
- * 
- */
+/** @see {@link file://./test.graphql} */
 export type NullabilityQueryVariables = Exact<{ [key: string]: never; }>;

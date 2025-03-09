@@ -137,8 +137,5 @@ export type QueryFragmentsQuery = {
 // Operation Variables
 // --------------------------------------------------------------------------------
 
-/**
- * @see {@link file://./test.graphql}
- * 
- */
+/** @see {@link file://./test.graphql} */
 export type QueryFragmentsQueryVariables = Exact<{ [key: string]: never; }>;

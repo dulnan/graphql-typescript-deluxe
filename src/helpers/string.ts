@@ -34,16 +34,23 @@ export function makeTypeDoc(
 ): string {
   const lines: string[] = []
   const filePath = context.filePath
-  if (context.type?.description && options.typeDescription) {
-    lines.push(context.type.description)
+  const description = (context.type?.description || '').trim()
+  if (description && options.typeDescription) {
+    lines.push(description)
   }
   if (filePath && filePath !== NO_FILE_PATH && options.link) {
-    lines.push(`@see {@link file://${filePath}}`, '')
+    if (lines.length) {
+      lines.push('')
+    }
+    lines.push(`@see {@link file://${filePath}}`)
   }
   if (context.definition?.loc && options.source) {
     const loc = context.definition.loc
     const source = loc.source.body.slice(loc.start, loc.end)
     if (source) {
+      if (lines.length) {
+        lines.push('')
+      }
       lines.push('@example')
       lines.push('```graphql')
       source.split('\n').forEach((line) => lines.push(line))

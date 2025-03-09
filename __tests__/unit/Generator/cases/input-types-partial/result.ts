@@ -35,10 +35,7 @@ export type InputTypesPartialMutation = {
 // Operation Variables
 // --------------------------------------------------------------------------------
 
-/**
- * @see {@link file://./test.graphql}
- * 
- */
+/** @see {@link file://./test.graphql} */
 export type InputTypesPartialMutationVariables = Exact<{
   address: Address;
   firstName: string;
@@ -52,6 +49,7 @@ export type InputTypesPartialMutationVariables = Exact<{
 
 /**
  * A valid address.
+ * 
  * @example
  * ```graphql
  * """

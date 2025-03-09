@@ -41,10 +41,7 @@ export type DefaultValuesQuery = {
 // Operation Variables
 // --------------------------------------------------------------------------------
 
-/**
- * @see {@link file://./test.graphql}
- * 
- */
+/** @see {@link file://./test.graphql} */
 export type DefaultValuesQueryVariables = Exact<{
   bundle?: string | null;
   bundleRequired: string;

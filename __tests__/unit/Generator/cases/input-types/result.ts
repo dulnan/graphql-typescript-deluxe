@@ -11,6 +11,7 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 
 /**
  * Means of contact.
+ * 
  * @example
  * ```graphql
  * """
@@ -62,10 +63,7 @@ export type InputTypesMutation = {
 // Operation Variables
 // --------------------------------------------------------------------------------
 
-/**
- * @see {@link file://./test.graphql}
- * 
- */
+/** @see {@link file://./test.graphql} */
 export type InputTypesMutationVariables = Exact<{
   dryRun?: boolean | null;
   input: SubmitContactForm;
@@ -78,6 +76,7 @@ export type InputTypesMutationVariables = Exact<{
 
 /**
  * A valid address.
+ * 
  * @example
  * ```graphql
  * """

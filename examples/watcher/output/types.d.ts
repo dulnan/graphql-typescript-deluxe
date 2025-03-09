@@ -46,7 +46,6 @@ export type Entity =
 
 /**
  * @see {@link file://./../graphql/query.fieldMerging.graphql}
- * 
  * @example
  * ```graphql
  * fragment articleOne on NodeArticle {
@@ -72,7 +71,6 @@ export type ArticleOneFragment = {
 
 /**
  * @see {@link file://./../graphql/query.fieldMerging.graphql}
- * 
  * @example
  * ```graphql
  * fragment articleTwo on NodeArticle {
@@ -95,7 +93,6 @@ export type ArticleTwoFragment = {
 
 /**
  * @see {@link file://./../graphql/mixed.graphql}
- * 
  * @example
  * ```graphql
  * fragment category on Category {
@@ -129,7 +126,6 @@ export type CategoryFragment = {
 
 /**
  * @see {@link file://./../graphql/fragment.randomEntity.graphql}
- * 
  * @example
  * ```graphql
  * fragment randomEntity on Entity {
@@ -166,7 +162,6 @@ export type RandomEntityFragment = ({
 
 /**
  * @see {@link file://./../graphql/query.fieldMerging.graphql}
- * 
  * @example
  * ```graphql
  * query fieldMerging {
@@ -203,7 +198,6 @@ export type FieldMergingQuery = {
 
 /**
  * @see {@link file://./../graphql/query.loadEntity.graphql}
- * 
  * @example
  * ```graphql
  * query loadEntity {
@@ -220,7 +214,6 @@ export type LoadEntityQuery = {
 
 /**
  * @see {@link file://./../graphql/mixed.graphql}
- * 
  * @example
  * ```graphql
  * query myQuery {
@@ -256,7 +249,6 @@ export type MyQueryQuery = {
 
 /**
  * @see {@link file://./../graphql/mixed.graphql}
- * 
  * @example
  * ```graphql
  * query queryWithVariables($skipCategories: Boolean = false) {
@@ -283,28 +275,16 @@ export type QueryWithVariablesQuery = {
 // Operation Variables
 // --------------------------------------------------------------------------------
 
-/**
- * @see {@link file://./../graphql/query.fieldMerging.graphql}
- * 
- */
+/** @see {@link file://./../graphql/query.fieldMerging.graphql} */
 export type FieldMergingQueryVariables = Exact<{ [key: string]: never; }>;
 
-/**
- * @see {@link file://./../graphql/query.loadEntity.graphql}
- * 
- */
+/** @see {@link file://./../graphql/query.loadEntity.graphql} */
 export type LoadEntityQueryVariables = Exact<{ [key: string]: never; }>;
 
-/**
- * @see {@link file://./../graphql/mixed.graphql}
- * 
- */
+/** @see {@link file://./../graphql/mixed.graphql} */
 export type MyQueryQueryVariables = Exact<{ [key: string]: never; }>;
 
-/**
- * @see {@link file://./../graphql/mixed.graphql}
- * 
- */
+/** @see {@link file://./../graphql/mixed.graphql} */
 export type QueryWithVariablesQueryVariables = Exact<{
   skipCategories?: boolean | null;
 }>;
