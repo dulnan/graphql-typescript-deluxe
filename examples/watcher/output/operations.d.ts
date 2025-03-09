@@ -1,18 +1,40 @@
+import type {
+  FieldMergingQuery,
+  FieldMergingQueryVariables,
+  LoadEntityQuery,
+  LoadEntityQueryVariables,
+  MyQueryQuery,
+  MyQueryQueryVariables,
+  QueryWithVariablesQuery,
+  QueryWithVariablesQueryVariables
+} from './types'
 
 export type Query = {
-  fieldMerging: { response: FieldMergingQuery, variables: FieldMergingQueryVariables, needsVariables: false };
-  loadEntity: { response: LoadEntityQuery, variables: LoadEntityQueryVariables, needsVariables: false };
-  myQuery: { response: MyQueryQuery, variables: MyQueryQueryVariables, needsVariables: false };
-  queryWithVariables: { response: QueryWithVariablesQuery, variables: QueryWithVariablesQueryVariables, needsVariables: false }
+  fieldMerging: {
+    response: FieldMergingQuery,
+    variables: FieldMergingQueryVariables,
+    needsVariables: false
+  };
+  loadEntity: {
+    response: LoadEntityQuery,
+    variables: LoadEntityQueryVariables,
+    needsVariables: false
+  };
+  myQuery: {
+    response: MyQueryQuery,
+    variables: MyQueryQueryVariables,
+    needsVariables: false
+  };
+  queryWithVariables: {
+    response: QueryWithVariablesQuery,
+    variables: QueryWithVariablesQueryVariables,
+    needsVariables: false
+  }
 }
 
-export type Mutation = {
-  
-}
+export type Mutation = {}
 
-export type Subscription = {
-  
-}
+export type Subscription = {}
 
 export type Operations = {
   query: Query,

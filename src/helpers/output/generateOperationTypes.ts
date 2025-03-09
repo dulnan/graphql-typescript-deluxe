@@ -14,7 +14,7 @@ export function generateOperationTypes(
   const allDependencies: Set<string> = new Set()
 
   for (const operation of operations) {
-    const line = `${operation.graphqlName}: { response: ${operation.typeName}, variables: ${operation.variablesTypeName}, needsVariables: ${operation.needsVariables} }`
+    const line = `${operation.graphqlName}: {\n    response: ${operation.typeName},\n    variables: ${operation.variablesTypeName},\n    needsVariables: ${operation.needsVariables}\n  }`
     operation.dependencyStrings.forEach((key) => {
       if (key.includes('operation')) {
         allDependencies.add(key)
@@ -31,25 +31,26 @@ export function generateOperationTypes(
     }
   }
 
-  let source = `
-export type Query = {
-  ${query.sort().join(';\n  ')}
-}
+  const makeExport = (name: string, lines: string[]) => {
+    if (!lines.length) {
+      return `export type ${name} = {}`
+    }
+    return `export type ${name} = {
+  ${lines.sort().join(';\n  ')}
+}`
+  }
 
-export type Mutation = {
-  ${mutation.sort().join(';\n  ')}
-}
+  let source = `${makeExport('Query', query)}
 
-export type Subscription = {
-  ${subscription.sort().join(';\n  ')}
-}
+${makeExport('Mutation', mutation)}
+
+${makeExport('Subscription', subscription)}
 
 export type Operations = {
   query: Query,
   mutation: Mutation,
   subscription: Subscription,
-}
-`
+}`
 
   if (importFrom) {
     source =

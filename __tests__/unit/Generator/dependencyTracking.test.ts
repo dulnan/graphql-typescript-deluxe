@@ -413,25 +413,23 @@ query foobar {
           "operation-variables#####FoobarQueryVariables",
         ],
         "mappedDependencies": null,
-        "source": "
-      export type Query = {
-        foobar: { response: FoobarQuery, variables: FoobarQueryVariables, needsVariables: false }
+        "source": "export type Query = {
+        foobar: {
+          response: FoobarQuery,
+          variables: FoobarQueryVariables,
+          needsVariables: false
+        }
       }
 
-      export type Mutation = {
-        
-      }
+      export type Mutation = {}
 
-      export type Subscription = {
-        
-      }
+      export type Subscription = {}
 
       export type Operations = {
         query: Query,
         mutation: Mutation,
         subscription: Subscription,
-      }
-      ",
+      }",
         "type": "ts",
       }
     `)

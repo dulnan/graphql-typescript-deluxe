@@ -61,7 +61,10 @@ async function main(): Promise<void> {
       await writeOutput('types.d.ts', result.getTypes())
       await writeOutput('enums.ts', result.getNonTypes())
       await writeOutput('operations.js', result.getOperationsFile())
-      await writeOutput('operations.d.ts', result.getOperationTypesFile())
+      await writeOutput(
+        'operations.d.ts',
+        result.getOperationTypesFile({ importFrom: './types' }),
+      )
     } catch (e) {
       console.error(e)
     }
