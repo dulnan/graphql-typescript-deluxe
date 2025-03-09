@@ -1,5 +1,6 @@
 export { Generator } from './classes/Generator'
 export type { GeneratorOptions, GeneratorOptionsOutput } from './types/options'
+export type { GeneratorInput, GeneratorInputArg } from './types'
 export type {
   GeneratorOutput,
   GeneratorOutputOptions,

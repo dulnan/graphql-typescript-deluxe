@@ -21,7 +21,7 @@ type GeneratorInputString = {
 /**
  * Possible types for adding or updating a document in the Generator.
  */
-type GeneratorInputArg =
+export type GeneratorInputArg =
   | GeneratorInput
   | Omit<GeneratorInput, 'filePath'>
   | GeneratorInputString

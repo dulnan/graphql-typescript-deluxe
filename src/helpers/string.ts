@@ -33,7 +33,7 @@ export function makeTypeDoc(
   options: Record<TypeCommentOptions, boolean>,
 ): string {
   const lines: string[] = []
-  const filePath = context.input?.filePath || context.filePath
+  const filePath = context.filePath
   if (context.type?.description && options.typeDescription) {
     lines.push(context.type.description)
   }

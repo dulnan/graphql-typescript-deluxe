@@ -1,0 +1,33 @@
+query myQuery {
+  getRandomEntity {
+    id
+    ... on NodeArticle {
+      categories {
+        label
+        url
+      }
+    }
+  }
+}
+
+query queryWithVariables($skipCategories: Boolean = false) {
+  getRandomEntity {
+    ... on NodeArticle {
+      categories @skip(if: $skipCategories) {
+        ...category
+      }
+    }
+  }
+}
+
+fragment category on Category {
+  url
+  label
+  renamedLabel: label
+  related {
+    ... on NodeArticle {
+      title
+      tags
+    }
+  }
+}

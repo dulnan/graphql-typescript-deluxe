@@ -1,0 +1,5 @@
+query loadEntity {
+  getRandomEntity {
+    ...randomEntity
+  }
+}

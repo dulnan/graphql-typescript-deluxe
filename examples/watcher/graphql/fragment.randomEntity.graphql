@@ -1,0 +1,9 @@
+fragment randomEntity on Entity {
+  id
+  entityType
+
+  ... on NodePage {
+    title
+    body
+  }
+}

@@ -299,14 +299,13 @@ export class Generator {
 
     let comment = ''
     if (result.context && this.options.output.typeComment) {
+      const filePath = result.context.filePath || result.context.input?.filePath
       comment =
         makeTypeDoc(
           {
             ...result.context,
-            filePath: result.context.filePath
-              ? this.options.output.buildTypeDocFilePath(
-                  result.context.filePath,
-                )
+            filePath: filePath
+              ? this.options.output.buildTypeDocFilePath(filePath)
               : undefined,
           },
           this.typeCommentOptions,
@@ -1891,6 +1890,17 @@ export class Generator {
     }
 
     return this
+  }
+
+  /**
+   * Check whether an input document with the given file path exists.
+   *
+   * @param filePath - The file path to check.
+   *
+   * @returns True if a document with this file path exists.
+   */
+  public hasFilePath(filePath: string): boolean {
+    return this.inputDocuments.has(filePath)
   }
 
   /**

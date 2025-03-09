@@ -3,6 +3,14 @@
 This is an **experimental** and **opinionated** code generator for generating
 TypeScript code for GraphQL operations and fragments.
 
+## Example outputs
+
+- [Types](./examples/watcher/output/types.d.ts)
+- [Enums](./examples/watcher/output/enums.ts)
+- [Operation Types](./examples/watcher/output/operations.d.ts)
+- [Operations](./examples/watcher/output/operations.js)
+- [All Test Cases](https://github.com/search?q=repo%3Adulnan%2Fgraphql-typescript-deluxe+path%3Aresult.ts&type=code)
+
 ## Features
 
 - Types: Generates types for operations, variables, fragments, input types and
@@ -22,9 +30,6 @@ This is still very much beta and experimental. While there are a lot of tests
 that cover both basic queries and edge cases, I'm sure there are plenty that I
 missed. Feel free to report anything you find, ideally by creating a pull
 request that implements a test case that shows the buggy output.
-
-In addition, the output is only minimally formatted. I recommend passing the
-output through prettier or any other code formatter.
 
 ## Usage
 

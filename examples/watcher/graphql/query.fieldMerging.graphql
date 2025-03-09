@@ -1,0 +1,26 @@
+query fieldMerging {
+  getRandomEntity {
+    __typename
+    ...articleOne
+    ...articleTwo
+
+    ... on NodeArticle {
+      id
+    }
+  }
+}
+
+fragment articleOne on NodeArticle {
+  title
+  tags
+  categories {
+    url
+  }
+}
+
+fragment articleTwo on NodeArticle {
+  title
+  categories {
+    label
+  }
+}
