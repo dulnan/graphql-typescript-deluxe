@@ -1,6 +1,6 @@
 # graphql-typescript-deluxe
 
-This is an **experimental** and **opiniated** code generator for generating
+This is an **experimental** and **opinionated** code generator for generating
 TypeScript code for GraphQL operations and fragments.
 
 ## Features
@@ -144,9 +144,9 @@ same set of operations/fragments.
 
 ## Output
 
-The output is very opiniated and the available options to customise the output
+The output is very opinionated and the available options to customise the output
 are fairly limited. I am open to adding new options, as long as they don't
-decrease performance.
+negatively affect performance.
 
 ### Fragment Types
 

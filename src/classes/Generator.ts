@@ -430,12 +430,19 @@ export class Generator {
    *
    * @throws {@link LogicError} if the helper type could not be found.
    */
-  private getOrCreateTypeHelper(type: 'exact'): string {
+  private getOrCreateTypeHelper(type: 'exact' | 'maybe'): string {
     if (type === 'exact') {
       return this.generateCodeOnce('type-helpers', type, () => {
         return {
           typeName: 'Exact',
-          code: `type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }; `,
+          code: `type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };`,
+        }
+      })
+    } else if (type === 'maybe') {
+      return this.generateCodeOnce('type-helpers', type, () => {
+        return {
+          typeName: 'Maybe',
+          code: `type Maybe<T> = T | null;`,
         }
       })
     }
@@ -880,6 +887,33 @@ export class Generator {
 
     // We can safely replace it with e.g. `string[]`.
     return shape.replace('$T$', type)
+  }
+
+  /**
+   * Create an array from the given type string.
+   *
+   * @param type - The string containing a valid TS type.
+   *
+   * @returns The type as an array.
+   */
+  private fieldToCode(
+    type: string,
+    nullable = false,
+    optional = false,
+  ): string {
+    const nullableField = this.options.output.nullableField
+    const prefix =
+      (nullableField === 'optional' && nullable) || optional ? '?: ' : ': '
+    if (!nullable) {
+      return prefix + type + ';'
+    }
+    if (nullableField === 'null') {
+      return `${prefix}${type} | null;`
+    } else if (nullableField === 'optional') {
+      return `${prefix}${type};`
+    } else {
+      return `${prefix}${this.getOrCreateTypeHelper('maybe')}<${type}>;`
+    }
   }
 
   /**
@@ -1712,15 +1746,7 @@ export class Generator {
       const fieldName = fieldNames[i]!
       const ir = fields.get(fieldName)!
       const tsType = this.IRToCode(ir)
-      const propertySuffix =
-        ir.nullable && this.options.output.nullableField === 'optional'
-          ? '?:'
-          : ':'
-      const valueSuffix =
-        ir.nullable && this.options.output.nullableField === 'null'
-          ? ' | null'
-          : ''
-      const field = `${fieldName}${propertySuffix} ${tsType}${valueSuffix};`
+      const field = fieldName + this.fieldToCode(tsType, ir.nullable)
 
       output += '\n'
       output += ir.description

@@ -35,6 +35,7 @@ export type GeneratorOptionsOutput = {
    *
    * - 'null' produces `{ field: string | null }`
    * - 'optional' produces `{ field?: string }`
+   * - 'maybe' produces `{ field: Maybe<string> }`, with Maybe producing `string | null`
    *
    * Note that when using 'optional', the types are technically not correct,
    * since the response will actually contain `null` and never be `undefined`.
@@ -42,7 +43,7 @@ export type GeneratorOptionsOutput = {
    *
    * @default "optional"
    */
-  nullableField?: 'null' | 'optional'
+  nullableField?: 'null' | 'optional' | 'maybe'
 
   /**
    * How arrays should be represented.
