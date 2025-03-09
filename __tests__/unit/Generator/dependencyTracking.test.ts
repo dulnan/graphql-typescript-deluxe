@@ -8,7 +8,7 @@ import type { GeneratorOutputCode } from '../../../src/classes/GeneratorOutputCo
 
 const schema = loadSchemaSync(schemaContent, { loaders: [] })
 
-function resultWithoutCode(items: GeneratorOutputCode[]): any[] {
+function resultWithoutCode(items: readonly GeneratorOutputCode[]): any[] {
   return items.map((v) => {
     return {
       type: v.type,

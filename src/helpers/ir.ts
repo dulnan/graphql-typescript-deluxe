@@ -4,6 +4,7 @@ import { LogicError } from '../errors'
 export type IRNodeScalar = {
   kind: 'SCALAR'
   description?: string | null
+  optional?: boolean
   nullable?: boolean
   tsType: string
 }
@@ -11,6 +12,7 @@ export type IRNodeScalar = {
 export type IRNodeTypename = {
   kind: 'TYPENAME'
   description?: string | null
+  optional?: boolean
   nullable?: boolean
 
   /**
@@ -30,6 +32,7 @@ export type IRNodeTypename = {
 export type IRNodeObject = {
   kind: 'OBJECT'
   description?: string | null
+  optional?: boolean
   nullable?: boolean
   /**
    * The GraphQL type name (like "User")
@@ -41,6 +44,7 @@ export type IRNodeObject = {
 export type IRNodeArray = {
   kind: 'ARRAY'
   description?: string | null
+  optional?: boolean
   nullable?: boolean
   nullableElement: boolean
   ofType: IRNode
@@ -49,6 +53,7 @@ export type IRNodeArray = {
 export type IRNodeUnion = {
   kind: 'UNION'
   description?: string | null
+  optional?: boolean
   nullable?: boolean
   types: IRNode[]
 }
@@ -56,6 +61,7 @@ export type IRNodeUnion = {
 export type IRNodeIntersection = {
   kind: 'INTERSECTION'
   description?: string | null
+  optional?: boolean
   nullable?: boolean
   types: IRNode[]
 }
@@ -63,6 +69,7 @@ export type IRNodeIntersection = {
 export type IRNodeFragmentSpread = {
   kind: 'FRAGMENT_SPREAD'
   description?: string | null
+  optional?: boolean
   nullable?: boolean
 
   /**

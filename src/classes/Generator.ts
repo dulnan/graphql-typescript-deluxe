@@ -1660,8 +1660,8 @@ export class Generator {
     fieldNode: FieldNode,
   ): IRNode {
     const ir = this.buildOutputTypeIR(field.type, fieldNode.selectionSet)
-    ir.nullable =
-      hasConditionalDirective(fieldNode) || !isNonNullType(field.type)
+    ir.nullable = !isNonNullType(field.type)
+    ir.optional = hasConditionalDirective(fieldNode)
     if (this.typeCommentOptions.fieldDescription) {
       ir.description = field.description
     }
@@ -1746,7 +1746,8 @@ export class Generator {
       const fieldName = fieldNames[i]!
       const ir = fields.get(fieldName)!
       const tsType = this.IRToCode(ir)
-      const field = fieldName + this.fieldToCode(tsType, ir.nullable)
+      const field =
+        fieldName + this.fieldToCode(tsType, ir.nullable, ir.optional)
 
       output += '\n'
       output += ir.description
