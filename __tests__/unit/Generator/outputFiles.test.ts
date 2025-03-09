@@ -2,20 +2,9 @@ import { describe, expect, it } from 'vitest'
 import schemaContent from './schema.graphql?raw'
 import { Generator } from '../../../src/classes/Generator'
 import { loadSchemaSync } from '@graphql-tools/load'
-import { parse } from 'graphql'
-import type { GeneratorInput } from '../../../src/types'
+import { toDocument } from '../../helpers'
 
 const schema = loadSchemaSync(schemaContent, { loaders: [] })
-
-function toDocument(content: string, filePath: string): GeneratorInput {
-  const documentNode = parse(content, {
-    noLocation: false,
-  })
-  return {
-    documentNode,
-    filePath,
-  }
-}
 
 describe('Generator Output Files', () => {
   it('Returns file dependencies for enums', async () => {

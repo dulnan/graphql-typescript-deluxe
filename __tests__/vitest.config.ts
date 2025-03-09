@@ -9,7 +9,12 @@ export default defineConfig({
     exclude: [...configDefaults.exclude, 'build/**/*'],
     coverage: {
       provider: 'v8',
-      exclude: [...coverageConfigDefaults.exclude, 'build/**/*'],
+      exclude: [
+        ...coverageConfigDefaults.exclude,
+        'build/**/*',
+        'benchmark/**/*',
+        'helpers/**/*',
+      ],
     },
     // server: {
     //   deps: {
