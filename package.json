@@ -45,8 +45,6 @@
     "vitest": "~3.0"
   },
   "scripts": {
-    "start": "node build/src/main.js",
-    "clean": "rimraf coverage build tmp",
     "build": "unbuild",
     "lint": "eslint .",
     "lint:fix": "eslint --fix",
