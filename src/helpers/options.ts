@@ -42,9 +42,7 @@ function buildTypeDocFilePath(filePath: string): string {
   return filePath
 }
 
-export function buildScalarType(
-  type: GraphQLScalarType,
-): string | undefined | null {
+function buildScalarType(type: GraphQLScalarType): string | undefined | null {
   switch (type.name) {
     case 'ID': {
       return 'string | number'

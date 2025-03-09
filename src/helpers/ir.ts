@@ -41,7 +41,7 @@ export type IRNodeObject = {
   fields: Record<string, IRNode>
 }
 
-export type IRNodeArray = {
+type IRNodeArray = {
   kind: 'ARRAY'
   description?: string | null
   optional?: boolean
@@ -50,7 +50,7 @@ export type IRNodeArray = {
   ofType: IRNode
 }
 
-export type IRNodeUnion = {
+type IRNodeUnion = {
   kind: 'UNION'
   description?: string | null
   optional?: boolean
@@ -58,7 +58,7 @@ export type IRNodeUnion = {
   types: IRNode[]
 }
 
-export type IRNodeIntersection = {
+type IRNodeIntersection = {
   kind: 'INTERSECTION'
   description?: string | null
   optional?: boolean
@@ -153,7 +153,7 @@ export function mergeFragmentSpread(
   return fields
 }
 
-export function unifyUnionBranches(
+function unifyUnionBranches(
   aBranches: IRNode[],
   bBranches: IRNode[],
 ): IRNode[] {
@@ -323,7 +323,7 @@ export function mergeObjectFields(
 /**
  * Flatten any union nodes in the array into a single-level array
  */
-export function flattenUnion(nodes: IRNode[]): IRNode[] {
+function flattenUnion(nodes: IRNode[]): IRNode[] {
   const out: IRNode[] = []
   for (const n of nodes) {
     if (n.kind === 'UNION') {
@@ -421,9 +421,7 @@ export function isIdenticalIR(a: IRNode, b: IRNode): boolean {
   return false
 }
 
-export function unifyObjectsDifferingOnlyInTypename(
-  objects: IRNodeObject[],
-): IRNodeObject {
+function unifyObjectsIgnoringTypename(objects: IRNodeObject[]): IRNodeObject {
   // We assume these all have the same shape except for possibly
   // different literal values of `__typename`. So we:
   // 1) Take the first object’s fields as a base
@@ -471,7 +469,7 @@ export function unifyObjectsDifferingOnlyInTypename(
 /**
  * Create a key from an IR node.
  */
-export function buildNodeKeyWithoutTypename(ir: IRNode): string {
+function buildNodeKeyWithoutTypename(ir: IRNode): string {
   let key = ir.kind
   switch (ir.kind) {
     case 'SCALAR': {
@@ -520,9 +518,7 @@ export function buildNodeKeyWithoutTypename(ir: IRNode): string {
  *
  * @TODO: This could already be handled in buildAbstractSelectionSet.
  */
-export function mergeUnionBranchesThatDifferOnlyInTypename(
-  branches: IRNode[],
-): IRNode[] {
+function mergeUnionBranchesIgnoringTypename(branches: IRNode[]): IRNode[] {
   const objectBranches: IRNodeObject[] = []
   const otherBranches: IRNode[] = []
 
@@ -557,7 +553,7 @@ export function mergeUnionBranchesThatDifferOnlyInTypename(
     }
 
     // Merge them all
-    const merged = unifyObjectsDifferingOnlyInTypename(objs)
+    const merged = unifyObjectsIgnoringTypename(objs)
     mergedObjects.push(merged)
   }
 
@@ -605,7 +601,7 @@ export function postProcessIR(ir: IRNode): IRNode {
       const processedBranches = ir.types.map((t) => postProcessIR(t))
       return {
         ...ir,
-        types: mergeUnionBranchesThatDifferOnlyInTypename(processedBranches),
+        types: mergeUnionBranchesIgnoringTypename(processedBranches),
       }
     }
 

@@ -5,7 +5,6 @@ import {
 } from '../../../src/helpers/generator'
 import { NO_FILE_PATH } from '../../../src/constants'
 import { parse } from 'graphql'
-import type { GeneratedCodeType } from '../../../src/types'
 
 describe('toInputDocuments', () => {
   // Test case 1: Simple string input

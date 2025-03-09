@@ -6,12 +6,12 @@ import * as PluginTypescript from '@graphql-codegen/typescript'
 import { type TypeScriptDocumentsPluginConfig } from '@graphql-codegen/typescript-operations'
 
 const config: TypeScriptDocumentsPluginConfig = {
-  exportFragmentSpreadSubTypes: true,
+  exportFragmentSpreadSubTypes: false,
   preResolveTypes: false,
   skipTypeNameForRoot: true,
   skipTypename: true,
   useTypeImports: true,
-  onlyOperationTypes: true,
+  onlyOperationTypes: false,
   namingConvention: {
     enumValues: 'change-case-all#upperCaseFirst',
   },

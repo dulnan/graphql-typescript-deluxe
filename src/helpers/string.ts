@@ -3,8 +3,19 @@ import type { TypeContext } from '../types'
 import { stripIgnoredCharacters } from 'graphql'
 import type { TypeCommentOptions } from '../types/options'
 
-export function escapeStringForComment(input: string): string {
+function escapeStringForComment(input: string): string {
   return input.replace(/\*\//g, '*\\/')
+}
+
+function toTSComment(lines: string[]): string {
+  if (lines.length === 0) {
+    return '/**\n */'
+  } else if (lines.length === 1) {
+    return `/** ${escapeStringForComment(lines[0]!)} */`
+  }
+
+  const commentLines = lines.map((line) => ` * ${escapeStringForComment(line)}`)
+  return ['/**', ...commentLines, ' */'].join('\n')
 }
 
 /**
@@ -15,17 +26,6 @@ export function makeComment(input: string): string {
     return toTSComment(input.split('\n'))
   }
   return `/** ${escapeStringForComment(input)} */`
-}
-
-export function toTSComment(lines: string[]): string {
-  if (lines.length === 0) {
-    return '/**\n */'
-  } else if (lines.length === 1) {
-    return `/** ${escapeStringForComment(lines[0]!)} */`
-  }
-
-  const commentLines = lines.map((line) => ` * ${escapeStringForComment(line)}`)
-  return ['/**', ...commentLines, ' */'].join('\n')
 }
 
 export function makeTypeDoc(
