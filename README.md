@@ -38,7 +38,7 @@ request that implements a test case that shows the buggy output.
 To just generate types use the static `generateOnce` method:
 
 ```typescript
-import { Generator } from 'graphql-typescript-generator'
+import { Generator } from 'graphql-typescript-deluxe'
 import { parse } from 'graphql'
 import { loadSchemaSync } from '@graphql-tools/load'
 
@@ -64,7 +64,7 @@ const result = Generator.generateOnce(schema, DOC)
 More interesting, especially in a local dev enviroment, is the stateful usage:
 
 ```typescript
-import { Generator } from 'graphql-typescript-generator'
+import { Generator } from 'graphql-typescript-deluxe'
 import { parse } from 'graphql'
 import { loadSchemaSync } from '@graphql-tools/load'
 
