@@ -9,15 +9,10 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 // Object Types
 // --------------------------------------------------------------------------------
 
-
 type DefaultEntityUrl = 'DefaultEntityUrl';
-
 type DefaultUrl = 'DefaultUrl';
-
 type Image = 'Image';
-
 type NodeArticle = 'NodeArticle';
-
 type NodePage = 'NodePage';
 
 
@@ -25,9 +20,7 @@ type NodePage = 'NodePage';
 // Interfaces & Unions
 // --------------------------------------------------------------------------------
 
-
 export type Entity = Image | NodeArticle | NodePage;
-
 
 export type Url = DefaultEntityUrl | DefaultUrl;
 

@@ -44,6 +44,7 @@ import type {
   GeneratedCodeIdentifier,
   CollectedOperation,
   GeneratorInputArgs,
+  GeneratedCodeByOutputType,
 } from '../types'
 import { toInputDocuments } from '../helpers/generator'
 import {
@@ -174,7 +175,7 @@ export class Generator {
     const docs = toInputDocuments(input)
     const generator = new Generator(schema, options)
     generator.add(docs)
-    return generator.build().getEverything().getSource()
+    return generator.build().getOperations('ts').getSource()
   }
 
   /**
@@ -278,7 +279,7 @@ export class Generator {
     generatedTypeType: GeneratedCodeType,
     key: string,
     cb: () => {
-      code: string
+      code: string | GeneratedCodeByOutputType
       typeName: string
       graphqlName?: string | null
       context?: TypeContext
@@ -300,23 +301,33 @@ export class Generator {
     let comment = ''
     if (result.context && this.options.output.typeComment) {
       const filePath = result.context.filePath || result.context.input?.filePath
-      comment =
-        makeTypeDoc(
-          {
-            ...result.context,
-            filePath: filePath
-              ? this.options.output.buildTypeDocFilePath(filePath)
-              : undefined,
-          },
-          this.typeCommentOptions,
-        ) + '\n'
+      comment = makeTypeDoc(
+        {
+          ...result.context,
+          filePath: filePath
+            ? this.options.output.buildTypeDocFilePath(filePath)
+            : undefined,
+        },
+        this.typeCommentOptions,
+      )
     }
-    const code = this.formatCode(result.code)
+    const code: GeneratedCodeByOutputType = {}
+
+    if (typeof result.code === 'string') {
+      const formatted = this.formatCode(result.code)
+      code['ts'] = formatted
+      code['d.ts'] = formatted
+    } else {
+      for (const [type, resultCode] of Object.entries(result.code)) {
+        code[type] = this.formatCode(resultCode)
+      }
+    }
     this.generatedCode.set(key, {
       id: DependencyTracker.toKey(generatedTypeType, result.typeName),
       type: generatedTypeType,
       name: result.typeName,
-      code: `${comment}${code}`,
+      code,
+      comment,
       filePath: this.dependencyTracker?.getCurrentFile() || '',
       dependencies,
       source: result.source,

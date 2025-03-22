@@ -36,6 +36,12 @@ export type TypeContext = {
   type?: GraphQLNamedType
 }
 
+export type GeneratedCodeOutputType = 'js' | 'ts' | 'd.ts'
+
+export type GeneratedCodeByOutputType = Partial<
+  Record<GeneratedCodeOutputType, string>
+>
+
 export type GeneratedCodeIdentifier =
   | 'fragment'
   | 'query'
@@ -85,9 +91,14 @@ export interface GeneratedCode {
   identifier?: GeneratedCodeIdentifier | null
 
   /**
+   * Comment.
+   */
+  comment?: string
+
+  /**
    * The full code of the generated type, including export identifiers.
    */
-  code: string
+  code: GeneratedCodeByOutputType
 
   /**
    * The path of the file that provided this type.

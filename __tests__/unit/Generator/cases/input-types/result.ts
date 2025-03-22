@@ -36,7 +36,7 @@ export const ContactMethod = {
   /** Contact via email. */
   MAIL: 'MAIL'
 } as const;
-export type ContactMethod = (typeof ContactMethod)[keyof typeof ContactMethod];
+export type ContactMethod = 'PHONE' | 'MAIL';
 
 
 // --------------------------------------------------------------------------------

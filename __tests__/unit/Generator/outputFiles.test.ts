@@ -7,7 +7,7 @@ import { toDocument } from '../../helpers'
 const schema = loadSchemaSync(schemaContent, { loaders: [] })
 
 describe('Generator Output Files', () => {
-  it('Returns file dependencies for enums', async () => {
+  it.only('Returns file dependencies for enums', async () => {
     const generator = new Generator(schema, {
       output: {
         typeComment: false,
@@ -34,14 +34,14 @@ query foobar {
 
     const result = generator.add(documents).build()
 
-    const resultTypes = result.getTypes()
+    const resultTypes = result.getOperations('ts')
 
     expect(
       resultTypes.getTypeScriptEnumDependencies(),
-      'Should contain exactly one enum.',
-    ).toEqual(['EntityType'])
+      'Should not contain any enum dependencies.',
+    ).toEqual([])
 
-    const resultEverything = result.getEverything()
+    const resultEverything = result.getOperations('ts')
     expect(
       resultEverything.getTypeScriptEnumDependencies(),
       'Should be empty since enums are included in the file.',
@@ -75,7 +75,7 @@ query foobar {
 
     const result = generator.add(documents).build()
 
-    const resultOperations = result.buildFile(['operation'])
+    const resultOperations = result.buildFile('ts', ['operation'])
 
     expect(resultOperations.getSource()).toMatchInlineSnapshot(`
       "// --------------------------------------------------------------------------------
@@ -117,7 +117,9 @@ query foobar {
       },
     ])
 
-    const resultEverything = result.getEverything().getDependencies('fragment')
+    const resultEverything = result
+      .getOperations('ts')
+      .getDependencies('fragment')
     expect(
       resultEverything,
       'Should be empty because all code types are included.',

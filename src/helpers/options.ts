@@ -10,7 +10,7 @@ import { makeComment } from './string'
 import type { DeepRequired } from './type'
 import { InvalidOptionError } from '../errors'
 import { pascalCase } from 'change-case'
-import type { GeneratedCode } from '../types'
+import type { GeneratedCode, GeneratedCodeByOutputType } from '../types'
 
 export function buildOperationTypeName(
   operationName: string,
@@ -63,10 +63,11 @@ function buildScalarType(type: GraphQLScalarType): string | undefined | null {
 }
 
 export function buildEnumCode(
-  nameInCode: string,
+  name: string,
   type: GraphQLEnumType,
-): string {
+): GeneratedCodeByOutputType {
   const enumValues = type.getValues()
+
   const enumEntries = enumValues
     .map((value) => {
       const description = value.description
@@ -75,13 +76,39 @@ export function buildEnumCode(
       return `${description}${value.name}: '${value.name}'`
     })
     .join(',\n')
-
-  return `
-export const ${nameInCode} = {
+  const codeJs = `export const ${name} = {
 ${enumEntries}
-} as const;
-export type ${nameInCode} = (typeof ${nameInCode})[keyof typeof ${nameInCode}];
-`.trim()
+};`
+
+  const strings = enumValues.map((v) => `'${v.name}'`).join(' | ')
+  const codeTsType = `export type ${name} = ${strings};`
+
+  const codeTs = `export const ${name} = {
+${enumEntries}
+} as const;`
+
+  const codeOutputTs = `${codeTs}\n${codeTsType}`
+
+  const enumEntriesReadonly = enumValues
+    .map((value) => {
+      const description = value.description
+        ? makeComment(value.description) + '\n'
+        : ''
+      return `${description}readonly ${value.name}: '${value.name}'`
+    })
+    .join(',\n')
+
+  const codeDeclare = `export declare const ${name}: {
+${enumEntriesReadonly}
+};`
+
+  const codeDts = `${codeDeclare}\n${codeTsType}`
+
+  return {
+    js: codeJs,
+    ts: codeOutputTs,
+    'd.ts': codeDts,
+  }
 }
 
 export function buildOptions(

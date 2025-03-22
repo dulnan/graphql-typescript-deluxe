@@ -3,6 +3,7 @@ import { notNullish } from '../helpers/type'
 import type {
   CollectedOperation,
   GeneratedCode,
+  GeneratedCodeOutputType,
   GeneratedCodeType,
 } from '../types/index'
 import { GeneratorOutputCode } from './GeneratorOutputCode'
@@ -68,11 +69,26 @@ export class GeneratorOutput {
    *
    * @returns The code as a single string or null if it would result in an empty string.
    */
-  public buildCodeGroupString(type: GeneratedCodeType): string | null {
+  public buildCodeGroupString(
+    type: GeneratedCodeType,
+    outputType: GeneratedCodeOutputType,
+  ): string | null {
     const items = this.code.filter((v) => v.type === type)
     const code = items
       .sort((a, b) => a.name.localeCompare(b.name))
-      .map((v) => v.code)
+      .map((v) => {
+        const output = v.code[outputType]
+        if (!output) {
+          return null
+        }
+
+        if (v.comment) {
+          return `${v.comment}\n${output}`
+        }
+
+        return output
+      })
+      .filter(notNullish)
       .join(type === 'typename-object' ? '\n' : '\n\n')
 
     return code
@@ -89,8 +105,9 @@ export class GeneratorOutput {
    * @return The output file.
    */
   public buildFile(
-    types: GeneratedCodeType[] = [],
-    options?: GeneratorOutputOptions,
+    outputType: GeneratedCodeOutputType,
+    types: GeneratedCodeType[] = DEFAULT_SORTING,
+    options: GeneratorOutputOptions = {},
   ): GeneratorOutputFile {
     // All collected dependencies of all code items.
     const allDependencies: Set<string> = new Set()
@@ -104,7 +121,7 @@ export class GeneratorOutput {
         allDependencies.add(key)
       }
 
-      if (!types.includes(code.type)) {
+      if (types && !types.includes(code.type)) {
         continue
       }
 
@@ -117,7 +134,7 @@ export class GeneratorOutput {
     )
 
     const source = groups
-      .map((type) => this.buildCodeGroupString(type))
+      .map((type) => this.buildCodeGroupString(type, outputType))
       .filter(notNullish)
       .join('\n\n\n')
       .trim()
@@ -127,6 +144,7 @@ export class GeneratorOutput {
       [...allDependencies.values()].filter((id) => {
         return !included.includes(id)
       }),
+      outputType,
     )
   }
 
@@ -135,29 +153,11 @@ export class GeneratorOutput {
    *
    * This excludes code types that are potentially not type-only, such as enum consts or helpers.
    */
-  public getTypes(options?: GeneratorOutputOptions): GeneratorOutputFile {
-    const typesOnly = DEFAULT_SORTING.filter(
-      (v) => v !== 'enum' && v !== 'helpers',
-    )
-    return this.buildFile(typesOnly, options)
-  }
-
-  /**
-   * Returns non-types only.
-   *
-   * This incldues code types that are not type-only, such as enum consts or helpers.
-   */
-  public getNonTypes(options?: GeneratorOutputOptions): GeneratorOutputFile {
-    return this.buildFile(['enum', 'helpers'], options)
-  }
-
-  /**
-   * Get everything.
-   *
-   * @returns The file contents.
-   */
-  public getEverything(options?: GeneratorOutputOptions): GeneratorOutputFile {
-    return this.buildFile(DEFAULT_SORTING, options)
+  public getOperations(
+    outputType: GeneratedCodeOutputType = 'ts',
+    options?: GeneratorOutputOptions,
+  ): GeneratorOutputFile {
+    return this.buildFile(outputType, undefined, options)
   }
 
   /**

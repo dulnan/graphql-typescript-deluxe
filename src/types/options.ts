@@ -6,7 +6,7 @@ import type {
   GraphQLScalarType,
   OperationDefinitionNode,
 } from 'graphql'
-import type { GeneratedCode } from '.'
+import type { GeneratedCode, GeneratedCodeByOutputType } from '.'
 
 /**
  * Possible type comment options.
@@ -237,6 +237,12 @@ export type GeneratorOptions = {
    * The method is executed once when the class is initialised. You can add
    * some custom helpers or types here.
    *
+   * The `code` property expects an object where the keys are the supported output types:
+   * `js`, `ts` and `d.ts`.
+   *
+   * If you only plan to generate a single `ts` output (the default), you can only define that one.
+   * If you plan to use separate `d.ts` and `js` output files, then you need to define both.
+   *
    * For example, if you want to provide a custom type for scalars, define the
    * type here:
    *
@@ -249,12 +255,17 @@ export type GeneratorOptions = {
    *       {
    *         type: 'type-helpers',
    *         name: 'MyCustomScalar',
-   *         code: 'type NumberMap = Record<string, number>',
+   *         code: {
+   *           'ts' : 'type NumberMap = Record<string, number>',
+   *           'd.ts' : 'type NumberMap = Record<string, number>',
+   *         },
    *       }
    *     ]
    *   }
    * }
    * ```
+   *
+   * Here, we define the same code for `ts` and `d.ts` output file types.
    *
    * And then tell the Generator to use your custom type for this scalar:
    * ```typescript
@@ -415,7 +426,10 @@ export type GeneratorOptions = {
    * export type ContactMethod = (typeof ContactMethod)[keyof typeof ContactMethod];
    * ```
    */
-  buildEnumCode?: (nameInCode: string, type: GraphQLEnumType) => string
+  buildEnumCode?: (
+    nameInCode: string,
+    type: GraphQLEnumType,
+  ) => GeneratedCodeByOutputType
 
   /**
    * Build the TS output for a scalar type.

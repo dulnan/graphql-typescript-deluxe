@@ -9,18 +9,14 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 // Object Types
 // --------------------------------------------------------------------------------
 
-
 type DefaultEntityUrl = 'DefaultEntityUrl';
-
 type DefaultInternalUrl = 'DefaultInternalUrl';
-
 type DefaultUrl = 'DefaultUrl';
 
 
 // --------------------------------------------------------------------------------
 // Interfaces & Unions
 // --------------------------------------------------------------------------------
-
 
 export type Url = DefaultEntityUrl | DefaultInternalUrl | DefaultUrl;
 

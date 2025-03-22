@@ -9,7 +9,6 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 // Object Types
 // --------------------------------------------------------------------------------
 
-
 type MediaVideo = 'MediaVideo';
 /** A blog post. */
 type NodeArticle = 'NodeArticle';

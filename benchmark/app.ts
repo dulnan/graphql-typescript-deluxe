@@ -140,7 +140,9 @@ async function main(): Promise<void> {
           id: 'type-helpers####MessengerMessage',
           type: 'type-helpers',
           name: 'MessengerMessage',
-          code: `type MessengerMessage = { message: string; type: string }`,
+          code: {
+            ts: `type MessengerMessage = { message: string; type: string }`,
+          },
         },
       ]
     },
@@ -165,7 +167,7 @@ async function main(): Promise<void> {
   await runWithDuration('custom-types.ts', () => {
     generator.add(documentCleaned)
     const output = generator.build()
-    return output.getEverything().getSource()
+    return output.getOperations('ts').getSource()
   })
 
   await runWithDuration('codes.json', () => {

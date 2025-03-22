@@ -13,13 +13,10 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 type Comment = 'Comment';
 /** A domain. */
 type Domain = 'Domain';
-
 type MediaImage = 'MediaImage';
-
 type MediaVideo = 'MediaVideo';
 /** A blog post. */
 type NodeArticle = 'NodeArticle';
-
 type NodePage = 'NodePage';
 /** A user. */
 type User = 'User';
@@ -28,7 +25,6 @@ type User = 'User';
 // --------------------------------------------------------------------------------
 // Interfaces & Unions
 // --------------------------------------------------------------------------------
-
 
 export type Entity = 
   | Comment

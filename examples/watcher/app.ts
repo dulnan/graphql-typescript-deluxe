@@ -58,8 +58,8 @@ async function main(): Promise<void> {
   const buildOutput = async (): Promise<void> => {
     try {
       const result = generator.build()
-      await writeOutput('types.d.ts', result.getTypes())
-      await writeOutput('enums.ts', result.getNonTypes())
+      await writeOutput('types.d.ts', result.getOperations('d.ts'))
+      await writeOutput('types.js', result.getOperations('js'))
       await writeOutput('operations.js', result.getOperationsFile())
       await writeOutput(
         'operations.d.ts',

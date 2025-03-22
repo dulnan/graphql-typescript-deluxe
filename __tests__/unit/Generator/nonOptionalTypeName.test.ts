@@ -37,7 +37,7 @@ query foobar {
     ]
 
     const output = await format(
-      generator.add(documents).build().getEverything().getSource(),
+      generator.add(documents).build().getOperations('ts').getSource(),
     )
 
     await expect(output).toMatchFileSnapshot(

@@ -1,6 +1,7 @@
+import type { GeneratedCodeOutputType } from '../types'
 import { DependencyAware } from './DependencyAware'
 
-export type GeneratorOutputFileType = 'ts' | 'js' | 'json'
+export type GeneratorOutputFileType = GeneratedCodeOutputType | 'json'
 
 export class GeneratorOutputFile extends DependencyAware {
   constructor(

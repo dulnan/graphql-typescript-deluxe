@@ -32,7 +32,7 @@ function generate(
     filePath: './test.graphql',
   })
   const output = generator.build()
-  return output.getEverything().getSource()
+  return output.getOperations('ts').getSource()
 }
 
 describe('Generator', () => {

@@ -31,7 +31,7 @@ export const EntityType = {
   /** A media. */
   MEDIA: 'MEDIA'
 } as const;
-export type EntityType = (typeof EntityType)[keyof typeof EntityType];
+export type EntityType = 'NODE' | 'MEDIA';
 
 
 // --------------------------------------------------------------------------------

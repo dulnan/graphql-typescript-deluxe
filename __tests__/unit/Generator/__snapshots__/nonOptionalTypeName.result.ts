@@ -13,15 +13,11 @@ type Category = 'Category'
 type Comment = 'Comment'
 /** A domain. */
 type Domain = 'Domain'
-
 type MediaImage = 'MediaImage'
-
 type MediaVideo = 'MediaVideo'
 /** A blog post. */
 type NodeArticle = 'NodeArticle'
-
 type NodePage = 'NodePage'
-
 type Query = 'Query'
 /** A user. */
 type User = 'User'

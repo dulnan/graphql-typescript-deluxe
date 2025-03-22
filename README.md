@@ -23,6 +23,8 @@ TypeScript code for GraphQL operations and fragments.
   update only types that need to be rebuilt
 - TypeDoc: Adds comments for fragments, operations and fields (description from
   schema)
+- Output: Option to generate a single `.ts` file or separate `.js` and `.d.ts`
+  files
 
 ## Caveats
 
@@ -108,7 +110,7 @@ generator.add([
 ])
 
 // Build the initial output.
-console.log(generator.build().getEverything().getSource())
+console.log(generator.build().getOperations().getSource())
 
 // Add a new one.
 generator.add({
@@ -117,7 +119,7 @@ generator.add({
 })
 
 // Will only generate code for the new query and reuse all existing code.
-console.log(generator.build().getEverything().getSource())
+console.log(generator.build().getOperations().getSource())
 
 // Update a previously added document.
 generator.update({
@@ -126,7 +128,7 @@ generator.update({
 })
 
 // Will update both the fragment type *and* the existing query type (since it depends on it).
-console.log(generator.build().getEverything().getSource())
+console.log(generator.build().getOperations().getSource())
 ```
 
 ## Why?
@@ -399,6 +401,41 @@ export const ContactMethod = {
   /* Contact via email. */
   MAIL: 'MAIL',
 } as const
+export type ContactMethod = (typeof ContactMethod)[keyof typeof ContactMethod]
+```
+
+This is the output when calling `result.getOperations()`, which defaults to
+generating a `.ts` file. It's also possible to create separate `.js` and `.d.ts`
+files:
+
+```ts
+const output = generator.build()
+const js = output.getOperations('js').getSource())
+const dts = output.getOperations('d.ts').getSource())
+```
+
+Which produces this:
+
+#### operations.js
+
+```js
+export const ContactMethod = {
+  /* Contact via phone. */
+  PHONE: 'PHONE',
+  /* Contact via email. */
+  MAIL: 'MAIL',
+}
+```
+
+#### operations.d.ts
+
+```typescript
+export declare const ContactMethod: {
+  /* Contact via phone. */
+  PHONE: 'PHONE'
+  /* Contact via email. */
+  MAIL: 'MAIL'
+}
 export type ContactMethod = (typeof ContactMethod)[keyof typeof ContactMethod]
 ```
 

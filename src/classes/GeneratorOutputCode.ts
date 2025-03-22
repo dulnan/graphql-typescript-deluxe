@@ -1,5 +1,6 @@
 import type {
   GeneratedCode,
+  GeneratedCodeByOutputType,
   GeneratedCodeIdentifier,
   GeneratedCodeType,
 } from '../types'
@@ -25,6 +26,11 @@ export class GeneratorOutputCode
   public readonly name: string
 
   /**
+   * The comment.
+   */
+  public readonly comment: string | undefined
+
+  /**
    * The name of the GraphQL type, interface, enum, etc.
    */
   public readonly graphqlName: string | null | undefined
@@ -39,7 +45,7 @@ export class GeneratorOutputCode
    *
    * Can contain one or more exports.
    */
-  public readonly code: string
+  public readonly code: GeneratedCodeByOutputType
 
   /**
    * The filePath of the source input document.
@@ -63,6 +69,7 @@ export class GeneratorOutputCode
     this.id = code.id
     this.type = code.type
     this.name = code.name
+    this.comment = code.comment
     this.graphqlName = code.graphqlName
     this.identifier = code.identifier
     this.code = code.code
