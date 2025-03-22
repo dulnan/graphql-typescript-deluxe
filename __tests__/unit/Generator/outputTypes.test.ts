@@ -7,7 +7,7 @@ import { toDocument } from '../../helpers'
 const schema = loadSchemaSync(schemaContent, { loaders: [] })
 
 describe('Generator Output Types', () => {
-  it.only('Generates a d.ts and js file for enums', async () => {
+  it('Generates a d.ts and js file for enums', async () => {
     const generator = new Generator(schema, {
       output: {
         typeComment: false,
