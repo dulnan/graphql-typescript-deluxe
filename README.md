@@ -419,12 +419,12 @@ Which produces this:
 #### operations.js
 
 ```js
-export const ContactMethod = {
+export const ContactMethod = Object.freeze({
   /* Contact via phone. */
   PHONE: 'PHONE',
   /* Contact via email. */
   MAIL: 'MAIL',
-}
+})
 ```
 
 #### operations.d.ts

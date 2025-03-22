@@ -30,12 +30,12 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
  * }
  * ```
  */
-export const ContactMethod = {
+export const ContactMethod = Object.freeze({
   /** Contact via phone. */
   PHONE: 'PHONE',
   /** Contact via email. */
   MAIL: 'MAIL'
-} as const;
+} as const);
 export type ContactMethod = 'PHONE' | 'MAIL';
 
 

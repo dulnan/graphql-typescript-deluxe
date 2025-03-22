@@ -25,12 +25,12 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
  * }
  * ```
  */
-export const EntityType = {
+export const EntityType = Object.freeze({
   /** A node. */
   NODE: 'NODE',
   /** A media. */
   MEDIA: 'MEDIA'
-} as const;
+} as const);
 export type EntityType = 'NODE' | 'MEDIA';
 
 

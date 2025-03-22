@@ -37,17 +37,17 @@ query foobar {
     const resultJs = result.buildFile('js', ['enum']).getSource()
     expect(resultJs, 'Generates valid JavaScript exporting the enum.')
       .toMatchInlineSnapshot(`
-      "// --------------------------------------------------------------------------------
-      // Enums
-      // --------------------------------------------------------------------------------
+        "// --------------------------------------------------------------------------------
+        // Enums
+        // --------------------------------------------------------------------------------
 
-      export const EntityType = {
-        /** A node. */
-        NODE: 'NODE',
-        /** A media. */
-        MEDIA: 'MEDIA'
-      };"
-    `)
+        export const EntityType = Object.freeze({
+          /** A node. */
+          NODE: 'NODE',
+          /** A media. */
+          MEDIA: 'MEDIA'
+        });"
+      `)
 
     const resultDts = result.buildFile('d.ts', ['enum']).getSource()
     expect(
@@ -58,12 +58,12 @@ query foobar {
       // Enums
       // --------------------------------------------------------------------------------
 
-      export declare const EntityType: {
+      export declare const EntityType: Readonly<{
         /** A node. */
         readonly NODE: 'NODE',
         /** A media. */
         readonly MEDIA: 'MEDIA'
-      };
+      }>;
       export type EntityType = 'NODE' | 'MEDIA';"
     `)
 
@@ -76,12 +76,12 @@ query foobar {
       // Enums
       // --------------------------------------------------------------------------------
 
-      export const EntityType = {
+      export const EntityType = Object.freeze({
         /** A node. */
         NODE: 'NODE',
         /** A media. */
         MEDIA: 'MEDIA'
-      } as const;
+      } as const);
       export type EntityType = 'NODE' | 'MEDIA';"
     `)
   })

@@ -76,16 +76,16 @@ export function buildEnumCode(
       return `${description}${value.name}: '${value.name}'`
     })
     .join(',\n')
-  const codeJs = `export const ${name} = {
+  const codeJs = `export const ${name} = Object.freeze({
 ${enumEntries}
-};`
+});`
 
   const strings = enumValues.map((v) => `'${v.name}'`).join(' | ')
   const codeTsType = `export type ${name} = ${strings};`
 
-  const codeTs = `export const ${name} = {
+  const codeTs = `export const ${name} = Object.freeze({
 ${enumEntries}
-} as const;`
+} as const);`
 
   const codeOutputTs = `${codeTs}\n${codeTsType}`
 
@@ -98,9 +98,9 @@ ${enumEntries}
     })
     .join(',\n')
 
-  const codeDeclare = `export declare const ${name}: {
+  const codeDeclare = `export declare const ${name}: Readonly<{
 ${enumEntriesReadonly}
-};`
+}>;`
 
   const codeDts = `${codeDeclare}\n${codeTsType}`
 
