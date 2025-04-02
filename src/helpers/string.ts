@@ -74,7 +74,9 @@ export function makeExport(name: string, type: string): string {
  */
 export function graphqlToString(str: string, minify = false): string {
   const strStripped = minify ? stripIgnoredCharacters(str) : str
-  return '`' + strStripped.replaceAll('`', '\\`') + (minify ? '`' : '\n\n`')
+  // Since we are using String.raw to keep GraphQL quote escaping intact, we have to "escape" backtics ourselves.
+  const escapedBackticks = strStripped.replaceAll('`', '${"`"}')
+  return 'String.raw`' + escapedBackticks + (minify ? '`' : '\n\n`')
 }
 
 export function generateHeaderComment(title: string): string {
