@@ -7,10 +7,10 @@ import { type TypeScriptDocumentsPluginConfig } from '@graphql-codegen/typescrip
 
 const config: TypeScriptDocumentsPluginConfig = {
   exportFragmentSpreadSubTypes: false,
-  preResolveTypes: false,
+  preResolveTypes: true,
   skipTypeNameForRoot: true,
   skipTypename: true,
-  useTypeImports: true,
+  useTypeImports: false,
   onlyOperationTypes: false,
   namingConvention: {
     enumValues: 'change-case-all#upperCaseFirst',

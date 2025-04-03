@@ -67,12 +67,12 @@ query foobar {
           {
             "dependencies": [
               {
-                "type": "enum",
-                "value": "EntityType",
-              },
-              {
                 "type": "file",
                 "value": "fragment.entity.graphql",
+              },
+              {
+                "type": "enum",
+                "value": "EntityType",
               },
             ],
             "filePath": "fragment.entity.graphql",
@@ -82,12 +82,12 @@ query foobar {
           {
             "dependencies": [
               {
-                "type": "enum",
-                "value": "EntityType",
-              },
-              {
                 "type": "file",
                 "value": "fragment.entity.graphql",
+              },
+              {
+                "type": "enum",
+                "value": "EntityType",
               },
               {
                 "type": "fragment-name",
@@ -104,6 +104,10 @@ query foobar {
           },
           {
             "dependencies": [
+              {
+                "type": "file",
+                "value": "query.foobar.graphql",
+              },
               {
                 "type": "file",
                 "value": "fragment.user.graphql",
@@ -136,10 +140,6 @@ query foobar {
                 "type": "operation",
                 "value": "FoobarQuery",
               },
-              {
-                "type": "file",
-                "value": "query.foobar.graphql",
-              },
             ],
             "filePath": "query.foobar.graphql",
             "name": "FoobarQuery",
@@ -148,12 +148,12 @@ query foobar {
           {
             "dependencies": [
               {
-                "type": "type-helpers",
-                "value": "Exact",
-              },
-              {
                 "type": "file",
                 "value": "query.foobar.graphql",
+              },
+              {
+                "type": "type-helpers",
+                "value": "Exact",
               },
             ],
             "filePath": "query.foobar.graphql",
@@ -218,12 +218,12 @@ fragment mediaImage on MediaImage {
           {
             "dependencies": [
               {
-                "type": "enum",
-                "value": "EntityType",
-              },
-              {
                 "type": "file",
                 "value": "fragment.entity.graphql",
+              },
+              {
+                "type": "enum",
+                "value": "EntityType",
               },
             ],
             "filePath": "fragment.entity.graphql",
@@ -233,12 +233,12 @@ fragment mediaImage on MediaImage {
           {
             "dependencies": [
               {
-                "type": "enum",
-                "value": "EntityType",
-              },
-              {
                 "type": "file",
                 "value": "fragment.entity.graphql",
+              },
+              {
+                "type": "enum",
+                "value": "EntityType",
               },
               {
                 "type": "fragment-name",
@@ -255,6 +255,10 @@ fragment mediaImage on MediaImage {
           },
           {
             "dependencies": [
+              {
+                "type": "file",
+                "value": "query.foobar.graphql",
+              },
               {
                 "type": "file",
                 "value": "fragment.user.graphql",
@@ -287,10 +291,6 @@ fragment mediaImage on MediaImage {
                 "type": "operation",
                 "value": "FoobarQuery",
               },
-              {
-                "type": "file",
-                "value": "query.foobar.graphql",
-              },
             ],
             "filePath": "query.foobar.graphql",
             "name": "FoobarQuery",
@@ -299,12 +299,12 @@ fragment mediaImage on MediaImage {
           {
             "dependencies": [
               {
-                "type": "type-helpers",
-                "value": "Exact",
-              },
-              {
                 "type": "file",
                 "value": "query.foobar.graphql",
+              },
+              {
+                "type": "type-helpers",
+                "value": "Exact",
               },
             ],
             "filePath": "query.foobar.graphql",
@@ -580,5 +580,54 @@ query foobar {
 
         export type QueryFirstQueryVariables = Exact<{ [key: string]: never; }>;"
       `)
+  })
+
+  it('handles updates correctly for fragment updates', async () => {
+    const generator = new Generator(schema, {
+      output: {
+        typeComment: false,
+      },
+    })
+
+    const articleOne = toDocument(
+      `fragment articleOne on NodeArticle { title, categories { label } }`,
+      'fragment.articleOne.graphql',
+    )
+
+    const articleTwo = toDocument(
+      `fragment articleTwo on NodeArticle { categories { url } }`,
+      'fragment.articleTwo.graphql',
+    )
+
+    const queryFirst = toDocument(
+      `query queryFirst {
+  getRandomEntity {
+    ...articleOne
+    ...articleTwo
+    ... on NodeArticle {
+      categories {
+        related {
+          id
+        }
+      }
+    }
+}
+}`,
+      'query.queryFirst.graphql',
+    )
+
+    const documents = [queryFirst, articleOne, articleTwo]
+
+    generator.add(documents)
+    generator.update(
+      toDocument(
+        `fragment articleTwo on NodeArticle { categories { urlRenamed: url } }`,
+        'fragment.articleTwo.graphql',
+      ),
+    )
+
+    expect(generator.build().getOperations('ts').getSource()).toContain(
+      'urlRenamed',
+    )
   })
 })

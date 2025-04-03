@@ -25,7 +25,7 @@ export type EntityUrlFragment = {
  * 
  * @example
  * ```graphql
- * fragment foobar on Query {
+ * fragment fieldMergingDeepNested on Query {
  *   route(path: $path) {
  *     ... on EntityUrl {
  *       ...entityUrl
@@ -34,6 +34,6 @@ export type EntityUrlFragment = {
  * }
  * ```
  */
-export type FoobarFragment = {
+export type FieldMergingDeepNestedFragment = {
   route?: EntityUrlFragment;
 };

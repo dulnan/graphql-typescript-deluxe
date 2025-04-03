@@ -1,4 +1,4 @@
-fragment foobar on Query {
+fragment fieldMergingDeepNested on Query {
   route(path: $path) {
     ... on EntityUrl {
       ...entityUrl

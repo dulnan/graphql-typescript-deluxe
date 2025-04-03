@@ -84,7 +84,9 @@ export class DependencyTracker {
     this.currentIndex++
     if (currentFile) {
       this.currentFilePath = currentFile
-      this.addFileDependency(currentFile)
+    }
+    if (this.currentFilePath) {
+      this.addFileDependency(this.currentFilePath)
     }
   }
 

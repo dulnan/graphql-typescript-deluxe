@@ -346,6 +346,7 @@ export class Generator {
    * @param filePath - The filePath to purge.
    */
   private purgeFromMap(
+    name: string,
     map: Map<string, { filePath?: string; dependencies?: string[] }>,
     filePath?: string,
   ): void {
@@ -359,11 +360,13 @@ export class Generator {
       const item = entry[1]
       if (item.filePath === filePath) {
         map.delete(key)
+        this.logDebug(`purgeFromMap "${name}: ${filePath}"`)
       } else if (
         fileDependencyKey &&
         item.dependencies &&
         item.dependencies.includes(fileDependencyKey)
       ) {
+        this.logDebug(`purgeFromMap "${name}: ${fileDependencyKey}"`)
         map.delete(key)
       }
     }
@@ -376,11 +379,11 @@ export class Generator {
    */
   private purgeFilePath(filePath: string): Generator {
     this.inputDocuments.delete(filePath)
-    this.purgeFromMap(this.fragments, filePath)
-    this.purgeFromMap(this.generatedCode, filePath)
-    this.purgeFromMap(this.cache, filePath)
-    this.purgeFromMap(this.fragmentIRs, filePath)
-    this.purgeFromMap(this.operations, filePath)
+    this.purgeFromMap('fragments', this.fragments, filePath)
+    this.purgeFromMap('generatedCode', this.generatedCode, filePath)
+    this.purgeFromMap('cache', this.cache, filePath)
+    this.purgeFromMap('fragmentIRs', this.fragmentIRs, filePath)
+    this.purgeFromMap('operations', this.operations, filePath)
     return this
   }
 
@@ -599,7 +602,7 @@ export class Generator {
       const graphqlTypeName = item.node.typeCondition.name.value
       const type = this.schema.getType(graphqlTypeName)
 
-      this.dependencyTracker?.start()
+      this.dependencyTracker?.start(item.filePath)
       this.dependencyTracker?.addFragment(fragmentName)
       const ir = this.buildSelectionSet(type, item.node.selectionSet)
       const processedIR = postProcessIR(ir)
@@ -2057,6 +2060,7 @@ export class Generator {
         )
       }
 
+      this.logDebug('update - purgeFilePath: ' + doc.filePath)
       this.purgeFilePath(doc.filePath)
     }
 
@@ -2123,6 +2127,7 @@ export class Generator {
   public build(): GeneratorOutput {
     try {
       this.forEachDefinitionKind(Kind.FRAGMENT_DEFINITION, (node) => {
+        this.dependencyTracker?.addFragment(node.name.value)
         this.fragments.set(node.name.value, {
           node,
           filePath: this.dependencyTracker?.getCurrentFile() || '',

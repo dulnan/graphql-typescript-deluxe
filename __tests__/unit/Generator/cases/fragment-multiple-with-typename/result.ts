@@ -38,32 +38,6 @@ export type Entity =
  * 
  * @example
  * ```graphql
- * fragment foobar on NodeArticle {
- *   categories {
- *     related {
- *       __typename
- *       ...nodeArticle
- *       ...nodePage
- *     }
- *   }
- * }
- * ```
- */
-export type FoobarFragment = {
-  /** Categories of this article. */
-  categories?: ({
-    /** Related entities. */
-  related?: (((NodeArticleFragment & { __typename: NodeArticle }) | NodePageFragment | {
-    __typename: Exclude<Entity, NodeArticle | NodePage>;
-  }))[];
-})[];
-};
-
-/**
- * @see {@link file://./test.graphql}
- * 
- * @example
- * ```graphql
  * fragment nodeArticle on NodeArticle {
  *   tags
  *   body
@@ -75,6 +49,32 @@ export type NodeArticleFragment = {
   body?: string;
   /** The tags. */
   tags?: (string | null)[];
+};
+
+/**
+ * @see {@link file://./test.graphql}
+ * 
+ * @example
+ * ```graphql
+ * fragment nodeArticleRoot on NodeArticle {
+ *   categories {
+ *     related {
+ *       __typename
+ *       ...nodeArticle
+ *       ...nodePage
+ *     }
+ *   }
+ * }
+ * ```
+ */
+export type NodeArticleRootFragment = {
+  /** Categories of this article. */
+  categories?: ({
+    /** Related entities. */
+  related?: (((NodeArticleFragment & { __typename: NodeArticle }) | NodePageFragment | {
+    __typename: Exclude<Entity, NodeArticle | NodePage>;
+  }))[];
+})[];
 };
 
 /**
