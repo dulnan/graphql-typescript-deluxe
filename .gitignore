@@ -31,5 +31,6 @@ dist/
 benchmark/output
 *result-codegen.ts
 benchmark/graphql
+examples/debug-test-case/output/*
 
 **.0x

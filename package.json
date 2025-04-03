@@ -58,6 +58,7 @@
     "test:watch": "WATCH_MODE=true vitest unit --config __tests__/vitest.config.ts",
     "benchmark": "node --expose-gc ./benchmark/index.cjs",
     "examples:watcher": "node ./examples/watcher/index.mjs",
+    "debug-test-case": "node ./examples/debug-test-case/index.mjs",
     "knip": "knip"
   },
   "dependencies": {

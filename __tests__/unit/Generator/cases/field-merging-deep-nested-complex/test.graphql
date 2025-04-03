@@ -1,0 +1,13 @@
+fragment foobar on Query {
+  route(path: $path) {
+    ... on EntityUrl {
+      ...entityUrl
+    }
+  }
+}
+
+fragment entityUrl on EntityUrl {
+  entity {
+    id
+  }
+}

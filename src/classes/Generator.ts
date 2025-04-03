@@ -1121,6 +1121,97 @@ export class Generator {
   }
 
   /**
+   * Preprocesses a selection set to hoist fragment spreads that target
+   * the same type as their parent inline fragment.
+   *
+   * This removes "useless" fragment spreads inside inline fragment spreads
+   * that target the exact same type.
+   *
+   * @param selections - The selections to process
+   * @returns An array of processed selections with hoisted fragment spreads
+   */
+  private preprocessSelections(
+    selections: readonly SelectionNode[],
+  ): SelectionNode[] {
+    const result: SelectionNode[] = []
+    const fragmentsToHoist: SelectionNode[] = []
+
+    for (const sel of selections) {
+      if (sel.kind === Kind.INLINE_FRAGMENT && sel.typeCondition) {
+        const typeConditionName = sel.typeCondition.name.value
+
+        // Check if this inline fragment contains fragment spreads that target the same type.
+        const [fragmentsToHoistFromInline, otherSelections] =
+          this.separateFragmentSpreadsByTypeCondition(
+            sel.selectionSet.selections,
+            typeConditionName,
+          )
+
+        fragmentsToHoist.push(...fragmentsToHoistFromInline)
+
+        // If there are still other selections, keep the inline fragment with them.
+        if (otherSelections.length > 0) {
+          const processedInnerSelections =
+            this.preprocessSelections(otherSelections)
+          if (processedInnerSelections.length > 0) {
+            result.push({
+              ...sel,
+              selectionSet: {
+                kind: Kind.SELECTION_SET,
+                selections: processedInnerSelections,
+              },
+            })
+          }
+        }
+      } else if (sel.kind === Kind.FIELD && sel.selectionSet) {
+        result.push({
+          ...sel,
+          selectionSet: {
+            kind: Kind.SELECTION_SET,
+            selections: this.preprocessSelections(sel.selectionSet.selections),
+          },
+        })
+      } else {
+        result.push(sel)
+      }
+    }
+
+    return [...fragmentsToHoist, ...result]
+  }
+
+  /**
+   * Separates fragment spreads that target a specific type from other selections.
+   *
+   * @param selections - The selections to process
+   * @param targetType - The type to match against fragment type conditions
+   * @returns A tuple with [fragmentSpreadsMatchingType, otherSelections]
+   */
+  private separateFragmentSpreadsByTypeCondition(
+    selections: readonly SelectionNode[],
+    targetType: string,
+  ): [SelectionNode[], SelectionNode[]] {
+    const matchingFragments: SelectionNode[] = []
+    const otherSelections: SelectionNode[] = []
+
+    for (const sel of selections) {
+      if (sel.kind === Kind.FRAGMENT_SPREAD) {
+        const fragDef = this.getFragmentNode(sel.name.value)
+        const fragTypeCondition = fragDef.typeCondition.name.value
+
+        if (fragTypeCondition === targetType) {
+          // This fragment spread targets the same type as the parent inline fragment
+          matchingFragments.push(sel)
+          continue
+        }
+      }
+
+      otherSelections.push(sel)
+    }
+
+    return [matchingFragments, otherSelections]
+  }
+
+  /**
    * Generate the IR selection set for an abstract (interface, union) type.
    *
    * @param abstractType - The interface/union type.
@@ -1136,7 +1227,7 @@ export class Generator {
     abstractType: GraphQLAbstractType,
     selectionSet: SelectionSetNode,
   ): IRNode {
-    const selections = selectionSet.selections
+    const selections = this.preprocessSelections(selectionSet.selections)
 
     const abstractTypeFields = isInterfaceType(abstractType)
       ? abstractType.getFields()

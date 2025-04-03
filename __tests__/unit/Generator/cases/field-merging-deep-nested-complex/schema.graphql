@@ -1,0 +1,32 @@
+type Query {
+  route(path: String!): Url
+}
+
+interface Url {
+  path: String
+}
+
+interface Entity {
+  id: String!
+}
+
+interface Product implements Entity {
+  id: String!
+  price: String
+}
+
+type ProductTent implements Entity & Product {
+  id: String!
+  price: String
+  size: String
+}
+
+interface EntityUrl {
+  entity: Entity
+}
+
+type DefaultEntityUrl implements EntityUrl & Url {
+  entity: Entity
+  path: String
+  routeName: String!
+}
