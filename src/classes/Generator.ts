@@ -1607,11 +1607,48 @@ export class Generator {
   ): string {
     // No fragment spreads.
     if (spreads.length === 0) {
-      return ''
+      return this.fieldMapToCode(fields)
     }
 
     const hasOnlyTypename = fields.has(TYPENAME) && fields.size === 1
 
+    // Special case: Only __typename field and multiple fragment spreads:
+    // We need to create a union of each fragment type with its corresponding __typename.
+    // @TODO: Should never end up in here but instead be handled when building the selection set.
+    if (hasOnlyTypename && spreads.length > 0) {
+      const typenameNode = fields.get(TYPENAME) as IRNodeTypename
+
+      // Create a union of fragments, each paired with the correct __typename.
+      const parts: string[] = []
+
+      for (const spread of spreads) {
+        const fragmentFields = this.getFragmentIRFields(spread.name)
+        const hasFragmentTypename = fragmentFields && TYPENAME in fragmentFields
+
+        if (hasFragmentTypename) {
+          // Fragment already has __typename, we can use as is.
+          parts.push(spread.fragmentTypeName)
+        } else {
+          parts.push(
+            `(${spread.fragmentTypeName} & { __typename: ${spread.fragmentTypeCondition} })`,
+          )
+        }
+      }
+
+      // Fallback.
+      if (typenameNode.excludeType) {
+        const excludedTypes = spreads
+          .map((s) => s.fragmentTypeCondition)
+          .join(' | ')
+        parts.push(
+          `{ __typename: Exclude<${typenameNode.excludeType}, ${excludedTypes}> }`,
+        )
+      }
+
+      return parts.join(' | ')
+    }
+
+    // Single fragment with only typename - simple intersection
     if (!fields.size || (hasOnlyTypename && spreads.length === 1)) {
       return spreads.map((v) => v.fragmentTypeName).join(' & ')
     }
@@ -1940,11 +1977,6 @@ export class Generator {
       } else {
         otherFields.set(fieldName, fieldIR)
       }
-    }
-
-    // When there are no fragment spreads, we can just build the object.
-    if (!fragmentSpreads.length) {
-      return this.fieldMapToCode(otherFields)
     }
 
     return this.mergeFragmentSpreads(otherFields, fragmentSpreads)

@@ -1,0 +1,20 @@
+fragment foobar on NodeArticle {
+  categories {
+    related {
+      __typename
+      ...nodeArticle
+      ...nodePage
+    }
+  }
+}
+
+fragment nodePage on NodePage {
+  __typename
+  pageId: id
+  title
+}
+
+fragment nodeArticle on NodeArticle {
+  tags
+  body
+}

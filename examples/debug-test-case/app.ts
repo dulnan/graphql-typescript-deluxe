@@ -8,9 +8,7 @@ import { Generator, type GeneratorOutputFile } from '../../src'
 
 const outputFolder = fileURLToPath(new URL('./output', import.meta.url))
 
-console.log(process.argv)
-
-const testCase = 'field-merging-deep-nested-complex'
+const testCase = 'fragment-multiple-with-typename'
 
 const graphqlDocumentFilePath = fileURLToPath(
   new URL(
