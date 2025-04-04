@@ -143,9 +143,29 @@ export type RelatedFragment = {
  */
 export type FieldMergingNestedComplexQuery = {
   /** Get an entity by ID. */
-entityById?: ((NodeArticleOneFragment & { __typename: NodeArticle }) | (NodeArticleTwoFragment & { __typename: NodeArticle }) | {
-  __typename: Exclude<Entity, NodeArticle>;
-});
+  entityById?: (({
+    /** Categories of this article. */
+    categories?: ({
+      /** Related entities. */
+      related?: (({
+        /** The ID. */
+        id: string;
+      } | {
+        /** The body text. */
+        body?: string;
+        /** The ID. */
+        id: string;
+        /** The title of the page. */
+        title: string;
+      }))[];
+      /** The URL for the category overview page. */
+      url?: string;
+    })[];
+  } & {
+    __typename: NodeArticle;
+  }) | {
+    __typename: Exclude<Entity, NodeArticle>;
+  });
 };
 
 

@@ -96,7 +96,16 @@ export type RouteEntityFragment = {
  * }
  * ```
  */
-export type RouteFragment = RouteOneFragment & RouteTwoFragment;
+export type RouteFragment = {
+  route?: (RouteEntityFragment | RouteInternalFragment | object | {
+    __typename: DefaultEntityUrl;
+    entity?: {
+      title: string;
+    };
+  } | {
+    __typename: DefaultInternalUrl | DefaultUrl;
+  });
+};
 
 /**
  * @see {@link file://./test.graphql}
