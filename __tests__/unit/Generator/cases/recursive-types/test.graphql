@@ -1,0 +1,70 @@
+query entries(
+  $excludeIds: [QueryArgument] = null
+  $relatedToEntries: [EntryRelationCriteriaInput]
+) {
+  entries(id: $excludeIds, relatedToEntries: $relatedToEntries) {
+    id
+    two {
+      two {
+        one {
+          ...oneA
+          two {
+            id
+          }
+          one {
+            two {
+              id
+            }
+          }
+        }
+      }
+      one {
+        two {
+          one {
+            two {
+              ...twoA
+              one {
+                two {
+                  ...twoA
+                  id
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    __typename
+  }
+}
+
+fragment oneA on EntriesItemOne {
+  one {
+    two {
+      one {
+        id
+      }
+    }
+  }
+}
+
+fragment oneB on EntriesItemOne {
+  two {
+    two {
+      one {
+        id
+      }
+    }
+  }
+}
+
+fragment twoA on EntriesItemTwo {
+  two {
+    two {
+      one {
+        ...oneB
+        id
+      }
+    }
+  }
+}

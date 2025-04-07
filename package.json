@@ -1,6 +1,6 @@
 {
   "name": "graphql-typescript-deluxe",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "description": "Fast GraphQL TypeScript code generator",
   "sideEffects": false,
   "author": "Jan Hug <me@dulnan.net>",

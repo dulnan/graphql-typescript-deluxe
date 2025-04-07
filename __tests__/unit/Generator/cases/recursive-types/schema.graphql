@@ -1,0 +1,26 @@
+input QueryArgument {
+  criteria: [EntryRelationCriteriaInput]
+}
+
+input EntryRelationCriteriaInput {
+  arg: [QueryArgument]
+}
+
+type EntriesItemOne {
+  id: String
+  one: EntriesItemOne
+  two: EntriesItemTwo
+}
+
+type EntriesItemTwo {
+  id: String
+  one: EntriesItemOne
+  two: EntriesItemTwo
+}
+
+type Query {
+  entries(
+    id: [QueryArgument]
+    relatedToEntries: [EntryRelationCriteriaInput]
+  ): [EntriesItemOne]
+}

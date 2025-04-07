@@ -105,6 +105,14 @@ export class Generator {
   > = new Map()
 
   /**
+   * GraphQL type name => TS type name.
+   *
+   * To prevent infinite recursion we cache the names of generated input types
+   * separately, because they might reference themselves recursively.
+   */
+  private generatedInputTypes: Map<string, string> = new Map()
+
+  /**
    * All operation definitions.
    */
   private operations: Map<string, CollectedOperation> = new Map()
@@ -540,8 +548,19 @@ export class Generator {
    * @throws {@link LogicError} when the AST node is missing on the input field.
    */
   private getOrCreateInputType(type: GraphQLInputObjectType): string {
+    // It's possible to end up in (valid) infinite recursion here, because an
+    // two input types might reference each other recursively *and* be used as
+    // variable types in the same operation. In this case, they would
+    // recursively try to generate a type for themselves.
+    const existing = this.generatedInputTypes.get(type.name)
+    if (existing) {
+      return existing
+    }
+
+    const typeName = this.options.buildInputTypeName(type)
+    this.generatedInputTypes.set(type.name, typeName)
+
     return this.generateCodeOnce('input', type.name, () => {
-      const typeName = this.options.buildInputTypeName(type)
       const fields = Object.entries(type.getFields()).reduce<
         Record<string, IRNode>
       >((acc, [name, field]) => {
@@ -2130,6 +2149,11 @@ export class Generator {
    * @throws {@link LogicError} if there is a logical error during building. This can hint at a bug in the Generator.
    */
   public build(): GeneratorOutput {
+    // This cache is only needed for a single build execution to prevent recursion.
+    // The cache is not dependency aware, because it only relies on data from the
+    // schema. Therefore we can always clear it in every build run.
+    this.generatedInputTypes.clear()
+
     try {
       this.forEachDefinitionKind(Kind.FRAGMENT_DEFINITION, (node) => {
         this.dependencyTracker?.addFragment(node.name.value)
