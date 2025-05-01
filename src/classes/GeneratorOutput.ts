@@ -1,6 +1,7 @@
 import { getCodeTypeLabel } from '../helpers/generator'
 import { notNullish } from '../helpers/type'
 import type {
+  CollectedFragment,
   CollectedOperation,
   GeneratedCode,
   GeneratedCodeOutputType,
@@ -15,6 +16,7 @@ import {
   type GenerateOperationsFileOptions,
 } from '../helpers/output/generateOperationsFile'
 import { generateOperationTypes } from '../helpers/output/generateOperationTypes'
+import { GeneratorOutputFragment } from './GeneratorOutputFragment'
 
 const DEFAULT_SORTING: GeneratedCodeType[] = [
   'helpers',
@@ -38,10 +40,16 @@ export type GeneratorOutputOptions = {
 export class GeneratorOutput {
   private readonly code: GeneratorOutputCode[]
   private readonly operations: GeneratorOutputOperation[]
+  private readonly fragments: GeneratorOutputFragment[]
 
-  constructor(codes: GeneratedCode[], operations: CollectedOperation[]) {
+  constructor(
+    codes: GeneratedCode[],
+    operations: CollectedOperation[],
+    fragments: CollectedFragment[],
+  ) {
     this.code = codes.map((v) => new GeneratorOutputCode(v))
     this.operations = operations.map((v) => new GeneratorOutputOperation(v))
+    this.fragments = fragments.map((v) => new GeneratorOutputFragment(v))
   }
 
   /**
@@ -235,5 +243,12 @@ export class GeneratorOutput {
     importFrom?: string
   }): GeneratorOutputFile {
     return generateOperationTypes(this.operations, options?.importFrom)
+  }
+
+  /**
+   * Get the collected fragments.
+   */
+  public getFragments(): GeneratorOutputFragment[] {
+    return this.fragments
   }
 }

@@ -7,6 +7,7 @@ export type {
 } from './classes/GeneratorOutput'
 export type { GeneratorOutputCode } from './classes/GeneratorOutputCode'
 export type { GeneratorOutputOperation } from './classes/GeneratorOutputOperation'
+export type { GeneratorOutputFragment } from './classes/GeneratorOutputFragment'
 export type {
   GeneratorOutputFile,
   GeneratorOutputFileType,

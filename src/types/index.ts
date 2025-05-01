@@ -1,7 +1,9 @@
 import type {
   DefinitionNode,
   DocumentNode,
+  FragmentDefinitionNode,
   GraphQLNamedType,
+  OperationDefinitionNode,
   OperationTypeNode,
 } from 'graphql'
 
@@ -123,6 +125,7 @@ export interface GeneratedCode {
 
 export type CollectedOperation = {
   operationType: OperationTypeNode
+  node: OperationDefinitionNode
   graphqlName: string
   typeName: string
   variablesTypeName: string
@@ -131,4 +134,10 @@ export type CollectedOperation = {
   dependencies: string[]
   filePath: string
   timestamp: number
+}
+
+export type CollectedFragment = {
+  node: FragmentDefinitionNode
+  dependencies: string[]
+  filePath: string
 }

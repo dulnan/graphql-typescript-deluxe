@@ -45,6 +45,7 @@ import type {
   CollectedOperation,
   GeneratorInputArgs,
   GeneratedCodeByOutputType,
+  CollectedFragment,
 } from '../types'
 import { toInputDocuments } from '../helpers/generator'
 import {
@@ -99,10 +100,7 @@ export class Generator {
   /**
    * All fragment definitions.
    */
-  private fragments: Map<
-    string,
-    { node: FragmentDefinitionNode; filePath: string; dependencies: string[] }
-  > = new Map()
+  private fragments: Map<string, CollectedFragment> = new Map()
 
   /**
    * GraphQL type name => TS type name.
@@ -801,6 +799,7 @@ export class Generator {
 
     this.operations.set(opName, {
       operationType: operation.operation,
+      node: operation,
       graphqlName: opName,
       typeName,
       variablesTypeName,
@@ -2206,6 +2205,7 @@ export class Generator {
     return new GeneratorOutput(
       [...code, ...this.options.additionalOutputCode()],
       [...this.operations.values()],
+      [...this.fragments.values()],
     )
   }
 }

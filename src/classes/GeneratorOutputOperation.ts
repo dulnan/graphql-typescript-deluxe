@@ -1,4 +1,4 @@
-import type { OperationTypeNode } from 'graphql'
+import type { OperationDefinitionNode, OperationTypeNode } from 'graphql'
 import type { CollectedOperation } from '../types'
 import { DependencyAware } from './DependencyAware'
 
@@ -10,6 +10,11 @@ export class GeneratorOutputOperation
    * The operation type.
    */
   public readonly operationType: OperationTypeNode
+
+  /**
+   * The operation definition node.
+   */
+  public readonly node: OperationDefinitionNode
 
   /**
    * The GraphQL name of the operation.
@@ -56,6 +61,7 @@ export class GeneratorOutputOperation
   constructor(operation: CollectedOperation) {
     super(operation.dependencies)
     this.operationType = operation.operationType
+    this.node = operation.node
     this.graphqlName = operation.graphqlName
     this.typeName = operation.typeName
     this.variablesTypeName = operation.variablesTypeName

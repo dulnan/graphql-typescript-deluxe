@@ -6,7 +6,7 @@ import { toDocument } from '../../helpers'
 
 const schema = loadSchemaSync(schemaContent, { loaders: [] })
 
-function testDirective(nullableField: 'null' | 'optional' | 'maybe') {
+function testDirective(nullableField: 'null' | 'optional' | 'maybe'): string {
   const generator = new Generator(schema, {
     output: {
       typeComment: false,
@@ -22,12 +22,11 @@ function testDirective(nullableField: 'null' | 'optional' | 'maybe') {
   ]
 
   const result = generator.add(documents).build()
-  return (
-    result.getGeneratedCode().find((v) => v.type === 'operation')?.code || ''
-  )
+  return (result.getGeneratedCode().find((v) => v.type === 'operation')?.code ||
+    '') as string
 }
 
-function testNullable(nullableField: 'null' | 'optional' | 'maybe') {
+function testNullable(nullableField: 'null' | 'optional' | 'maybe'): string {
   const generator = new Generator(schema, {
     output: {
       typeComment: false,
@@ -40,7 +39,8 @@ function testNullable(nullableField: 'null' | 'optional' | 'maybe') {
   ]
 
   const result = generator.add(documents).build()
-  return result.getGeneratedCode().find((v) => v.type === 'fragment')?.code
+  return result.getGeneratedCode().find((v) => v.type === 'fragment')
+    ?.code as string
 }
 
 describe('Generator nullableField options', () => {
