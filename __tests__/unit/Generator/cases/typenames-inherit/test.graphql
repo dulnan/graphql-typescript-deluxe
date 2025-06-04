@@ -1,0 +1,19 @@
+fragment media on Media {
+  __typename
+  provider
+}
+
+fragment mediaImage on MediaImage {
+  ...media
+  image
+}
+
+fragment mediaVideo on MediaVideo {
+  ...media
+  videoUrl
+}
+
+fragment mediaVideoSingle on MediaVideo {
+  __typename
+  videoUrl
+}
