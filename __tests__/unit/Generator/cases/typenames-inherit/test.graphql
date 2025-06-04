@@ -17,3 +17,13 @@ fragment mediaVideoSingle on MediaVideo {
   __typename
   videoUrl
 }
+
+fragment mediaIntermediate on Media {
+  ...media
+  id
+}
+
+fragment mediaVideoGrandchild on MediaVideo {
+  ...mediaIntermediate
+  videoUrl
+}

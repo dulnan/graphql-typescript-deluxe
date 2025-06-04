@@ -3,6 +3,7 @@ import type {
   MediaImageFragment,
   MediaVideoFragment,
   MediaVideoSingleFragment,
+  MediaVideoGrandchildFragment,
 } from './result'
 
 export default function (
@@ -10,6 +11,7 @@ export default function (
   mediaImageFragment: MediaImageFragment,
   mediaVideoFragment: MediaVideoFragment,
   mediaVideoSingleFragment: MediaVideoSingleFragment,
+  mediaVideoGrandchildFragment: MediaVideoGrandchildFragment,
 ): void {
   let notReachable: never
 
@@ -55,6 +57,11 @@ export default function (
   // mediaVideoSingleFragment.__typename should be unique
   if (mediaVideoSingleFragment.__typename !== 'MediaVideo') {
     notReachable = mediaVideoSingleFragment.__typename
+  }
+
+  // mediaVideoGrandchildFragment.__typename should be unique
+  if (mediaVideoGrandchildFragment.__typename !== 'MediaVideo') {
+    notReachable = mediaVideoGrandchildFragment.__typename
   }
 
   // @ts-expect-error this is just here to make a usage
