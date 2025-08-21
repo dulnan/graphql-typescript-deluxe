@@ -1032,6 +1032,9 @@ export class Generator {
   ): IRNode {
     const objFields = objectType.getFields()
     const fields: Record<string, IRNode> = {}
+    let hasTypenameFromSpread = false
+    let directFieldCount = 0
+
     for (const sel of selectionSet.selections) {
       if (sel.kind === Kind.FIELD) {
         if (sel.name.value === TYPENAME) {
@@ -1040,6 +1043,7 @@ export class Generator {
           fields[TYPENAME] = IR.TYPENAME(
             this.getOrCreateObjectTypeName(objectType),
           )
+          directFieldCount++
           // Continue since __typename is not a field that exists.
           continue
         }
@@ -1056,16 +1060,19 @@ export class Generator {
         const fieldIR = this.buildFieldIRFromFieldDef(fieldDef, sel)
         const current = fields[alias]
         fields[alias] = current ? mergeIR(current, fieldIR) : fieldIR
-      } else if (sel.kind === Kind.FRAGMENT_SPREAD) {
+        directFieldCount++
+      }
+    }
+
+    for (const sel of selectionSet.selections) {
+      if (sel.kind === Kind.FRAGMENT_SPREAD) {
         const fragName = sel.name.value
         const fragDef = this.getFragmentNode(fragName)
         const fragmentFields = this.getFragmentIRFields(fragName)
         const hasTypename = hasTypenameField(fragmentFields)
 
         if (hasTypename && !hasTypenameField(fields)) {
-          fields[TYPENAME] = IR.TYPENAME(
-            this.getOrCreateObjectTypeName(objectType),
-          )
+          hasTypenameFromSpread = true
         }
 
         // If the fragment's typeCondition is the same or an interface the object implements, merge it.
@@ -1082,7 +1089,7 @@ export class Generator {
               fragmentTypeName: fragTypeName,
               parentType: objectType.name,
               fragmentTypeCondition: condName,
-              omit: hasTypename ? [TYPENAME] : [],
+              omit: hasTypename && directFieldCount >= 1 ? [TYPENAME] : [],
             }),
           )
         }
@@ -1111,9 +1118,18 @@ export class Generator {
       }
     }
 
-    // Always add __typename field if option is set.
-    if (this.options.output.nonOptionalTypename && !fields[TYPENAME]) {
-      fields[TYPENAME] = IR.TYPENAME(this.getOrCreateObjectTypeName(objectType))
+    if (!hasTypenameField(fields)) {
+      // Always add __typename field if option is set.
+      if (this.options.output.nonOptionalTypename) {
+        fields[TYPENAME] = IR.TYPENAME(
+          this.getOrCreateObjectTypeName(objectType),
+        )
+      } else if (hasTypenameFromSpread && directFieldCount >= 1) {
+        // Add a typename field if a fragment spread has one *and* if we have at least one direct field selection.
+        fields[TYPENAME] = IR.TYPENAME(
+          this.getOrCreateObjectTypeName(objectType),
+        )
+      }
     }
 
     const result = IR.OBJECT({

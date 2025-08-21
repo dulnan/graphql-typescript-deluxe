@@ -1,0 +1,22 @@
+fragment nodeAccomodation on NodeAccomodation {
+  __typename
+  title
+  address {
+    ...addressCard
+    ...addressEmail
+  }
+}
+
+fragment addressEmail on NodeAddress {
+  __typename
+  fieldEmail
+}
+
+fragment addressCard on NodeAddress {
+  address: fieldAddressForm {
+    additionalName
+    addressLine1
+    addressLine2
+    locality
+  }
+}
