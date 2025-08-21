@@ -1059,6 +1059,14 @@ export class Generator {
       } else if (sel.kind === Kind.FRAGMENT_SPREAD) {
         const fragName = sel.name.value
         const fragDef = this.getFragmentNode(fragName)
+        const fragmentFields = this.getFragmentIRFields(fragName)
+        const hasTypename = hasTypenameField(fragmentFields)
+
+        if (hasTypename && !hasTypenameField(fields)) {
+          fields[TYPENAME] = IR.TYPENAME(
+            this.getOrCreateObjectTypeName(objectType),
+          )
+        }
 
         // If the fragment's typeCondition is the same or an interface the object implements, merge it.
         const condName = fragDef.typeCondition.name.value
@@ -1074,6 +1082,7 @@ export class Generator {
               fragmentTypeName: fragTypeName,
               parentType: objectType.name,
               fragmentTypeCondition: condName,
+              omit: hasTypename ? [TYPENAME] : [],
             }),
           )
         }
@@ -1635,7 +1644,7 @@ export class Generator {
 
     // Single fragment with only typename - simple intersection
     if (spreads.length === 1 && fields.size === 0) {
-      return spreads.map((v) => v.fragmentTypeName).join(' & ')
+      return this.IRToCode(spreads[0]!)
     }
 
     this.incrementDebugCount('mergeFragmentSpreads')
@@ -1746,7 +1755,7 @@ export class Generator {
     // When there are no conflicts found: Return a simple intersection.
     if (conflictFields.size === 0) {
       const codeFields = this.fieldMapToCode(fields)
-      return [codeFields, ...spreads.map((v) => v.fragmentTypeName)]
+      return [codeFields, ...spreads.map((spread) => this.IRToCode(spread))]
         .filter((v) => v !== this.options.output.emptyObject)
         .join(' & ')
     }
@@ -1976,6 +1985,10 @@ export class Generator {
       }
 
       case 'FRAGMENT_SPREAD': {
+        if (ir.omit?.length) {
+          const omit = ir.omit.map((type) => `'${type}'`).join(' | ')
+          return `Omit<${ir.fragmentTypeName}, ${omit}>`
+        }
         // Merges as an intersection into the parent's object.
         return ir.fragmentTypeName
       }

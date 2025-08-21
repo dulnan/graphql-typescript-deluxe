@@ -10,7 +10,7 @@ const outputFolder = fileURLToPath(new URL('./output', import.meta.url))
 
 // const testCase = 'field-merging-nested-complex'
 // const testCase = 'fragment-multiple-with-typename'
-const testCase = 'field-merging-deep-nested-fragment'
+const testCase = 'typenames-inherit'
 
 const graphqlDocumentFilePath = fileURLToPath(
   new URL(
