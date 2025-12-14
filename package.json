@@ -64,6 +64,6 @@
   },
   "dependencies": {
     "change-case": "^5.4.4",
-    "graphql": "^16.10.0"
+    "graphql": "^16.12.0"
   }
 }
