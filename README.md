@@ -131,6 +131,21 @@ generator.update({
 console.log(generator.build().getOperations().getSource())
 ```
 
+### Getting GraphQL Documents
+
+You can also retrieve the full GraphQL document string for any operation or
+fragment, including all required fragment dependencies:
+
+```typescript
+const output = generator.build()
+
+// Get operation with all its fragments.
+const operationDoc = output.getOperationDocumentWithFragments('myQuery')
+
+// Get fragment with all nested fragment dependencies.
+const fragmentDoc = output.getFragmentDocumentWithFragments('myImage')
+```
+
 ## Why?
 
 Mostly performance: On some of my projects with large schemas and tons of
