@@ -1,0 +1,130 @@
+# Schema for testing Omit<> generation scenarios
+# Omit is generated when fragments have overlapping nested fields that can't be intersected
+
+type Tag {
+  id: ID!
+  name: String!
+  slug: String!
+  color: String
+  description: String
+}
+
+type Category {
+  id: ID!
+  name: String!
+  slug: String!
+  parent: Category
+  children: [Category!]
+  description: String
+  image: Image
+}
+
+type Image {
+  id: ID!
+  url: String!
+  alt: String
+  width: Int
+  height: Int
+  caption: String
+}
+
+type Author {
+  id: ID!
+  name: String!
+  email: String
+  avatar: Image
+  bio: String
+  articles: [Article!]
+}
+
+type Comment {
+  id: ID!
+  text: String!
+  author: Author
+  replies: [Comment!]
+  likes: Int
+}
+
+interface Content {
+  id: ID!
+  title: String!
+  author: Author
+  tags: [Tag!]
+  comments: [Comment!]
+}
+
+type Article implements Content {
+  id: ID!
+  title: String!
+  author: Author
+  tags: [Tag!]
+  comments: [Comment!]
+  body: String!
+  excerpt: String
+  category: Category
+  relatedArticles: [Article!]
+  featuredImage: Image
+}
+
+type Page implements Content {
+  id: ID!
+  title: String!
+  author: Author
+  tags: [Tag!]
+  comments: [Comment!]
+  body: String!
+  sections: [Section!]
+  parent: Page
+  children: [Page!]
+}
+
+type Section {
+  id: ID!
+  heading: String
+  content: String
+  image: Image
+  subsections: [Section!]
+}
+
+type Product {
+  id: ID!
+  name: String!
+  price: Float!
+  images: [Image!]
+  categories: [Category!]
+  variants: [ProductVariant!]
+  reviews: [Review!]
+}
+
+type ProductVariant {
+  id: ID!
+  name: String!
+  sku: String!
+  price: Float!
+  image: Image
+  attributes: [Attribute!]
+}
+
+type Attribute {
+  name: String!
+  value: String!
+}
+
+type Review {
+  id: ID!
+  rating: Int!
+  text: String
+  author: Author
+  images: [Image!]
+}
+
+union SearchResult = Article | Page | Product
+
+type Query {
+  article(id: ID!): Article
+  page(id: ID!): Page
+  product(id: ID!): Product
+  content(id: ID!): Content
+  search(query: String!): [SearchResult!]!
+  allContent: [Content!]!
+}

@@ -1,0 +1,864 @@
+# Test cases for Omit<> generation
+# Omit is needed when fragments have overlapping nested fields with different sub-selections
+
+# =============================================================================
+# Test 1: Two fragments on same type with different nested array selections
+# =============================================================================
+query TwoFragmentsDifferentArraySelections($id: ID!) {
+  article(id: $id) {
+    ...articleTags
+    ...articleTagsExtended
+  }
+}
+
+fragment articleTags on Article {
+  title
+  tags {
+    id
+    name
+  }
+}
+
+fragment articleTagsExtended on Article {
+  body
+  tags {
+    slug
+    color
+  }
+}
+
+# =============================================================================
+# Test 2: Three fragments all selecting same nested field differently
+# =============================================================================
+query ThreeFragmentsSameNestedField($id: ID!) {
+  article(id: $id) {
+    ...articleCommentsBasic
+    ...articleCommentsWithAuthor
+    ...articleCommentsWithReplies
+  }
+}
+
+fragment articleCommentsBasic on Article {
+  title
+  comments {
+    id
+    text
+  }
+}
+
+fragment articleCommentsWithAuthor on Article {
+  excerpt
+  comments {
+    author {
+      name
+    }
+  }
+}
+
+fragment articleCommentsWithReplies on Article {
+  body
+  comments {
+    likes
+    replies {
+      id
+      text
+    }
+  }
+}
+
+# =============================================================================
+# Test 3: Nested objects (not arrays) with different selections
+# =============================================================================
+query NestedObjectDifferentSelections($id: ID!) {
+  article(id: $id) {
+    ...articleAuthorBasic
+    ...articleAuthorWithAvatar
+  }
+}
+
+fragment articleAuthorBasic on Article {
+  title
+  author {
+    id
+    name
+  }
+}
+
+fragment articleAuthorWithAvatar on Article {
+  body
+  author {
+    email
+    avatar {
+      url
+      alt
+    }
+  }
+}
+
+# =============================================================================
+# Test 4: Deep nesting - overlapping at multiple levels
+# =============================================================================
+query DeepNestingOverlap($id: ID!) {
+  article(id: $id) {
+    ...articleCategoryBasic
+    ...articleCategoryDeep
+  }
+}
+
+fragment articleCategoryBasic on Article {
+  title
+  category {
+    id
+    name
+    children {
+      id
+    }
+  }
+}
+
+fragment articleCategoryDeep on Article {
+  excerpt
+  category {
+    slug
+    children {
+      name
+      children {
+        id
+        name
+      }
+    }
+  }
+}
+
+# =============================================================================
+# Test 5: Interface with fragments - overlapping nested on interface field
+# =============================================================================
+query InterfaceFragmentsOverlap($id: ID!) {
+  content(id: $id) {
+    __typename
+    ...contentTagsBasic
+    ...contentTagsExtended
+  }
+}
+
+fragment contentTagsBasic on Content {
+  id
+  tags {
+    id
+    name
+  }
+}
+
+fragment contentTagsExtended on Content {
+  title
+  tags {
+    slug
+    description
+  }
+}
+
+# =============================================================================
+# Test 6: Inline fragment + fragment spread with overlap
+# =============================================================================
+query InlineAndFragmentOverlap($id: ID!) {
+  article(id: $id) {
+    ...articleTagsBasic
+    ... on Article {
+      tags {
+        color
+        description
+      }
+    }
+  }
+}
+
+fragment articleTagsBasic on Article {
+  id
+  title
+  tags {
+    id
+    name
+  }
+}
+
+# =============================================================================
+# Test 7: Union type with overlapping selections per member
+# =============================================================================
+query UnionWithOverlappingFragments($query: String!) {
+  search(query: $query) {
+    __typename
+    ... on Article {
+      ...searchArticleOne
+      ...searchArticleTwo
+    }
+    ... on Product {
+      ...searchProductOne
+      ...searchProductTwo
+    }
+  }
+}
+
+fragment searchArticleOne on Article {
+  title
+  tags {
+    id
+    name
+  }
+}
+
+fragment searchArticleTwo on Article {
+  excerpt
+  tags {
+    slug
+  }
+}
+
+fragment searchProductOne on Product {
+  name
+  images {
+    url
+  }
+}
+
+fragment searchProductTwo on Product {
+  price
+  images {
+    alt
+    width
+  }
+}
+
+# =============================================================================
+# Test 8: Product with multiple nested arrays all overlapping
+# =============================================================================
+query ProductMultipleOverlaps($id: ID!) {
+  product(id: $id) {
+    ...productImagesBasic
+    ...productImagesExtended
+    ...productCategoriesBasic
+    ...productCategoriesExtended
+  }
+}
+
+fragment productImagesBasic on Product {
+  name
+  images {
+    id
+    url
+  }
+}
+
+fragment productImagesExtended on Product {
+  price
+  images {
+    alt
+    caption
+  }
+}
+
+fragment productCategoriesBasic on Product {
+  id
+  categories {
+    id
+    name
+  }
+}
+
+fragment productCategoriesExtended on Product {
+  name
+  categories {
+    slug
+    parent {
+      id
+      name
+    }
+  }
+}
+
+# =============================================================================
+# Test 9: Deeply nested with image field overlapping at leaf
+# =============================================================================
+query DeeplyNestedImageOverlap($id: ID!) {
+  product(id: $id) {
+    ...productVariantsBasic
+    ...productVariantsWithImage
+  }
+}
+
+fragment productVariantsBasic on Product {
+  name
+  variants {
+    id
+    name
+    sku
+  }
+}
+
+fragment productVariantsWithImage on Product {
+  price
+  variants {
+    price
+    image {
+      url
+      alt
+    }
+  }
+}
+
+# =============================================================================
+# Test 10: Page with recursive sections having overlapping nested
+# =============================================================================
+query PageSectionsOverlap($id: ID!) {
+  page(id: $id) {
+    ...pageSectionsBasic
+    ...pageSectionsWithImage
+  }
+}
+
+fragment pageSectionsBasic on Page {
+  title
+  sections {
+    id
+    heading
+    subsections {
+      id
+    }
+  }
+}
+
+fragment pageSectionsWithImage on Page {
+  body
+  sections {
+    content
+    image {
+      url
+    }
+    subsections {
+      heading
+      content
+    }
+  }
+}
+
+# =============================================================================
+# Test 11: Interface field on concrete type with concrete fragment overlap
+# =============================================================================
+query InterfaceOnConcreteOverlap($id: ID!) {
+  article(id: $id) {
+    ...articleWithContentTags
+    ...articleExtraTags
+  }
+}
+
+fragment articleWithContentTags on Article {
+  id
+  title
+  tags {
+    id
+  }
+}
+
+fragment articleExtraTags on Article {
+  body
+  tags {
+    name
+    slug
+  }
+}
+
+# =============================================================================
+# Test 12: Multiple inline fragments with overlap (no named fragments)
+# =============================================================================
+query MultipleInlineOverlap($id: ID!) {
+  content(id: $id) {
+    __typename
+    ... on Article {
+      title
+      tags {
+        id
+        name
+      }
+    }
+    ... on Article {
+      body
+      tags {
+        slug
+      }
+    }
+  }
+}
+
+# =============================================================================
+# Test 13: Fragment spreading another fragment, both with nested overlap
+# =============================================================================
+query FragmentSpreadingFragment($id: ID!) {
+  article(id: $id) {
+    ...articleComplete
+  }
+}
+
+fragment articleBase on Article {
+  id
+  title
+  author {
+    id
+    name
+  }
+}
+
+fragment articleComplete on Article {
+  ...articleBase
+  body
+  author {
+    email
+    bio
+  }
+}
+
+# =============================================================================
+# Test 14: All content with interface-level overlap
+# =============================================================================
+query AllContentOverlap {
+  allContent {
+    __typename
+    ...allContentTags
+    ...allContentComments
+  }
+}
+
+fragment allContentTags on Content {
+  id
+  tags {
+    id
+    name
+  }
+}
+
+fragment allContentComments on Content {
+  title
+  comments {
+    id
+    text
+  }
+  tags {
+    slug
+  }
+}
+
+# =============================================================================
+# Test 15: Review with nested author having avatar overlap
+# =============================================================================
+query ProductReviewsOverlap($id: ID!) {
+  product(id: $id) {
+    ...productReviewsBasic
+    ...productReviewsWithAuthorDetails
+  }
+}
+
+fragment productReviewsBasic on Product {
+  name
+  reviews {
+    id
+    rating
+    text
+  }
+}
+
+fragment productReviewsWithAuthorDetails on Product {
+  price
+  reviews {
+    author {
+      id
+      name
+      avatar {
+        url
+      }
+    }
+  }
+}
+
+# =============================================================================
+# Test 16: Interface with partial coverage - produces | object
+# Only Article is covered, Page should become object
+# =============================================================================
+query InterfacePartialCoverage($id: ID!) {
+  content(id: $id) {
+    __typename
+    ... on Article {
+      ...partialArticleTags
+      ...partialArticleTagsExtra
+    }
+  }
+}
+
+fragment partialArticleTags on Article {
+  title
+  tags {
+    id
+    name
+  }
+}
+
+fragment partialArticleTagsExtra on Article {
+  body
+  tags {
+    slug
+  }
+}
+
+# =============================================================================
+# Test 17: Union with partial coverage - some members are object
+# Only Article and Product covered, Page becomes object
+# =============================================================================
+query UnionPartialCoverage($query: String!) {
+  search(query: $query) {
+    __typename
+    ... on Article {
+      ...unionArticleOne
+      ...unionArticleTwo
+    }
+    ... on Product {
+      name
+      price
+    }
+  }
+}
+
+fragment unionArticleOne on Article {
+  title
+  tags {
+    id
+  }
+}
+
+fragment unionArticleTwo on Article {
+  excerpt
+  tags {
+    name
+    slug
+  }
+}
+
+# =============================================================================
+# Test 18: Interface with single fragment (partial coverage)
+# Single fragment on one concrete type, others become object
+# =============================================================================
+query InterfaceSingleFragmentPartial($id: ID!) {
+  content(id: $id) {
+    __typename
+    ...singleArticleFragment
+  }
+}
+
+fragment singleArticleFragment on Article {
+  title
+  body
+  tags {
+    id
+    name
+  }
+}
+
+# =============================================================================
+# Test 19: All content with only one type having overlap
+# Article has overlapping fragments, Page has simple fragment
+# =============================================================================
+query AllContentMixedCoverage {
+  allContent {
+    __typename
+    ... on Article {
+      ...mixedArticleOne
+      ...mixedArticleTwo
+    }
+    ... on Page {
+      title
+    }
+  }
+}
+
+fragment mixedArticleOne on Article {
+  title
+  tags {
+    id
+  }
+}
+
+fragment mixedArticleTwo on Article {
+  body
+  tags {
+    name
+    slug
+  }
+}
+
+# =============================================================================
+# Test 20: Interface fragment + concrete inline with partial coverage
+# Interface fragment covers all, concrete inline adds overlap for one type
+# =============================================================================
+query InterfaceFragmentPlusConcreteOverlap($id: ID!) {
+  content(id: $id) {
+    __typename
+    ...baseContentFields
+    ... on Article {
+      body
+      tags {
+        slug
+        color
+      }
+    }
+  }
+}
+
+fragment baseContentFields on Content {
+  id
+  title
+  tags {
+    id
+    name
+  }
+}
+
+# =============================================================================
+# Test 21: Union with fragment on interface that some members implement
+# SearchResult = Article | Page | Product
+# Content interface fragment (Article, Page implement it, Product doesn't)
+# =============================================================================
+query UnionWithInterfaceFragment($query: String!) {
+  search(query: $query) {
+    __typename
+    ...searchContentFields
+    ... on Product {
+      name
+      price
+    }
+  }
+}
+
+fragment searchContentFields on Content {
+  id
+  title
+  tags {
+    id
+    name
+  }
+}
+
+# =============================================================================
+# Test 22: Deep partial coverage - nested interface with partial handling
+# =============================================================================
+query DeepPartialCoverage($id: ID!) {
+  article(id: $id) {
+    title
+    relatedArticles {
+      ...deepRelatedOne
+      ...deepRelatedTwo
+    }
+  }
+}
+
+fragment deepRelatedOne on Article {
+  id
+  title
+  tags {
+    id
+  }
+}
+
+fragment deepRelatedTwo on Article {
+  excerpt
+  tags {
+    name
+  }
+}
+
+# =============================================================================
+# Test 23: Interface with overlapping fragments and inline for uncovered
+# Fragments cover Article, inline covers Page minimally
+# =============================================================================
+query InterfaceOverlapPlusMinimalInline($id: ID!) {
+  content(id: $id) {
+    __typename
+    ... on Article {
+      ...inlineOverlapArticleOne
+      ...inlineOverlapArticleTwo
+    }
+    ... on Page {
+      title
+    }
+  }
+}
+
+fragment inlineOverlapArticleOne on Article {
+  title
+  comments {
+    id
+    text
+  }
+}
+
+fragment inlineOverlapArticleTwo on Article {
+  body
+  comments {
+    author {
+      name
+    }
+    likes
+  }
+}
+
+# =============================================================================
+# Test 24: Nested union with partial coverage at nested level
+# =============================================================================
+query NestedUnionPartialCoverage($id: ID!) {
+  article(id: $id) {
+    title
+    author {
+      articles {
+        ...nestedUnionArticleOne
+        ...nestedUnionArticleTwo
+      }
+    }
+  }
+}
+
+fragment nestedUnionArticleOne on Article {
+  id
+  title
+  category {
+    id
+  }
+}
+
+fragment nestedUnionArticleTwo on Article {
+  excerpt
+  category {
+    name
+    slug
+  }
+}
+
+# =============================================================================
+# Test 25: All content - no fragments, just interface-level inline
+# Should have | object for uncovered differences between Article and Page
+# =============================================================================
+query AllContentInlineOnly {
+  allContent {
+    __typename
+    id
+    title
+    ... on Article {
+      body
+      excerpt
+    }
+  }
+}
+
+# =============================================================================
+# Test 26: NO __typename - interface with partial coverage produces | object
+# =============================================================================
+query NoTypenamePartialCoverage($id: ID!) {
+  content(id: $id) {
+    ... on Article {
+      ...noTypenameArticleOne
+      ...noTypenameArticleTwo
+    }
+  }
+}
+
+fragment noTypenameArticleOne on Article {
+  title
+  tags {
+    id
+  }
+}
+
+fragment noTypenameArticleTwo on Article {
+  body
+  tags {
+    name
+  }
+}
+
+# =============================================================================
+# Test 27: NO __typename - union with partial coverage
+# =============================================================================
+query NoTypenameUnionPartial($query: String!) {
+  search(query: $query) {
+    ... on Article {
+      title
+      tags {
+        id
+        name
+      }
+    }
+    ... on Product {
+      name
+      price
+    }
+  }
+}
+
+# =============================================================================
+# Test 28: NO __typename - single fragment on interface
+# =============================================================================
+query NoTypenameSingleFragment($id: ID!) {
+  content(id: $id) {
+    ...noTypenameSingleArticle
+  }
+}
+
+fragment noTypenameSingleArticle on Article {
+  id
+  title
+  body
+}
+
+# =============================================================================
+# Test 29: NO __typename - overlapping fragments producing Omit + object
+# =============================================================================
+query NoTypenameOverlapWithObject($id: ID!) {
+  content(id: $id) {
+    ... on Article {
+      ...noTypenameOverlapOne
+      ...noTypenameOverlapTwo
+    }
+  }
+}
+
+fragment noTypenameOverlapOne on Article {
+  title
+  comments {
+    id
+    text
+  }
+}
+
+fragment noTypenameOverlapTwo on Article {
+  excerpt
+  comments {
+    likes
+    author {
+      name
+    }
+  }
+}
+
+# =============================================================================
+# Test 30: NO __typename - all content array with partial coverage
+# =============================================================================
+query NoTypenameAllContentPartial {
+  allContent {
+    ... on Article {
+      ...noTypenameAllContentArticle
+    }
+  }
+}
+
+fragment noTypenameAllContentArticle on Article {
+  id
+  title
+  tags {
+    id
+    name
+  }
+}
