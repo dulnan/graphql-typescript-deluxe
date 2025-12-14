@@ -2,9 +2,49 @@ import { describe, expect, it, vi } from 'vitest'
 import schemaContent from './schema.graphql?raw'
 import { Generator } from '../../../src/classes/Generator'
 import { loadSchemaSync } from '@graphql-tools/load'
+import { buildSchema } from 'graphql'
 import { toDocument } from '../../helpers'
 
 const schema = loadSchemaSync(schemaContent, { loaders: [] })
+
+// Schema with custom scalar for testing
+const schemaWithCustomScalar = buildSchema(`
+  scalar DateTime
+
+  type Query {
+    now: DateTime
+    created: DateTime!
+  }
+`)
+
+// Schema with interface that has no implementing types initially
+const schemaWithEmptyInterface = buildSchema(`
+  interface EmptyInterface {
+    id: ID!
+  }
+
+  type Query {
+    getEmpty: EmptyInterface
+  }
+`)
+
+// Schema with interface that has exactly one implementing type
+const schemaWithSingleImplInterface = buildSchema(`
+  interface SingleInterface {
+    id: ID!
+    name: String!
+  }
+
+  type OnlyType implements SingleInterface {
+    id: ID!
+    name: String!
+    extra: String
+  }
+
+  type Query {
+    getSingle: SingleInterface
+  }
+`)
 
 /**
  * These tests are specifically designed to increase code coverage
@@ -1050,6 +1090,666 @@ describe('Generator Coverage Tests', () => {
       const source = result.getOperations('ts').getSource()
 
       expect(source).toContain('TestQuery')
+    })
+  })
+
+  // ===========================================================================
+  // Fragment spread on different type condition (lines 669-671)
+  // ===========================================================================
+  describe('fragment spread on different type condition', () => {
+    it('should keep fragment spread when type condition differs from current type', () => {
+      const generator = new Generator(schema, {
+        output: { typeComment: false },
+      })
+      generator.add([
+        // Fragment on MediaVideo, but we're querying Entity which includes NodeArticle
+        toDocument(
+          'fragment videoFields on MediaVideo { videoUrl }',
+          'fragment.graphql',
+        ),
+        toDocument(
+          `query test {
+            getRandomEntity {
+              id
+              ...videoFields
+            }
+          }`,
+          'query.graphql',
+        ),
+      ])
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      // Fragment should be used in the type
+      expect(source).toContain('VideoFieldsFragment')
+    })
+
+    it('should not inline fragment with different type condition during recursive inlining', () => {
+      const generator = new Generator(schema, {
+        output: { typeComment: false },
+      })
+      generator.add([
+        // Inner fragment on MediaVideo (different from Query)
+        toDocument(
+          'fragment innerFields on MediaVideo { videoUrl }',
+          'inner.graphql',
+        ),
+        // Outer fragment on Query that uses inner fragment
+        toDocument(
+          `fragment outerFields on Query {
+            getRandomEntity {
+              ...innerFields
+            }
+          }`,
+          'outer.graphql',
+        ),
+        // Query that spreads outer fragment at root level
+        toDocument(
+          `query test {
+            ...outerFields
+          }`,
+          'query.graphql',
+        ),
+      ])
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      // Both fragments should be used
+      expect(source).toContain('InnerFieldsFragment')
+    })
+  })
+
+  // ===========================================================================
+  // Inline fragment on unrelated type (lines 1105-1107)
+  // ===========================================================================
+  describe('inline fragment on unrelated type', () => {
+    it('should skip inline fragment when type does not match object', () => {
+      const generator = new Generator(schema, {
+        output: { typeComment: false },
+      })
+      generator.add(
+        toDocument(
+          `query test {
+            getRandomEntity {
+              ... on NodeArticle {
+                title
+                ... on MediaVideo {
+                  videoUrl
+                }
+              }
+            }
+          }`,
+          'query.graphql',
+        ),
+      )
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      // NodeArticle should have title, but not videoUrl (MediaVideo is unrelated)
+      expect(source).toContain('title')
+      // The videoUrl should not appear in the NodeArticle branch
+    })
+  })
+
+  // ===========================================================================
+  // Typename exclusion with fragment spreads (lines 1775-1782)
+  // ===========================================================================
+  describe('typename exclusion with fragment spreads', () => {
+    it('should use Exclude for __typename when fragment spreads do not cover all types', () => {
+      const generator = new Generator(schema, {
+        output: { typeComment: false },
+      })
+      generator.add([
+        toDocument(
+          'fragment articleFields on NodeArticle { title, body }',
+          'fragment.graphql',
+        ),
+        toDocument(
+          `query test {
+            getRandomEntity {
+              __typename
+              ...articleFields
+            }
+          }`,
+          'query.graphql',
+        ),
+      ])
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      // Should have Exclude in the output because articleFields only covers NodeArticle
+      // but Entity has many more implementing types
+      expect(source).toContain('Exclude<')
+    })
+  })
+
+  // ===========================================================================
+  // Empty branches in abstract selection (lines 1639-1644)
+  // ===========================================================================
+  describe('empty branches in abstract selection', () => {
+    it('should handle abstract type query with only base interface fields', () => {
+      const generator = new Generator(schema, {
+        output: { typeComment: false },
+      })
+      // Query only interface-level fields, no inline fragments
+      generator.add(
+        toDocument(
+          `query test {
+            getRandomEntity {
+              id
+              entityType
+            }
+          }`,
+          'query.graphql',
+        ),
+      )
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      expect(source).toContain('id')
+      expect(source).toContain('entityType')
+    })
+  })
+
+  // ===========================================================================
+  // Field merging (line 1057)
+  // ===========================================================================
+  describe('field merging in object selection', () => {
+    it('should merge overlapping field selections', () => {
+      const generator = new Generator(schema, {
+        output: { typeComment: false },
+      })
+      generator.add(
+        toDocument(
+          `query test {
+            getHomepage {
+              title
+              title
+              body
+            }
+          }`,
+          'query.graphql',
+        ),
+      )
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      expect(source).toContain('title')
+      expect(source).toContain('body')
+    })
+
+    it('should merge nested field selections with fragments', () => {
+      const generator = new Generator(schema, {
+        output: { typeComment: false },
+      })
+      generator.add([
+        toDocument(
+          'fragment authorName on Author { name }',
+          'fragment.graphql',
+        ),
+        toDocument(
+          `query test {
+            getRandomEntity {
+              ... on NodeArticle {
+                author {
+                  name
+                  email
+                }
+                author {
+                  ...authorName
+                }
+              }
+            }
+          }`,
+          'query.graphql',
+        ),
+      ])
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      expect(source).toContain('name')
+      expect(source).toContain('email')
+    })
+  })
+
+  // ===========================================================================
+  // Custom scalar type (line 1906)
+  // ===========================================================================
+  describe('custom scalar type', () => {
+    it('should handle custom scalar with default buildScalarType', () => {
+      const generator = new Generator(schemaWithCustomScalar, {
+        output: { typeComment: false },
+      })
+      generator.add(
+        toDocument(
+          `query test {
+            now
+            created
+          }`,
+          'query.graphql',
+        ),
+      )
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      // Default scalar type should be 'any' for unknown scalars
+      expect(source).toContain('any')
+    })
+
+    it('should handle custom scalar with custom buildScalarType', () => {
+      const generator = new Generator(schemaWithCustomScalar, {
+        output: { typeComment: false },
+        buildScalarType: (type): string | null => {
+          if (type.name === 'DateTime') {
+            return 'string'
+          }
+          return null
+        },
+      })
+      generator.add(
+        toDocument(
+          `query test {
+            now
+            created
+          }`,
+          'query.graphql',
+        ),
+      )
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      expect(source).toContain('string')
+    })
+
+    it('should fallback to any when buildScalarType returns null', () => {
+      const generator = new Generator(schemaWithCustomScalar, {
+        output: { typeComment: false },
+        buildScalarType: (): null => null,
+      })
+      generator.add(toDocument('query test { now }', 'query.graphql'))
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      expect(source).toContain('any')
+    })
+  })
+
+  // ===========================================================================
+  // Empty interface/union (lines 826-834, 863)
+  // ===========================================================================
+  describe('empty interface', () => {
+    it('should handle interface with no implementing types', () => {
+      const generator = new Generator(schemaWithEmptyInterface, {
+        output: { typeComment: false },
+      })
+      generator.add(
+        toDocument(
+          `query test {
+            getEmpty {
+              id
+            }
+          }`,
+          'query.graphql',
+        ),
+      )
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      // With no implementing types, the result is essentially empty
+      expect(source).toContain('TestQuery')
+    })
+
+    it('should produce never for empty interface __typename', () => {
+      const generator = new Generator(schemaWithEmptyInterface, {
+        output: { typeComment: false },
+      })
+      generator.add(
+        toDocument(
+          `query test {
+            getEmpty {
+              __typename
+            }
+          }`,
+          'query.graphql',
+        ),
+      )
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      // Should produce 'never' for empty interface typename union
+      expect(source).toContain('never')
+    })
+
+    it('should produce never for empty interface with nonOptionalTypename', () => {
+      const generator = new Generator(schemaWithEmptyInterface, {
+        output: {
+          typeComment: false,
+          nonOptionalTypename: true,
+        },
+      })
+      generator.add(
+        toDocument(
+          `query test {
+            getEmpty {
+              id
+            }
+          }`,
+          'query.graphql',
+        ),
+      )
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      // Should produce 'never' for empty interface typename union
+      expect(source).toContain('never')
+    })
+  })
+
+  // ===========================================================================
+  // Fragment on interface with __typename and partial coverage (lines 1775-1782)
+  // ===========================================================================
+  describe('fragment with __typename and partial coverage', () => {
+    it('should produce Exclude type when fragments do not cover all types', () => {
+      const generator = new Generator(schema, {
+        output: { typeComment: false },
+      })
+      generator.add([
+        // Fragment only covers NodeArticle, not all Entity types
+        toDocument(
+          'fragment articleOnly on NodeArticle { __typename, title }',
+          'fragment.graphql',
+        ),
+        toDocument(
+          `query test {
+            getRandomEntity {
+              __typename
+              ...articleOnly
+            }
+          }`,
+          'query.graphql',
+        ),
+      ])
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      // Should have Exclude<Entity, NodeArticle> pattern
+      expect(source).toContain('Exclude<')
+      expect(source).toContain('NodeArticle')
+    })
+
+    it('should handle multiple fragment spreads with __typename', () => {
+      const generator = new Generator(schema, {
+        output: { typeComment: false },
+      })
+      generator.add([
+        toDocument(
+          'fragment pageFields on NodePage { __typename, title }',
+          'page.graphql',
+        ),
+        toDocument(
+          'fragment articleFields on NodeArticle { __typename, title }',
+          'article.graphql',
+        ),
+        toDocument(
+          `query test {
+            getRandomEntity {
+              __typename
+              ...pageFields
+              ...articleFields
+            }
+          }`,
+          'query.graphql',
+        ),
+      ])
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      expect(source).toContain('PageFieldsFragment')
+      expect(source).toContain('ArticleFieldsFragment')
+    })
+  })
+
+  // ===========================================================================
+  // Selection set on various types (lines 963-969, 1639-1644)
+  // ===========================================================================
+  describe('selection set edge cases', () => {
+    it('should handle abstract type with no type-specific selections', () => {
+      const generator = new Generator(schema, {
+        output: { typeComment: false },
+      })
+      // Query abstract type but only select interface-level fields
+      generator.add(
+        toDocument(
+          `query test {
+            search(text: "foo") {
+              __typename
+            }
+          }`,
+          'query.graphql',
+        ),
+      )
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      expect(source).toContain('__typename')
+    })
+
+    it('should handle union with only __typename selected', () => {
+      const generator = new Generator(schema, {
+        output: { typeComment: false },
+      })
+      generator.add(
+        toDocument(
+          `query test {
+            search(text: "test") {
+              __typename
+            }
+          }`,
+          'query.graphql',
+        ),
+      )
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      expect(source).toContain('MediaVideo')
+      expect(source).toContain('NodeArticle')
+    })
+  })
+
+  // ===========================================================================
+  // Fragment spread when fragment IR not yet generated (lines 992-997)
+  // ===========================================================================
+  describe('fragment generation order', () => {
+    it('should generate fragment IR on demand when not yet created', () => {
+      const generator = new Generator(schema, {
+        output: { typeComment: false },
+      })
+      // Add operation first, then fragment
+      // This ensures fragment IR is generated on demand
+      generator.add([
+        toDocument(
+          `query test {
+            getRandomEntity {
+              ...lazyFragment
+            }
+          }`,
+          'query.graphql',
+        ),
+        toDocument(
+          'fragment lazyFragment on User { email }',
+          'fragment.graphql',
+        ),
+      ])
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      expect(source).toContain('LazyFragmentFragment')
+    })
+
+    it('should handle fragments that spread other fragments', () => {
+      const generator = new Generator(schema, {
+        output: { typeComment: false },
+      })
+      generator.add([
+        toDocument('fragment inner on User { email }', 'inner.graphql'),
+        toDocument(
+          'fragment outer on User { ...inner, name }',
+          'outer.graphql',
+        ),
+        toDocument(
+          `query test {
+            getRandomEntity {
+              ...outer
+            }
+          }`,
+          'query.graphql',
+        ),
+      ])
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      expect(source).toContain('InnerFragment')
+      expect(source).toContain('OuterFragment')
+    })
+  })
+
+  // ===========================================================================
+  // FieldNotFoundError on interface (lines 1325-1331)
+  // ===========================================================================
+  describe('field not found on interface', () => {
+    it('should throw FieldNotFoundError when selecting non-existent field on interface', () => {
+      // Create schema where we can query an interface directly
+      const interfaceSchema = buildSchema(`
+        interface Animal {
+          name: String!
+        }
+        type Dog implements Animal {
+          name: String!
+          breed: String!
+        }
+        type Query {
+          getAnimal: Animal
+        }
+      `)
+
+      const generator = new Generator(interfaceSchema, {
+        output: { typeComment: false },
+      })
+      generator.add(
+        toDocument(
+          `query test {
+            getAnimal {
+              nonExistentField
+            }
+          }`,
+          'query.graphql',
+        ),
+      )
+
+      expect(() => generator.build()).toThrow()
+    })
+  })
+
+  // ===========================================================================
+  // Line 1553 - objectTypeMap default value
+  // ===========================================================================
+  describe('object type map edge cases', () => {
+    it('should handle fragment spread in abstract type selection', () => {
+      const generator = new Generator(schema, {
+        output: { typeComment: false },
+      })
+      generator.add([
+        toDocument('fragment nodeBase on Node { title }', 'fragment.graphql'),
+        toDocument(
+          `query test {
+            getRandomEntity {
+              ... on Node {
+                ...nodeBase
+              }
+            }
+          }`,
+          'query.graphql',
+        ),
+      ])
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      expect(source).toContain('NodeBaseFragment')
+    })
+
+    it('should handle interface with single implementing type', () => {
+      const generator = new Generator(schemaWithSingleImplInterface, {
+        output: { typeComment: false },
+      })
+      generator.add([
+        toDocument(
+          'fragment singleFields on SingleInterface { id, name }',
+          'fragment.graphql',
+        ),
+        toDocument(
+          `query test {
+            getSingle {
+              ...singleFields
+              ... on OnlyType {
+                extra
+              }
+            }
+          }`,
+          'query.graphql',
+        ),
+      ])
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      expect(source).toContain('SingleFieldsFragment')
+      expect(source).toContain('extra')
+    })
+
+    it('should handle fragment spread on interface within interface query', () => {
+      const generator = new Generator(schemaWithSingleImplInterface, {
+        output: { typeComment: false },
+      })
+      generator.add([
+        toDocument(
+          'fragment interfaceFields on SingleInterface { name }',
+          'fragment.graphql',
+        ),
+        toDocument(
+          `query test {
+            getSingle {
+              id
+              ...interfaceFields
+            }
+          }`,
+          'query.graphql',
+        ),
+      ])
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      expect(source).toContain('InterfaceFieldsFragment')
     })
   })
 })

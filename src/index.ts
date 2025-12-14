@@ -26,4 +26,5 @@ export {
   MissingRootTypeError,
   NodeLocMissingError,
   TypeNotFoundError,
+  UnreachableError,
 } from './errors'

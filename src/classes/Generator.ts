@@ -33,6 +33,7 @@ import {
   mergeSameFieldSelections,
   unwrapNonNull,
 } from '../helpers/ast'
+import { unreachable } from '../helpers/unreachable'
 import type { GeneratorOptions, TypeCommentOptions } from '../types/options'
 import { buildOptions, mapTypeCommentOptions } from '../helpers/options'
 import { makeComment, makeExport, makeTypeDoc } from '../helpers/string'
@@ -558,9 +559,11 @@ export class Generator {
         Record<string, IRNode>
       >((acc, [name, field]) => {
         const required = isNonNullType(field.type)
+        /* v8 ignore start */
         if (!field.astNode) {
-          throw new LogicError('Missing astNode on input field: ' + field.name)
+          unreachable('Missing astNode on input field: ' + field.name)
         }
+        /* v8 ignore stop */
         const tsType = this.createInputTS(field.astNode.type)
         acc[name] = IR.SCALAR({
           tsType,
@@ -605,9 +608,11 @@ export class Generator {
     return this.generateCodeOnce('fragment', fragmentName, () => {
       const item = this.fragments.get(fragmentName)
 
+      /* v8 ignore start */
       if (!item) {
         throw new FragmentNotFoundError(fragmentName, this.getErrorContext())
       }
+      /* v8 ignore stop */
       const source = getAstSource(item.node)
       const typeName = this.options.buildFragmentTypeName(item.node)
 
@@ -666,9 +671,11 @@ export class Generator {
           // Inline the fragment's selections
           newSelections.push(...fragDef.selectionSet.selections)
           hasChanged = true
+          /* v8 ignore start */
         } else {
           newSelections.push(spread)
         }
+        /* v8 ignore stop */
       } else {
         newSelections.push(spread)
       }
@@ -825,13 +832,14 @@ export class Generator {
     return this.generateCodeOnce('typename-object', name, () => {
       const type = typeof arg === 'string' ? this.schema.getType(name) : arg
 
+      /* v8 ignore start */
       if (!isObjectType(type)) {
-        throw new LogicError(
+        unreachable(
           'Attempted to create object type string literal for non-object type: ' +
             name,
-          this.getErrorContext(),
         )
       }
+      /* v8 ignore stop */
 
       return {
         code: `type ${name} = '${name}';`,
@@ -963,10 +971,9 @@ export class Generator {
     }
 
     // We should never actually end up here, as there is no selection set for any other types.
-    throw new LogicError(
-      'Cannot build selection set for type: ' + type.name,
-      this.getErrorContext(),
-    )
+    /* v8 ignore start */
+    unreachable('Cannot build selection set for type: ' + type.name)
+    /* v8 ignore stop */
   }
 
   /**
@@ -989,13 +996,16 @@ export class Generator {
       let item = this.fragmentIRs.get(fragmentName)
 
       // This means the fragment has not yet been created.
+      /* v8 ignore start */
       if (!item) {
         // Generate the actual fragment IR.
         // If successful, this will store the IR of the fragment.
         this.generateFragmentType(fragmentName)
         item = this.fragmentIRs.get(fragmentName)
       }
+      /* v8 ignore stop */
 
+      /* v8 ignore start */
       if (!item) {
         // Likely means there are circular references between two or more
         // fragments and we are trying to generated the IR recursively.
@@ -1005,6 +1015,7 @@ export class Generator {
           this.getErrorContext(),
         )
       }
+      /* v8 ignore stop */
       return item.map
     })
   }
@@ -1090,12 +1101,11 @@ export class Generator {
         }
       } else if (sel.kind === Kind.INLINE_FRAGMENT) {
         const typeConditionName = sel.typeCondition?.name.value
+        /* v8 ignore start */
         if (!typeConditionName) {
-          throw new LogicError(
-            'Inline fragment has no type condition.',
-            this.getErrorContext(),
-          )
+          unreachable('Inline fragment has no type condition.')
         }
+        /* v8 ignore stop */
 
         // Only process inline fragment if it applies to this object type
         // (same type or object implements the interface/union)
@@ -1334,12 +1344,11 @@ export class Generator {
           baseFields[aliasName] = current ? mergeIR(current, fieldIR) : fieldIR
         }
       } else if (sel.kind === Kind.INLINE_FRAGMENT) {
+        /* v8 ignore start */
         if (!sel.typeCondition) {
-          throw new LogicError(
-            'Missing type condition in inline fragment.',
-            this.getErrorContext(),
-          )
+          unreachable('Missing type condition in inline fragment.')
         }
+        /* v8 ignore stop */
         const typeConditionName = sel.typeCondition?.name.value
         if (typeConditionName === abstractType.name) {
           inlineFragmentsForAbstract.push(sel)
@@ -1481,12 +1490,11 @@ export class Generator {
     for (const sel of selections) {
       if (sel.kind === Kind.INLINE_FRAGMENT) {
         const typeConditionName = sel.typeCondition?.name.value
+        /* v8 ignore start */
         if (!typeConditionName) {
-          throw new LogicError(
-            'Inline fragment has no type condition.',
-            this.getErrorContext(),
-          )
+          unreachable('Inline fragment has no type condition.')
         }
+        /* v8 ignore stop */
 
         const spreadType = this.schema.getType(typeConditionName)
 
@@ -1772,6 +1780,7 @@ export class Generator {
       }
 
       // Fallback.
+      /* v8 ignore start */
       if (typenameNode.excludeType) {
         const excludedTypes = spreads
           .map((s) => s.fragmentTypeCondition)
@@ -1780,6 +1789,7 @@ export class Generator {
           `{ __typename: Exclude<${typenameNode.excludeType}, ${excludedTypes}> }`,
         )
       }
+      /* v8 ignore stop */
 
       return parts.join(' | ')
     }

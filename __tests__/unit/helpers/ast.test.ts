@@ -41,6 +41,17 @@ describe('ast helpers', () => {
       expect(hasConditionalDirective(fieldNode)).toBe(false)
     })
 
+    it('should return false when directives is undefined', () => {
+      // Create a FieldNode with explicitly undefined directives
+      const fieldNode: FieldNode = {
+        kind: Kind.FIELD,
+        name: { kind: Kind.NAME, value: 'testField' },
+        directives: undefined,
+      }
+
+      expect(hasConditionalDirective(fieldNode)).toBe(false)
+    })
+
     it('should return false when field has non-conditional directives', () => {
       const doc = parse('{ field @deprecated }')
       const operation = doc.definitions[0] as any

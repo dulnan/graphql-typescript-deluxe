@@ -117,3 +117,17 @@ export class InvalidOptionError extends Error {
     Object.setPrototypeOf(this, InvalidOptionError.prototype)
   }
 }
+
+/**
+ * Thrown when code that should be unreachable is executed.
+ *
+ * This indicates a bug in the generator - the code path should never
+ * be reached with valid GraphQL input.
+ */
+export class UnreachableError extends Error {
+  constructor(message: string) {
+    super(`Unreachable code executed: ${message}`)
+    this.name = 'UnreachableError'
+    Object.setPrototypeOf(this, UnreachableError.prototype)
+  }
+}
