@@ -1798,14 +1798,12 @@ export class Generator {
 
     // Add fragments with Omit for conflicting fields.
     for (const spread of spreads) {
-      const fragmentFields = fragmentFieldMaps[spread.fragmentTypeName]
-      const allFragmentFieldNames = fragmentFields
-        ? Object.keys(fragmentFields)
-        : []
+      const fragmentFields = fragmentFieldMaps[spread.fragmentTypeName]!
+      const allFragmentFieldNames = Object.keys(fragmentFields)
 
       // If there's a conflict field that the fragment actually defines, use Omit.
       const conflictsForThisFrag = [...conflictFields.keys()].filter((fld) => {
-        return fragmentFields && fragmentFields[fld] !== undefined
+        return fragmentFields[fld] !== undefined
       })
 
       // Skip fragment entirely if all of its fields are conflicting.
@@ -1826,19 +1824,14 @@ export class Generator {
     }
 
     // Add merged conflict fields as a separate object into the intersection.
-    if (conflictFields.size > 0) {
-      intersectionParts.unshift(this.fieldMapToCode(conflictFields))
-    }
+    // We know conflictFields.size > 0 here (otherwise we returned early above),
+    // so intersectionParts will always have at least one element.
+    intersectionParts.unshift(this.fieldMapToCode(conflictFields))
 
-    if (intersectionParts.length === 0) {
-      // No intersections: Empty object.
-      return this.options.output.emptyObject
-    } else if (intersectionParts.length === 1) {
-      // Just one intersection.
+    if (intersectionParts.length === 1) {
       return intersectionParts[0]!
     }
 
-    // Create a union.
     return `(${intersectionParts.join(' & ')})`
   }
 

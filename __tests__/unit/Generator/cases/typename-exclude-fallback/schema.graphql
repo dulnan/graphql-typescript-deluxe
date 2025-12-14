@@ -22,6 +22,16 @@ type Fish implements Animal {
   freshwater: Boolean
 }
 
+type Reptile implements Animal {
+  name: String!
+  coldBlooded: Boolean
+}
+
+type Insect implements Animal {
+  name: String!
+  legs: Int
+}
+
 type Query {
   animals: [Animal!]!
 }

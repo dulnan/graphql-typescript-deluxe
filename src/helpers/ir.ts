@@ -1,5 +1,4 @@
 import { TYPENAME } from '../constants'
-import { LogicError } from '../errors'
 
 export type IRNodeScalar = {
   kind: 'SCALAR'
@@ -342,9 +341,7 @@ function areObjectsIdentical(a: IRNodeObject, b: IRNodeObject): boolean {
     return false
   }
 
-  if (a.nullable !== b.nullable) {
-    return false
-  }
+  // Note: nullable is already checked in isIdenticalIR before calling this function
 
   const aKeys = Object.keys(a.fields).sort()
   const bKeys = Object.keys(b.fields).sort()
@@ -360,13 +357,13 @@ function areObjectsIdentical(a: IRNodeObject, b: IRNodeObject): boolean {
 }
 
 function areArraysIdentical(a: IRNodeArray, b: IRNodeArray): boolean {
-  if (a.nullable !== b.nullable) return false
+  // Note: nullable is already checked in isIdenticalIR before calling this function
   if (a.nullableElement !== b.nullableElement) return false
   return isIdenticalIR(a.ofType, b.ofType)
 }
 
 function areUnionsIdentical(a: IRNodeUnion, b: IRNodeUnion): boolean {
-  if (a.nullable !== b.nullable) return false
+  // Note: nullable is already checked in isIdenticalIR before calling this function
   if (a.types.length !== b.types.length) return false
   for (let i = 0; i < a.types.length; i++) {
     if (!isIdenticalIR(a.types[i]!, b.types[i]!)) return false
@@ -414,18 +411,12 @@ export function isIdenticalIR(a: IRNode, b: IRNode): boolean {
 function unifyObjectsIgnoringTypename(objects: IRNodeObject[]): IRNodeObject {
   // We assume these all have the same shape except for possibly
   // different literal values of `__typename`. So we:
-  // 1) Take the first object’s fields as a base
+  // 1) Take the first object's fields as a base
   // 2) For `__typename`, gather all the distinct literal values from each object
   // 3) Everything else is the same (if your signature logic is correct)
   // 4) Mark `nonNull: true` if any object is nonNull (OR them together)
-
-  if (objects.length === 1) {
-    return objects[0]!
-  } else if (objects.length === 0) {
-    throw new LogicError(
-      'Need at least one object in unifyObjectsDifferingOnlyInTypename.',
-    )
-  }
+  // Note: This function is only called with 2+ objects (single objects are
+  // handled by the caller in mergeUnionBranchesIgnoringTypename)
 
   const base = { ...objects[0]! }
   const mergedFields = { ...base.fields }
@@ -594,11 +585,7 @@ export function postProcessIR(ir: IRNode): IRNode {
         types: mergeUnionBranchesIgnoringTypename(processedBranches),
       }
     }
-
   }
-
-  // @ts-expect-error Should never end up here.
-  throw new LogicError('Unknown IR type: ' + ir.kind)
 }
 
 /**

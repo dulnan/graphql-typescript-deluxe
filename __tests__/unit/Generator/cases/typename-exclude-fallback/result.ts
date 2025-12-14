@@ -13,13 +13,15 @@ type Bird = 'Bird';
 type Cat = 'Cat';
 type Dog = 'Dog';
 type Fish = 'Fish';
+type Insect = 'Insect';
+type Reptile = 'Reptile';
 
 
 // --------------------------------------------------------------------------------
 // Interfaces & Unions
 // --------------------------------------------------------------------------------
 
-export type Animal = Bird | Cat | Dog | Fish;
+export type Animal = Bird | Cat | Dog | Fish | Insect | Reptile;
 
 
 // --------------------------------------------------------------------------------
@@ -75,7 +77,7 @@ export type DogFragmentFragment = {
  */
 export type TypenameExcludeFallbackQuery = {
 animals: (((CatFragmentFragment & { __typename: Cat }) | (DogFragmentFragment & { __typename: Dog }) | {
-  __typename: Bird | Fish;
+  __typename: Exclude<Animal, Cat | Dog>;
 }))[];
 };
 
