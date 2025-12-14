@@ -9,9 +9,11 @@ import {
   hasTypenameField,
   buildFragmentIRFields,
   type IRNode,
+  type IRNodeArray,
   type IRNodeObject,
   type IRNodeScalar,
   type IRNodeTypename,
+  type IRNodeUnion,
 } from '../../../src/helpers/ir'
 
 describe('IR factory functions', () => {
@@ -255,11 +257,9 @@ describe('mergeIR', () => {
         ofType: IR.SCALAR({ tsType: 'string' }),
         nullableElement: true,
       })
-      const result = mergeIR(a, b)
+      const result = mergeIR(a, b) as IRNodeArray
       expect(result.kind).toBe('ARRAY')
-      if (result.kind === 'ARRAY') {
-        expect(result.nullableElement).toBe(true) // OR operation
-      }
+      expect(result.nullableElement).toBe(true) // OR operation
     })
 
     it('recursively merges array element types', () => {
@@ -271,10 +271,9 @@ describe('mergeIR', () => {
         ofType: IR.SCALAR({ tsType: 'number' }),
         nullableElement: false,
       })
-      const result = mergeIR(a, b)
-      if (result.kind === 'ARRAY') {
-        expect((result.ofType as IRNodeScalar).tsType).toBe('string | number')
-      }
+      const result = mergeIR(a, b) as IRNodeArray
+      expect(result.kind).toBe('ARRAY')
+      expect((result.ofType as IRNodeScalar).tsType).toBe('string | number')
     })
   })
 
@@ -286,11 +285,9 @@ describe('mergeIR', () => {
       const b = IR.UNION({
         types: [IR.SCALAR({ tsType: 'number' })],
       })
-      const result = mergeIR(a, b)
+      const result = mergeIR(a, b) as IRNodeUnion
       expect(result.kind).toBe('UNION')
-      if (result.kind === 'UNION') {
-        expect(result.types.length).toBe(2)
-      }
+      expect(result.types.length).toBe(2)
     })
 
     it('unifies union branches with same object type', () => {
@@ -310,16 +307,15 @@ describe('mergeIR', () => {
           }),
         ],
       })
-      const result = mergeIR(a, b)
-      if (result.kind === 'UNION') {
-        // Should have unified the User objects
-        const userObj = result.types.find(
-          (t) => t.kind === 'OBJECT' && t.graphQLTypeName === 'User',
-        ) as IRNodeObject
-        expect(userObj).toBeDefined()
-        expect(userObj.fields.id).toBeDefined()
-        expect(userObj.fields.name).toBeDefined()
-      }
+      const result = mergeIR(a, b) as IRNodeUnion
+      expect(result.kind).toBe('UNION')
+      // Should have unified the User objects
+      const userObj = result.types.find(
+        (t) => t.kind === 'OBJECT' && t.graphQLTypeName === 'User',
+      ) as IRNodeObject
+      expect(userObj).toBeDefined()
+      expect(userObj.fields.id).toBeDefined()
+      expect(userObj.fields.name).toBeDefined()
     })
 
     it('handles non-object branches in unions', () => {
@@ -335,10 +331,9 @@ describe('mergeIR', () => {
           IR.OBJECT({ graphQLTypeName: 'Admin', fields: {} }),
         ],
       })
-      const result = mergeIR(a, b)
-      if (result.kind === 'UNION') {
-        expect(result.types.length).toBe(4)
-      }
+      const result = mergeIR(a, b) as IRNodeUnion
+      expect(result.kind).toBe('UNION')
+      expect(result.types.length).toBe(4)
     })
   })
 
@@ -401,12 +396,10 @@ describe('mergeIR', () => {
         types: [IR.SCALAR({ tsType: 'string' })],
       })
       const b = IR.SCALAR({ tsType: 'number' })
-      const result = mergeIR(a, b)
+      const result = mergeIR(a, b) as IRNodeUnion
       expect(result.kind).toBe('UNION')
-      if (result.kind === 'UNION') {
-        // Should flatten the union from a
-        expect(result.types.length).toBe(2)
-      }
+      // Should flatten the union from a
+      expect(result.types.length).toBe(2)
     })
   })
 })
@@ -787,16 +780,14 @@ describe('postProcessIR', () => {
         }),
       ],
     })
-    const result = postProcessIR(union)
+    const result = postProcessIR(union) as IRNodeUnion
     expect(result.kind).toBe('UNION')
     // The branches should be merged since they have the same shape except __typename
-    if (result.kind === 'UNION') {
-      expect(result.types.length).toBe(1)
-      const merged = result.types[0] as IRNodeObject
-      const typename = merged.fields.__typename as IRNodeTypename
-      expect(typename.types).toContain('Cat')
-      expect(typename.types).toContain('Dog')
-    }
+    expect(result.types.length).toBe(1)
+    const merged = result.types[0] as IRNodeObject
+    const typename = merged.fields.__typename as IRNodeTypename
+    expect(typename.types).toContain('Cat')
+    expect(typename.types).toContain('Dog')
   })
 
   it('keeps different shaped objects separate', () => {
@@ -818,10 +809,9 @@ describe('postProcessIR', () => {
         }),
       ],
     })
-    const result = postProcessIR(union)
-    if (result.kind === 'UNION') {
-      expect(result.types.length).toBe(2)
-    }
+    const result = postProcessIR(union) as IRNodeUnion
+    expect(result.kind).toBe('UNION')
+    expect(result.types.length).toBe(2)
   })
 })
 

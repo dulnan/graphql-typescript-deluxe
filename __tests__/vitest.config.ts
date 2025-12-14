@@ -23,8 +23,6 @@ export default defineConfig({
 
   resolve: {
     alias: {
-      'graphql/language/printer': 'graphql/language/printer.js',
-      'graphql/language': 'graphql/language/index.js',
       graphql: 'graphql/index.js',
     },
   },

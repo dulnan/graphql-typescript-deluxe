@@ -46,7 +46,6 @@ npm run benchmark
 - **Generator**: Main entry point. Accepts a GraphQL schema and documents,
   tracks dependencies between fragments/operations, and outputs TypeScript
   types. Key methods:
-
   - `add(docs)`: Add new documents
   - `update(docs)`: Update existing documents (triggers incremental rebuild)
   - `build()`: Generate output

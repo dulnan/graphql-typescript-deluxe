@@ -40,7 +40,7 @@ export type IRNodeObject = {
   fields: Record<string, IRNode>
 }
 
-type IRNodeArray = {
+export type IRNodeArray = {
   kind: 'ARRAY'
   description?: string | null
   optional?: boolean
@@ -49,7 +49,7 @@ type IRNodeArray = {
   ofType: IRNode
 }
 
-type IRNodeUnion = {
+export type IRNodeUnion = {
   kind: 'UNION'
   description?: string | null
   optional?: boolean

@@ -19,8 +19,6 @@ const config: KnipConfig = {
   ignoreDependencies: [
     // Used via jiti for TypeScript runtime compilation
     'jiti',
-    // Used by eslint config
-    '@types/eslint__js',
     '@typescript-eslint/parser',
     // Used via tsconfig paths
     'tslib',

@@ -90,10 +90,11 @@ describe('Generator', () => {
         'The cached and uncached output must be identical.',
       ).toEqual(resultWithoutCaching)
 
+      // Only generate codegen comparison in watch mode
       if (isWatch) {
         const codegenSchemaContent = customSchema ?? schemaContent
-        // Also generate an output with graphql-codegen for reference.
         const resultCodegen = await generateCodegen(codegenSchemaContent, query)
+        // eslint-disable-next-line vitest/no-conditional-expect -- environment-based conditional
         await expect(resultCodegen).toMatchFileSnapshot(codegenSnapshotPath)
       }
     })
