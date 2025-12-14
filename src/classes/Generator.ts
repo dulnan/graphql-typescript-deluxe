@@ -2205,6 +2205,14 @@ export class Generator {
         this.generateOperationType(def, input)
       })
 
+      // Update fragment dependencies from fragmentIRs.
+      for (const [fragmentName, fragment] of this.fragments) {
+        const irData = this.fragmentIRs.get(fragmentName)
+        if (irData) {
+          fragment.dependencies = irData.dependencies
+        }
+      }
+
       if (this.options.debugMode) {
         const entries = Object.entries(this.debugCounts)
         const longestKey =
