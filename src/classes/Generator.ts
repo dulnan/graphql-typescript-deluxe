@@ -1420,9 +1420,19 @@ export class Generator {
 
           // We have just a single fragment.
           if (fragments.length === 1) {
-            return IR.SCALAR({
+            const fragmentType = IR.SCALAR({
               tsType: this.generateFragmentType(fragments[0]!.name.value),
             })
+
+            // If there are other possible types not covered by this fragment,
+            // we need to include empty object in the union.
+            if (totalPossibleTypes > 1) {
+              return IR.UNION({
+                types: [fragmentType, this.emptyObjectScalar()],
+              })
+            }
+
+            return fragmentType
           }
         } else {
           // We have exactly one fragment per type.

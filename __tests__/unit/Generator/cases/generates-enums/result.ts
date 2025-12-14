@@ -72,7 +72,7 @@ export type FragmentWithEnumFragment = {
  */
 export type GeneratesEnumsQuery = {
   /** Get random entity. */
-  getRandomEntity?: FragmentWithEnumFragment;
+  getRandomEntity?: (FragmentWithEnumFragment | object);
 };
 
 

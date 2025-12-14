@@ -1,0 +1,9 @@
+query queryFragmentsSingle {
+  getRandomEntity {
+    ...mediaImage
+  }
+}
+
+fragment mediaImage on MediaImage {
+  id
+}
