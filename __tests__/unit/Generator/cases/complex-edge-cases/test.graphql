@@ -1,0 +1,295 @@
+query ComplexEdgeCases(
+  $id: ID!
+  $filter: ContentFilter
+  $includeMedia: Boolean! = true
+  $skipContributors: Boolean! = false
+  $limit: Int = 20
+) {
+  content(id: $id) {
+    __typename
+    ...identifiableFields
+    ...contentFields
+
+    ... on Timestamped {
+      createdAt
+      updatedAt
+    }
+
+    ... on Article {
+      ...articleDetails
+      ...articleMedia @include(if: $includeMedia)
+      contributors @skip(if: $skipContributors) {
+        ...personBasic
+      }
+    }
+
+    ... on Page {
+      ...pageWithSections
+      parent {
+        __typename
+        title
+        parent {
+          title
+        }
+      }
+    }
+  }
+
+  media(id: $id) {
+    __typename
+    ... on Image {
+      ...imageFields
+    }
+    ... on Video {
+      ...videoFields
+      thumbnail {
+        ...imageFields
+      }
+    }
+    ... on Document {
+      url
+      filename
+      mimeType
+      size
+    }
+  }
+
+  tree(rootId: $id) {
+    ...treeNodeRecursive
+  }
+
+  search(query: "test", filter: $filter) {
+    total
+    items {
+      __typename
+      ...contentFields
+      ... on Article {
+        excerpt
+        priority
+        category {
+          label
+          parent {
+            label
+          }
+        }
+      }
+      ... on Page {
+        sections {
+          ...sectionDeep
+        }
+      }
+    }
+    facets {
+      statuses {
+        value
+        count
+      }
+      authors {
+        value
+        count
+      }
+    }
+  }
+
+  article(id: $id) {
+    ...articleBasic
+    ...articleDetails
+    ...articleMedia @include(if: $includeMedia)
+    title
+    author {
+      name
+      ...personBasic
+    }
+  }
+
+  allContent(filter: $filter, limit: $limit) {
+    __typename
+    ... on Article {
+      relatedContent {
+        __typename
+        title
+        ... on Article {
+          author {
+            avatar {
+              ...imageFields
+            }
+          }
+          media {
+            __typename
+            ... on Image {
+              ...imageFields
+            }
+            ... on Video {
+              thumbnail {
+                url
+                alt
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+fragment identifiableFields on Identifiable {
+  id
+  uuid
+}
+
+fragment contentFields on Content {
+  title
+  status
+}
+
+fragment articleBasic on Article {
+  __typename
+  id
+  title
+  status
+  excerpt
+}
+
+fragment articleDetails on Article {
+  body
+  tags
+  priority
+  author {
+    ...personFull
+  }
+  category {
+    label
+    metadata {
+      key
+      value
+    }
+  }
+}
+
+fragment articleMedia on Article {
+  media {
+    __typename
+    ...mediaUnionFields
+  }
+}
+
+fragment personBasic on Person {
+  id
+  name
+}
+
+fragment personFull on Person {
+  ...personBasic
+  email
+  avatar {
+    url
+    alt
+  }
+}
+
+fragment imageFields on Image {
+  id
+  url
+  alt
+  width
+  height
+  caption
+}
+
+fragment videoFields on Video {
+  id
+  url
+  duration
+  provider
+}
+
+fragment mediaUnionFields on MediaItem {
+  ... on Image {
+    ...imageFields
+  }
+  ... on Video {
+    ...videoFields
+  }
+  ... on Document {
+    url
+    filename
+  }
+}
+
+fragment pageWithSections on Page {
+  body
+  sections {
+    ...sectionDeep
+  }
+  children {
+    title
+    sections {
+      id
+      heading
+    }
+  }
+}
+
+fragment sectionDeep on Section {
+  id
+  heading
+  content {
+    __typename
+    ... on TextBlock {
+      html
+      plain
+    }
+    ... on ImageGallery {
+      layout
+      images {
+        ...imageFields
+      }
+    }
+    ... on VideoEmbed {
+      autoplay
+      video {
+        ...videoFields
+      }
+    }
+    ... on CodeBlock {
+      code
+      language
+    }
+  }
+  subsections {
+    id
+    heading
+    content {
+      __typename
+      ... on TextBlock {
+        html
+      }
+    }
+  }
+}
+
+fragment treeNodeRecursive on TreeNode {
+  id
+  label
+  metadata {
+    key
+    value
+    nested {
+      key
+      value
+    }
+    tags
+  }
+  children {
+    id
+    label
+    children {
+      id
+      label
+      children {
+        id
+        label
+      }
+    }
+  }
+}

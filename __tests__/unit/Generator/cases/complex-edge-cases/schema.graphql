@@ -1,0 +1,213 @@
+# Enums
+enum Status {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+# Base interfaces
+interface Identifiable {
+  id: ID!
+  uuid: String!
+}
+
+interface Timestamped {
+  createdAt: Int!
+  updatedAt: Int
+}
+
+interface Authored {
+  author: Person!
+  contributors: [Person!]
+}
+
+# Interface extending interface
+interface Content implements Identifiable {
+  id: ID!
+  uuid: String!
+  title: String!
+  status: Status!
+}
+
+# Recursive type
+type TreeNode {
+  id: ID!
+  label: String!
+  parent: TreeNode
+  children: [TreeNode!]!
+  metadata: Metadata
+}
+
+# Complex nested type
+type Metadata {
+  key: String!
+  value: String
+  nested: [Metadata!]
+  tags: [[String!]]
+}
+
+# Person type
+type Person implements Identifiable {
+  id: ID!
+  uuid: String!
+  name: String!
+  email: String
+  avatar: Image
+}
+
+# Types implementing multiple interfaces
+type Article implements Identifiable & Content & Timestamped & Authored {
+  id: ID!
+  uuid: String!
+  title: String!
+  status: Status!
+  createdAt: Int!
+  updatedAt: Int
+  author: Person!
+  contributors: [Person!]
+  body: String
+  excerpt: String
+  tags: [String!]
+  relatedContent: [Content!]
+  media: [MediaItem!]
+  priority: Priority
+  category: TreeNode
+}
+
+type Page implements Identifiable & Content & Timestamped {
+  id: ID!
+  uuid: String!
+  title: String!
+  status: Status!
+  createdAt: Int!
+  updatedAt: Int
+  body: String
+  sections: [Section!]
+  parent: Page
+  children: [Page!]
+}
+
+type Section {
+  id: ID!
+  heading: String
+  content: SectionContent
+  subsections: [Section!]
+}
+
+# Union types
+union MediaItem = Image | Video | Document
+union SectionContent = TextBlock | ImageGallery | VideoEmbed | CodeBlock
+
+type Image implements Identifiable {
+  id: ID!
+  uuid: String!
+  url: String!
+  alt: String
+  width: Int
+  height: Int
+  caption: String
+}
+
+type Video implements Identifiable {
+  id: ID!
+  uuid: String!
+  url: String!
+  duration: Int
+  thumbnail: Image
+  provider: String
+}
+
+type Document implements Identifiable {
+  id: ID!
+  uuid: String!
+  url: String!
+  filename: String!
+  mimeType: String!
+  size: Int
+}
+
+type TextBlock {
+  id: ID!
+  html: String!
+  plain: String
+}
+
+type ImageGallery {
+  id: ID!
+  images: [Image!]!
+  layout: String
+}
+
+type VideoEmbed {
+  id: ID!
+  video: Video!
+  autoplay: Boolean
+}
+
+type CodeBlock {
+  id: ID!
+  code: String!
+  language: String
+  highlighted: String
+}
+
+# Input types with nesting
+input ContentFilter {
+  status: [Status!]
+  priority: Priority
+  author: AuthorFilter
+  dateRange: DateRange
+  tags: TagFilter
+}
+
+input AuthorFilter {
+  ids: [ID!]
+  nameContains: String
+}
+
+input DateRange {
+  from: Int
+  to: Int
+}
+
+input TagFilter {
+  include: [String!]
+  exclude: [String!]
+  matchAll: Boolean = false
+}
+
+# Query type
+type Query {
+  content(id: ID!): Content
+  allContent(filter: ContentFilter, limit: Int = 10): [Content!]!
+  media(id: ID!): MediaItem
+  allMedia: [MediaItem!]!
+  article(id: ID!): Article
+  page(id: ID!): Page
+  person(id: ID!): Person
+  tree(rootId: ID!): TreeNode
+  search(query: String!, filter: ContentFilter): SearchResult!
+}
+
+type SearchResult {
+  total: Int!
+  items: [Content!]!
+  facets: SearchFacets
+}
+
+type SearchFacets {
+  statuses: [FacetCount!]!
+  authors: [FacetCount!]!
+  tags: [FacetCount!]!
+}
+
+type FacetCount {
+  value: String!
+  count: Int!
+}
