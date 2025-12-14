@@ -58,14 +58,6 @@ type IRNodeUnion = {
   types: IRNode[]
 }
 
-type IRNodeIntersection = {
-  kind: 'INTERSECTION'
-  description?: string | null
-  optional?: boolean
-  nullable?: boolean
-  types: IRNode[]
-}
-
 export type IRNodeFragmentSpread = {
   kind: 'FRAGMENT_SPREAD'
   description?: string | null
@@ -102,7 +94,6 @@ export type IRNode =
   | IRNodeObject
   | IRNodeArray
   | IRNodeUnion
-  | IRNodeIntersection
   | IRNodeFragmentSpread
   | IRNodeTypename
 
@@ -111,7 +102,6 @@ type KindToNode = {
   OBJECT: IRNodeObject
   ARRAY: IRNodeArray
   UNION: IRNodeUnion
-  INTERSECTION: IRNodeIntersection
   FRAGMENT_SPREAD: IRNodeFragmentSpread
   TYPENAME: IRNodeTypename
 }
@@ -130,7 +120,6 @@ export const IR = {
   OBJECT: nodeFactory('OBJECT'),
   ARRAY: nodeFactory('ARRAY'),
   UNION: nodeFactory('UNION'),
-  INTERSECTION: nodeFactory('INTERSECTION'),
   FRAGMENT_SPREAD: nodeFactory('FRAGMENT_SPREAD'),
   TYPENAME: (
     types: string[] | string,
@@ -606,14 +595,6 @@ export function postProcessIR(ir: IRNode): IRNode {
       }
     }
 
-    case 'INTERSECTION': {
-      // First recurse into each branch
-      const processedBranches = ir.types.map((t) => postProcessIR(t))
-      return {
-        ...ir,
-        types: processedBranches,
-      }
-    }
   }
 
   // @ts-expect-error Should never end up here.

@@ -1,0 +1,11 @@
+# Query a specific object type (Car) but use inline fragment on interface (Vehicle)
+# This triggers the code path where buildSelectionSet returns UNION IR
+# because Vehicle interface has multiple implementations (Car, Boat, Plane)
+query inlineFragmentUnionIr {
+  getCar {
+    name
+    ... on Vehicle {
+      maxSpeed
+    }
+  }
+}

@@ -1,0 +1,26 @@
+interface Vehicle {
+  name: String!
+  maxSpeed: Int!
+}
+
+type Car implements Vehicle {
+  name: String!
+  maxSpeed: Int!
+  numWheels: Int!
+}
+
+type Boat implements Vehicle {
+  name: String!
+  maxSpeed: Int!
+  numPropellers: Int!
+}
+
+type Plane implements Vehicle {
+  name: String!
+  maxSpeed: Int!
+  wingspan: Int!
+}
+
+type Query {
+  getCar: Car
+}

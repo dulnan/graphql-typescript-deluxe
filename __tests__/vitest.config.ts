@@ -14,13 +14,10 @@ export default defineConfig({
         'build/**/*',
         'benchmark/**/*',
         'helpers/**/*',
+        'examples/**/*',
+        'knip.ts',
       ],
     },
-    // server: {
-    //   deps: {
-    //     fallbackCJS: true,
-    //   },
-    // },
   },
 
   resolve: {

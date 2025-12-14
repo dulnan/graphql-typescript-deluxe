@@ -1,0 +1,27 @@
+interface Animal {
+  name: String!
+}
+
+type Dog implements Animal {
+  name: String!
+  breed: String
+}
+
+type Cat implements Animal {
+  name: String!
+  color: String
+}
+
+type Bird implements Animal {
+  name: String!
+  wingspan: Int
+}
+
+type Fish implements Animal {
+  name: String!
+  freshwater: Boolean
+}
+
+type Query {
+  animals: [Animal!]!
+}

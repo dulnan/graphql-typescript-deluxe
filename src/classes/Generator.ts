@@ -354,11 +354,9 @@ export class Generator {
   private purgeFromMap(
     name: string,
     map: Map<string, { filePath?: string; dependencies?: string[] }>,
-    filePath?: string,
+    filePath: string,
   ): void {
-    const fileDependencyKey = filePath
-      ? DependencyTracker.toKey('file', filePath)
-      : null
+    const fileDependencyKey = DependencyTracker.toKey('file', filePath)
 
     const entries = map.entries()
     for (const entry of entries) {
@@ -368,7 +366,6 @@ export class Generator {
         map.delete(key)
         this.logDebug(`purgeFromMap "${name}: ${filePath}"`)
       } else if (
-        fileDependencyKey &&
         item.dependencies &&
         item.dependencies.includes(fileDependencyKey)
       ) {
@@ -457,16 +454,14 @@ export class Generator {
           code: `type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };`,
         }
       })
-    } else if (type === 'maybe') {
-      return this.generateCodeOnce('type-helpers', type, () => {
-        return {
-          typeName: 'Maybe',
-          code: `type Maybe<T> = T | null;`,
-        }
-      })
     }
 
-    throw new LogicError('Invalid helper type: ' + type)
+    return this.generateCodeOnce('type-helpers', type, () => {
+      return {
+        typeName: 'Maybe',
+        code: `type Maybe<T> = T | null;`,
+      }
+    })
   }
 
   // ===========================================================================
@@ -1101,15 +1096,26 @@ export class Generator {
             this.getErrorContext(),
           )
         }
+
+        // Only process inline fragment if it applies to this object type
+        // (same type or object implements the interface/union)
+        if (
+          typeConditionName !== objectType.name &&
+          !this.schema.objectImplements(objectType.name, typeConditionName)
+        ) {
+          continue
+        }
+
         const spreadType = this.schema.getType(typeConditionName)
         const ir = this.buildSelectionSet(spreadType, sel.selectionSet)
         if (ir.kind === 'OBJECT') {
           mergeObjectFields(fields, ir.fields)
         } else if (ir.kind === 'UNION') {
+          // Find the branch matching this object type (not the type condition)
           for (const branch of ir.types) {
             if (
               branch.kind === 'OBJECT' &&
-              branch.graphQLTypeName === typeConditionName
+              branch.graphQLTypeName === objectType.name
             ) {
               mergeObjectFields(fields, branch.fields)
             }
@@ -1882,22 +1888,9 @@ export class Generator {
           !isNonNullType(innerType) &&
           this.options.output.nullableArrayElements,
       })
-    } else if (isObjectType(type)) {
-      if (!selectionSet) {
-        return IR.OBJECT({
-          graphQLTypeName: type.name,
-          fields: {},
-        })
-      }
-      return this.buildSelectionSet(type, selectionSet)
-    } else if (isAbstractType(type)) {
-      if (!selectionSet) {
-        return IR.OBJECT({
-          graphQLTypeName: type.name,
-          fields: {},
-        })
-      }
-      return this.buildSelectionSet(type, selectionSet)
+    } else if (isObjectType(type) || isAbstractType(type)) {
+      // Object and abstract types always require a selection set in valid GraphQL
+      return this.buildSelectionSet(type, selectionSet!)
     } else if (isEnumType(type)) {
       return IR.SCALAR({ tsType: this.getOrCreateEnum(type) })
     } else if (isInputObjectType(type)) {
@@ -1990,14 +1983,6 @@ export class Generator {
           return parts[0]!
         }
         return `(${parts.join(' | ')})`
-      }
-
-      case 'INTERSECTION': {
-        const parts = ir.types.map((t) => this.IRToCode(t)).sort()
-        if (parts.length === 1) {
-          return parts[0]!
-        }
-        return `(${parts.join(' & ')})`
       }
 
       case 'FRAGMENT_SPREAD': {
