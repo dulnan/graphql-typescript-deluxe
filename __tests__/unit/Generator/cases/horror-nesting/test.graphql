@@ -1,0 +1,620 @@
+# HORROR TEST - Maximum nesting complexity
+# This tests every possible combination of spreads, inline fragments, and nesting
+
+query HorrorNesting($id: ID!, $query: String!) {
+  # Level 1: Interface with multiple implementing types
+  # Using fragments + inline spreads + overlapping selections
+  content(id: $id) {
+    __typename
+    ...nodeFields
+    ...displayableFields
+    ...contentBaseFields
+
+    # Inline spread on same interface (Content) - overlaps with fragment
+    ... on Content {
+      title
+      description
+      author {
+        ...personBasic
+        ... on Person {
+          email
+        }
+      }
+    }
+
+    # Inline spreads on concrete types with nested complexity
+    ... on Article {
+      ...articleFields
+      body
+      excerpt
+
+      # Nested: featuredMedia is a union
+      featuredMedia {
+        __typename
+        ...mediaItemFields
+        ... on Image {
+          photographer {
+            ...personBasic
+            articles {
+              ...articleShallow
+            }
+          }
+        }
+        ... on Video {
+          director {
+            name
+            ...personBasic
+          }
+          thumbnail {
+            ...imageFields
+          }
+        }
+      }
+
+      # Nested: blocks is a union array with recursive NestedBlock
+      blocks {
+        __typename
+        ...blockFields
+        ... on MediaBlock {
+          media {
+            __typename
+            ... on Image {
+              ...imageFields
+              photographer {
+                name
+              }
+            }
+            ... on Video {
+              ...videoFields
+            }
+          }
+        }
+        ... on NestedBlock {
+          blocks {
+            __typename
+            ... on TextBlock {
+              html
+            }
+            ... on MediaBlock {
+              media {
+                __typename
+                ...mediaItemFields
+              }
+            }
+            ... on NestedBlock {
+              title
+              blocks {
+                __typename
+                ... on TextBlock {
+                  plain
+                }
+              }
+            }
+          }
+        }
+      }
+
+      # Nested: relatedContent is the same interface (Content) - recursive
+      relatedContent {
+        __typename
+        ...contentBaseFields
+        ... on Article {
+          excerpt
+          author {
+            name
+          }
+        }
+        ... on Page {
+          sections {
+            ...sectionShallow
+          }
+        }
+      }
+    }
+
+    ... on Page {
+      ...pageFields
+      body
+
+      # Nested: sections with recursive subsections
+      sections {
+        ...sectionDeep
+        subsections {
+          ...sectionDeep
+          subsections {
+            id
+            heading
+            content {
+              __typename
+              ... on TextBlock {
+                html
+              }
+            }
+          }
+        }
+      }
+
+      # Nested: parent/children is recursive Page
+      parent {
+        ...pageShallow
+        parent {
+          title
+          url
+        }
+      }
+
+      children {
+        ...pageShallow
+        children {
+          title
+          sections {
+            id
+          }
+        }
+      }
+
+      # Nested: navigation is Linkable interface
+      navigation {
+        __typename
+        ...linkableFields
+        ... on Article {
+          excerpt
+        }
+        ... on Page {
+          body
+        }
+        ... on Product {
+          price
+        }
+        ... on Category {
+          name
+        }
+      }
+    }
+  }
+
+  # Level 1: Union type with exhaustive handling
+  media(id: $id) {
+    __typename
+    ...mediaItemFields
+
+    ... on Image {
+      ...imageFields
+      photographer {
+        ...personFull
+      }
+    }
+
+    ... on Video {
+      ...videoFields
+      thumbnail {
+        ...imageFields
+        photographer {
+          name
+        }
+      }
+      director {
+        ...personFull
+        articles {
+          title
+          featuredMedia {
+            __typename
+            ... on Image {
+              url
+            }
+          }
+        }
+      }
+    }
+
+    ... on Document {
+      ...documentFields
+      uploadedBy {
+        ...personBasic
+      }
+    }
+
+    ... on AudioClip {
+      duration
+      artist {
+        ...personBasic
+        articles {
+          ...articleShallow
+        }
+      }
+    }
+  }
+
+  # Search returns union array with complex nested selections
+  search(query: $query) {
+    __typename
+
+    # Inline on interface that some union members implement
+    ... on Node {
+      id
+      uuid
+    }
+
+    ... on Displayable {
+      title
+      description
+    }
+
+    ... on Linkable {
+      url
+      slug
+    }
+
+    # Concrete type handling with deep nesting
+    ... on Article {
+      ...articleFields
+      relatedContent {
+        __typename
+        ... on Article {
+          ...articleShallow
+          blocks {
+            __typename
+            ... on NestedBlock {
+              blocks {
+                __typename
+              }
+            }
+          }
+        }
+      }
+    }
+
+    ... on Page {
+      ...pageFields
+      sections {
+        ...sectionDeep
+      }
+    }
+
+    ... on Product {
+      price
+      media {
+        __typename
+        ...mediaItemFields
+      }
+      variants {
+        ...variantFields
+        image {
+          ...imageFields
+        }
+      }
+      relatedProducts {
+        title
+        price
+        media {
+          __typename
+          ... on Image {
+            url
+            alt
+          }
+        }
+      }
+      category {
+        ...categoryDeep
+      }
+    }
+
+    ... on Person {
+      ...personFull
+      articles {
+        ...articleShallow
+        category {
+          name
+        }
+      }
+      managedProducts {
+        title
+        price
+      }
+    }
+  }
+
+  # Another content query with different fragment combination
+  article(id: $id) {
+    # Same type, different fragments - should merge
+    ...articleFields
+    ...articleShallow
+    ...contentBaseFields
+
+    # Overlapping inline selection
+    title
+    body
+
+    # Different nested selection than above
+    author {
+      ...personFull
+      avatar {
+        ...imageFields
+      }
+    }
+
+    # Category with recursive parent
+    category {
+      ...categoryDeep
+    }
+  }
+
+  # Linkable interface - implements by multiple types
+  linkable(slug: "test") {
+    __typename
+    ...linkableFields
+
+    ... on Article {
+      ...articleFields
+      author {
+        name
+      }
+    }
+
+    ... on Page {
+      body
+      parent {
+        title
+      }
+    }
+
+    ... on Product {
+      price
+      variants {
+        name
+        sku
+      }
+    }
+
+    ... on Category {
+      name
+      parent {
+        name
+      }
+      children {
+        name
+      }
+    }
+  }
+
+  # All content with different selection per type
+  allContent {
+    __typename
+    ...contentBaseFields
+
+    ... on Article {
+      excerpt
+      blocks {
+        __typename
+        ... on TextBlock {
+          html
+        }
+        ... on MediaBlock {
+          caption
+        }
+      }
+    }
+
+    ... on Page {
+      body
+      sections {
+        id
+        heading
+      }
+    }
+  }
+}
+
+# ============================================================================
+# FRAGMENTS - Various levels of complexity
+# ============================================================================
+
+# Base interface fragments
+fragment nodeFields on Node {
+  id
+  uuid
+}
+
+fragment displayableFields on Displayable {
+  title
+  description
+}
+
+fragment linkableFields on Linkable {
+  url
+  slug
+}
+
+fragment contentBaseFields on Content {
+  id
+  uuid
+  title
+  tags
+}
+
+# Person fragments
+fragment personBasic on Person {
+  id
+  name
+}
+
+fragment personFull on Person {
+  ...personBasic
+  email
+  role
+  avatar {
+    url
+    alt
+  }
+}
+
+# Media fragments
+fragment imageFields on Image {
+  id
+  url
+  alt
+  width
+  height
+  caption
+}
+
+fragment videoFields on Video {
+  id
+  url
+  duration
+  transcript
+}
+
+fragment documentFields on Document {
+  id
+  url
+  filename
+  mimeType
+  size
+}
+
+fragment mediaItemFields on MediaItem {
+  ... on Image {
+    id
+    url
+    alt
+  }
+  ... on Video {
+    id
+    url
+    duration
+  }
+  ... on Document {
+    id
+    url
+    filename
+  }
+  ... on AudioClip {
+    id
+    url
+  }
+}
+
+# Block fragments
+fragment blockFields on BlockContent {
+  ... on TextBlock {
+    id
+    html
+  }
+  ... on MediaBlock {
+    id
+    caption
+  }
+  ... on EmbedBlock {
+    id
+    embedUrl
+  }
+  ... on NestedBlock {
+    id
+    title
+  }
+}
+
+# Article fragments
+fragment articleFields on Article {
+  body
+  excerpt
+  publishedAt
+  author {
+    ...personBasic
+  }
+}
+
+fragment articleShallow on Article {
+  id
+  title
+  slug
+  excerpt
+}
+
+# Page fragments
+fragment pageFields on Page {
+  body
+  author {
+    ...personBasic
+  }
+}
+
+fragment pageShallow on Page {
+  id
+  title
+  url
+  slug
+}
+
+# Section fragments
+fragment sectionShallow on Section {
+  id
+  heading
+}
+
+fragment sectionDeep on Section {
+  id
+  heading
+  content {
+    __typename
+    ...blockFields
+    ... on MediaBlock {
+      media {
+        __typename
+        ... on Image {
+          ...imageFields
+        }
+        ... on Video {
+          thumbnail {
+            url
+          }
+        }
+      }
+    }
+    ... on NestedBlock {
+      blocks {
+        __typename
+        ... on TextBlock {
+          html
+          plain
+        }
+      }
+    }
+  }
+  relatedMedia {
+    __typename
+    ...mediaItemFields
+  }
+}
+
+# Product fragments
+fragment variantFields on ProductVariant {
+  id
+  name
+  sku
+  price
+}
+
+# Category fragments
+fragment categoryDeep on Category {
+  id
+  name
+  slug
+  parent {
+    id
+    name
+    parent {
+      id
+      name
+    }
+  }
+  children {
+    id
+    name
+    children {
+      id
+      name
+    }
+  }
+}

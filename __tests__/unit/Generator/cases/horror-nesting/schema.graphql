@@ -1,0 +1,221 @@
+# Horror test schema - maximum complexity
+
+# Base interfaces
+interface Node {
+  id: ID!
+  uuid: String!
+}
+
+interface Displayable {
+  title: String!
+  description: String
+}
+
+interface Linkable {
+  url: String!
+  slug: String!
+}
+
+# Interface extending interfaces
+interface Content implements Node & Displayable {
+  id: ID!
+  uuid: String!
+  title: String!
+  description: String
+  author: Person
+  tags: [String!]
+}
+
+# Union types
+union MediaItem = Image | Video | Document | AudioClip
+union BlockContent = TextBlock | MediaBlock | EmbedBlock | NestedBlock
+union SearchResult = Article | Page | Product | Person
+
+# Person type
+type Person implements Node {
+  id: ID!
+  uuid: String!
+  name: String!
+  email: String
+  avatar: Image
+  role: String
+  articles: [Article!]
+  managedProducts: [Product!]
+}
+
+# Media types
+type Image implements Node {
+  id: ID!
+  uuid: String!
+  url: String!
+  alt: String
+  width: Int
+  height: Int
+  caption: String
+  photographer: Person
+}
+
+type Video implements Node {
+  id: ID!
+  uuid: String!
+  url: String!
+  duration: Int
+  thumbnail: Image
+  transcript: String
+  director: Person
+}
+
+type Document implements Node {
+  id: ID!
+  uuid: String!
+  url: String!
+  filename: String!
+  mimeType: String!
+  size: Int
+  uploadedBy: Person
+}
+
+type AudioClip implements Node {
+  id: ID!
+  uuid: String!
+  url: String!
+  duration: Int
+  artist: Person
+}
+
+# Block types for nested content
+type TextBlock {
+  id: ID!
+  html: String!
+  plain: String
+  links: [Linkable!]
+}
+
+type MediaBlock {
+  id: ID!
+  media: MediaItem!
+  caption: String
+  layout: String
+}
+
+type EmbedBlock {
+  id: ID!
+  embedUrl: String!
+  provider: String
+  html: String
+}
+
+type NestedBlock {
+  id: ID!
+  title: String
+  blocks: [BlockContent!]!
+  metadata: Metadata
+}
+
+# Content types
+type Article implements Node & Displayable & Content & Linkable {
+  id: ID!
+  uuid: String!
+  title: String!
+  description: String
+  url: String!
+  slug: String!
+  author: Person
+  tags: [String!]
+  body: String
+  excerpt: String
+  featuredMedia: MediaItem
+  blocks: [BlockContent!]
+  relatedContent: [Content!]
+  category: Category
+  publishedAt: String
+}
+
+type Page implements Node & Displayable & Content & Linkable {
+  id: ID!
+  uuid: String!
+  title: String!
+  description: String
+  url: String!
+  slug: String!
+  author: Person
+  tags: [String!]
+  body: String
+  sections: [Section!]
+  parent: Page
+  children: [Page!]
+  navigation: [Linkable!]
+}
+
+type Product implements Node & Displayable & Linkable {
+  id: ID!
+  uuid: String!
+  title: String!
+  description: String
+  url: String!
+  slug: String!
+  price: Float!
+  media: [MediaItem!]
+  variants: [ProductVariant!]
+  relatedProducts: [Product!]
+  category: Category
+}
+
+type ProductVariant implements Node {
+  id: ID!
+  uuid: String!
+  name: String!
+  sku: String!
+  price: Float!
+  image: Image
+}
+
+# Supporting types
+type Section {
+  id: ID!
+  heading: String
+  content: BlockContent
+  subsections: [Section!]
+  relatedMedia: [MediaItem!]
+}
+
+type Category implements Node & Linkable {
+  id: ID!
+  uuid: String!
+  url: String!
+  slug: String!
+  name: String!
+  parent: Category
+  children: [Category!]
+  items: [Content!]
+}
+
+type Metadata {
+  key: String!
+  value: String
+  nested: [Metadata!]
+  tags: [[String!]]
+}
+
+# Query type
+type Query {
+  # Returns interface
+  node(id: ID!): Node
+  content(id: ID!): Content
+  linkable(slug: String!): Linkable
+
+  # Returns union
+  media(id: ID!): MediaItem
+  search(query: String!): [SearchResult!]!
+
+  # Returns concrete types
+  article(id: ID!): Article
+  page(id: ID!): Page
+  product(id: ID!): Product
+  person(id: ID!): Person
+
+  # Returns lists
+  allContent: [Content!]!
+  allMedia: [MediaItem!]!
+  featuredItems: [SearchResult!]!
+}
