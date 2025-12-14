@@ -1,0 +1,45 @@
+# Entity interface (abstract type with multiple implementing types)
+interface Entity {
+  id: ID!
+  entityType: String!
+}
+
+# Concrete types implementing Entity
+type NodePage implements Entity {
+  id: ID!
+  entityType: String!
+  title: String
+  body: String
+  deprecatedTitle: String
+}
+
+type NodeArticle implements Entity {
+  id: ID!
+  entityType: String!
+  body: String
+  tags: [String!]
+}
+
+type MediaImage implements Entity {
+  id: ID!
+  entityType: String!
+  url: String!
+}
+
+# Interface with only ONE implementing type (edge case for totalPossibleTypes === 1)
+interface SingleImplementer {
+  id: ID!
+}
+
+type SimpleImpl implements SingleImplementer {
+  id: ID!
+  value: String!
+}
+
+type Query {
+  getRandomEntity: Entity
+  getSingleImplementer: SingleImplementer
+  # Returns concrete type directly (not interface)
+  getNodePage: NodePage
+  getNodeArticle: NodeArticle
+}

@@ -1,0 +1,173 @@
+# Tests for shortcut fall-through paths in buildAbstractSelectionSet
+# These scenarios bypass shortcuts and go to full gathering
+
+# Test 1: Two fragments on SAME concrete type (no abstract fragment, no base fields)
+# This bypasses Shortcut 2 because fragments.length > 1 for NodePage
+query twoFragmentsSameType {
+  getRandomEntity {
+    ...nodePageBasic
+    ...nodePageDetails
+  }
+}
+
+# Test 2: Two abstract fragments (no concrete fragments)
+# This bypasses Shortcut 1 because fragmentsForAbstract.length > 1
+query twoAbstractFragments {
+  getRandomEntity {
+    ...entityBasic
+    ...entityDetails
+  }
+}
+
+# Test 3: Multiple concrete types, one type has multiple fragments
+# This bypasses Shortcut 3 because !allTargetDifferent
+query mixedFragmentCounts {
+  getRandomEntity {
+    ...nodePageBasic
+    ...nodePageDetails
+    ...nodeArticleInfo
+  }
+}
+
+# Test 4: Single concrete fragment on type where interface has only ONE implementing type
+# This tests the edge case where totalPossibleTypes === 1
+query singleTypeInterface {
+  getSingleImplementer {
+    ...simpleImpl
+  }
+}
+
+# Fragments for NodePage (concrete type)
+fragment nodePageBasic on NodePage {
+  id
+  title
+}
+
+fragment nodePageDetails on NodePage {
+  body
+  deprecatedTitle
+}
+
+# Fragments for NodeArticle (concrete type)
+fragment nodeArticleInfo on NodeArticle {
+  body
+  tags
+}
+
+# Fragments for Entity (abstract interface)
+fragment entityBasic on Entity {
+  id
+}
+
+fragment entityDetails on Entity {
+  entityType
+}
+
+# Fragment for SingleImplementer (interface with only one implementing type)
+fragment simpleImpl on SimpleImpl {
+  value
+}
+
+# ==============================================================================
+# INLINE SPREAD TEST CASES
+# ==============================================================================
+
+# Test 5: Inline spread on concrete type field (field returns concrete type directly)
+query inlineSpreadOnConcreteField {
+  getNodePage {
+    ... on NodePage {
+      title
+      body
+    }
+  }
+}
+
+# Test 6: Inline spread + fragment spread on same concrete type (field returns concrete)
+query inlineAndFragmentOnConcreteField {
+  getNodePage {
+    ...nodePageBasic
+    ... on NodePage {
+      body
+    }
+  }
+}
+
+# Test 7: Inline spread on concrete type within interface field
+query inlineSpreadConcreteOnInterface {
+  getRandomEntity {
+    ... on NodePage {
+      title
+      body
+    }
+  }
+}
+
+# Test 8: Fragment spread + inline spread on SAME concrete type within interface
+query fragmentAndInlineOnSameConcreteType {
+  getRandomEntity {
+    ...nodePageBasic
+    ... on NodePage {
+      body
+    }
+  }
+}
+
+# Test 9: Interface fragment + inline interface spread
+query interfaceFragmentAndInlineSpread {
+  getRandomEntity {
+    ...entityBasic
+    ... on Entity {
+      entityType
+    }
+  }
+}
+
+# Test 10: Interface fragment + inline interface spread + concrete inline spread
+query mixedInterfaceAndConcreteInline {
+  getRandomEntity {
+    ...entityBasic
+    ... on Entity {
+      entityType
+    }
+    ... on NodePage {
+      title
+    }
+    ... on NodeArticle {
+      tags
+    }
+  }
+}
+
+# Test 11: Multiple inline spreads on different concrete types (no fragments)
+query multipleConcreteInlineSpreads {
+  getRandomEntity {
+    ... on NodePage {
+      title
+      body
+    }
+    ... on NodeArticle {
+      body
+      tags
+    }
+  }
+}
+
+# Test 12: Fragment on interface + fragment on concrete + inline on concrete
+query allCombined {
+  getRandomEntity {
+    ...entityBasic
+    ...nodePageDetails
+    ... on NodeArticle {
+      tags
+    }
+  }
+}
+
+# Test 13: Single inline spread on concrete, interface has one implementer
+query inlineOnSingleImplementer {
+  getSingleImplementer {
+    ... on SimpleImpl {
+      value
+    }
+  }
+}
