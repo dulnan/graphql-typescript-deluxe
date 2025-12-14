@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { makeComment } from '../../../src/helpers/string.js'
+import { makeComment, makeTypeDoc } from '../../../src/helpers/string.js'
+import { GraphQLObjectType, GraphQLString, parse } from 'graphql'
 
 describe('makeComment', () => {
   it('should wrap normal text in comment delimiters', () => {
@@ -74,5 +75,110 @@ describe('makeComment', () => {
     expect(result).toMatchInlineSnapshot(
       `"/** Multiple *\\/*\\/*\\/*\\/ consecutive */"`,
     )
+  })
+})
+
+describe('makeTypeDoc', () => {
+  const allOptionsEnabled = {
+    typeDescription: true,
+    fieldDescription: true,
+    link: true,
+    source: true,
+  }
+
+  const allOptionsDisabled = {
+    typeDescription: false,
+    fieldDescription: false,
+    link: false,
+    source: false,
+  }
+
+  it('should return empty string when no content', () => {
+    const result = makeTypeDoc(
+      { filePath: undefined, type: undefined, definition: undefined },
+      allOptionsDisabled,
+    )
+    expect(result).toBe('')
+  })
+
+  it('should include type description when enabled', () => {
+    const type = new GraphQLObjectType({
+      name: 'TestType',
+      description: 'A test type description',
+      fields: { id: { type: GraphQLString } },
+    })
+
+    const result = makeTypeDoc(
+      { type, filePath: undefined, definition: undefined },
+      allOptionsEnabled,
+    )
+    expect(result).toContain('A test type description')
+  })
+
+  it('should include file path link when enabled', () => {
+    const result = makeTypeDoc(
+      {
+        filePath: '/path/to/file.graphql',
+        type: undefined,
+        definition: undefined,
+      },
+      allOptionsEnabled,
+    )
+    expect(result).toContain('@see {@link file:///path/to/file.graphql}')
+  })
+
+  it('should add empty line between description and link', () => {
+    const type = new GraphQLObjectType({
+      name: 'TestType',
+      description: 'A description',
+      fields: { id: { type: GraphQLString } },
+    })
+
+    const result = makeTypeDoc(
+      { type, filePath: '/path/to/file.graphql', definition: undefined },
+      allOptionsEnabled,
+    )
+    // Should have description, empty line, then link
+    expect(result).toContain('A description')
+    expect(result).toContain('@see {@link file:///path/to/file.graphql}')
+    // Verify there's a blank line (empty * line) between them
+    expect(result).toMatch(/A description\n \* \n \* @see/)
+  })
+
+  it('should not include link when filePath is NO_FILE_PATH', () => {
+    const result = makeTypeDoc(
+      { filePath: '', type: undefined, definition: undefined },
+      allOptionsEnabled,
+    )
+    expect(result).not.toContain('@see')
+  })
+
+  it('should include source when definition has loc', () => {
+    const doc = parse('type Query { field: String }')
+    const definition = doc.definitions[0] as any
+
+    const result = makeTypeDoc(
+      { definition, filePath: undefined, type: undefined },
+      allOptionsEnabled,
+    )
+    expect(result).toContain('@example')
+    expect(result).toContain('```graphql')
+    expect(result).toContain('type Query')
+  })
+
+  it('should respect disabled options', () => {
+    const type = new GraphQLObjectType({
+      name: 'TestType',
+      description: 'A description',
+      fields: { id: { type: GraphQLString } },
+    })
+    const doc = parse('type Query { field: String }')
+    const definition = doc.definitions[0] as any
+
+    const result = makeTypeDoc(
+      { type, filePath: '/path/to/file.graphql', definition },
+      allOptionsDisabled,
+    )
+    expect(result).toBe('')
   })
 })

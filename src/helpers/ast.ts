@@ -60,9 +60,7 @@ export function mergeSameFieldSelections(
   // 2) For each group of Fields with the same alias, unify their sub‐selection
   const mergedFieldNodes: FieldNode[] = []
   for (const fieldNodes of fieldMap.values()) {
-    if (!fieldNodes.length) {
-      continue
-    } else if (fieldNodes.length === 1) {
+    if (fieldNodes.length === 1) {
       // nothing to merge
       mergedFieldNodes.push(fieldNodes[0]!)
       continue

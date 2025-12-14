@@ -8,9 +8,7 @@ function escapeStringForComment(input: string): string {
 }
 
 function toTSComment(lines: string[]): string {
-  if (lines.length === 0) {
-    return '/**\n */'
-  } else if (lines.length === 1) {
+  if (lines.length === 1) {
     return `/** ${escapeStringForComment(lines[0]!)} */`
   }
 

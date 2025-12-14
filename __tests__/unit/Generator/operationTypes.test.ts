@@ -85,7 +85,7 @@ describe('Generator Operation Types', () => {
       importFrom: './types',
     })
 
-    expect(operationTypes.getSource()).toContain("import type {")
+    expect(operationTypes.getSource()).toContain('import type {')
     expect(operationTypes.getSource()).toContain("} from './types'")
     expect(operationTypes.getSource()).toContain('GetHomepageQuery')
     expect(operationTypes.getSource()).toContain('CreateUserMutation')

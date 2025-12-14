@@ -12,7 +12,6 @@ import {
   type IRNodeObject,
   type IRNodeScalar,
   type IRNodeTypename,
-  type IRNodeFragmentSpread,
 } from '../../../src/helpers/ir'
 
 describe('IR factory functions', () => {
@@ -34,7 +33,7 @@ describe('IR factory functions', () => {
     })
     expect(obj.kind).toBe('OBJECT')
     expect(obj.graphQLTypeName).toBe('User')
-    expect(obj.fields.id.kind).toBe('SCALAR')
+    expect(obj.fields.id?.kind).toBe('SCALAR')
   })
 
   it('creates ARRAY nodes', () => {
@@ -48,10 +47,7 @@ describe('IR factory functions', () => {
 
   it('creates UNION nodes', () => {
     const union = IR.UNION({
-      types: [
-        IR.SCALAR({ tsType: 'string' }),
-        IR.SCALAR({ tsType: 'number' }),
-      ],
+      types: [IR.SCALAR({ tsType: 'string' }), IR.SCALAR({ tsType: 'number' })],
     })
     expect(union.kind).toBe('UNION')
     expect(union.types.length).toBe(2)
@@ -115,7 +111,7 @@ describe('mergeFragmentSpread', () => {
     mergeFragmentSpread(fields, spread1)
     mergeFragmentSpread(fields, spread2)
     // Same fragment should just return the existing one
-    expect(fields['__fragment_UserFragmentType'].kind).toBe('FRAGMENT_SPREAD')
+    expect(fields['__fragment_UserFragmentType']?.kind).toBe('FRAGMENT_SPREAD')
   })
 
   it('creates union when merging different fragment spreads', () => {
@@ -206,7 +202,7 @@ describe('mergeIR', () => {
       })
       const result = mergeIR(a, b) as IRNodeObject
       expect(result.kind).toBe('OBJECT')
-      expect(result.fields.id.kind).toBe('SCALAR')
+      expect(result.fields.id?.kind).toBe('SCALAR')
     })
 
     it('merges object nodes with different fields', () => {
@@ -509,8 +505,16 @@ describe('isIdenticalIR', () => {
     })
 
     it('returns false for different nullable in objects', () => {
-      const a = IR.OBJECT({ graphQLTypeName: 'User', fields: {}, nullable: true })
-      const b = IR.OBJECT({ graphQLTypeName: 'User', fields: {}, nullable: false })
+      const a = IR.OBJECT({
+        graphQLTypeName: 'User',
+        fields: {},
+        nullable: true,
+      })
+      const b = IR.OBJECT({
+        graphQLTypeName: 'User',
+        fields: {},
+        nullable: false,
+      })
       expect(isIdenticalIR(a, b)).toBe(false)
     })
 
@@ -606,10 +610,16 @@ describe('isIdenticalIR', () => {
   describe('union comparison', () => {
     it('returns true for identical unions', () => {
       const a = IR.UNION({
-        types: [IR.SCALAR({ tsType: 'string' }), IR.SCALAR({ tsType: 'number' })],
+        types: [
+          IR.SCALAR({ tsType: 'string' }),
+          IR.SCALAR({ tsType: 'number' }),
+        ],
       })
       const b = IR.UNION({
-        types: [IR.SCALAR({ tsType: 'string' }), IR.SCALAR({ tsType: 'number' })],
+        types: [
+          IR.SCALAR({ tsType: 'string' }),
+          IR.SCALAR({ tsType: 'number' }),
+        ],
       })
       expect(isIdenticalIR(a, b)).toBe(true)
     })
@@ -619,7 +629,10 @@ describe('isIdenticalIR', () => {
         types: [IR.SCALAR({ tsType: 'string' })],
       })
       const b = IR.UNION({
-        types: [IR.SCALAR({ tsType: 'string' }), IR.SCALAR({ tsType: 'number' })],
+        types: [
+          IR.SCALAR({ tsType: 'string' }),
+          IR.SCALAR({ tsType: 'number' }),
+        ],
       })
       expect(isIdenticalIR(a, b)).toBe(false)
     })
@@ -690,7 +703,11 @@ describe('isIdenticalIR', () => {
 
     it('returns false when nullable differs at top level', () => {
       const a = IR.SCALAR({ tsType: 'string', nullable: true })
-      const b = IR.OBJECT({ graphQLTypeName: 'User', fields: {}, nullable: false })
+      const b = IR.OBJECT({
+        graphQLTypeName: 'User',
+        fields: {},
+        nullable: false,
+      })
       expect(isIdenticalIR(a, b)).toBe(false)
     })
   })

@@ -54,7 +54,9 @@ describe('MinifyVariableName', () => {
     it('should return the original variable name', () => {
       const minifier = new MinifyVariableName(false)
 
-      expect(minifier.getVarName('myLongVariableName')).toBe('myLongVariableName')
+      expect(minifier.getVarName('myLongVariableName')).toBe(
+        'myLongVariableName',
+      )
       expect(minifier.getVarName('anotherVariable')).toBe('anotherVariable')
     })
 

@@ -16,10 +16,7 @@ describe('Generator', () => {
       })
 
       generator.add([
-        toDocument(
-          'fragment user on User { email }',
-          'fragment.user.graphql',
-        ),
+        toDocument('fragment user on User { email }', 'fragment.user.graphql'),
         toDocument(
           `query getUser { getRandomEntity { ...user } }`,
           'query.user.graphql',

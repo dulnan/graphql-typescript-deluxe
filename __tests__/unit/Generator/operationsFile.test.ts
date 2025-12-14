@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import schemaContent from './schema.graphql?raw'
 import { Generator } from '../../../src/classes/Generator'
+import { GeneratorOutputCode } from '../../../src/classes/GeneratorOutputCode'
+import { generateOperationsFile } from '../../../src/helpers/output/generateOperationsFile'
 import { loadSchemaSync } from '@graphql-tools/load'
 import { toDocument } from '../../helpers'
 
@@ -167,5 +169,51 @@ describe('Generator Operations File', () => {
 
     // Long lines should be split when not minifying
     expect(operationsFile.getSource()).toBeDefined()
+  })
+
+  describe('error handling', () => {
+    it('throws NodeLocMissingError when fragment has no source', () => {
+      const fragmentCode = new GeneratorOutputCode({
+        id: 'fragment-1',
+        type: 'fragment',
+        name: 'TestFragment',
+        graphqlName: 'testFragment',
+        code: { ts: '', 'd.ts': '', js: '' },
+        source: null, // Missing source
+      })
+
+      expect(() => generateOperationsFile([fragmentCode])).toThrow(
+        'testFragment',
+      )
+    })
+
+    it('throws LogicError when fragment has no graphqlName', () => {
+      const fragmentCode = new GeneratorOutputCode({
+        id: 'fragment-1',
+        type: 'fragment',
+        name: 'TestFragment',
+        graphqlName: null, // Missing graphqlName
+        code: { ts: '', 'd.ts': '', js: '' },
+        source: 'fragment test on User { id }',
+      })
+
+      expect(() => generateOperationsFile([fragmentCode])).toThrow(
+        'Missing graphqlName for fragment',
+      )
+    })
+
+    it('throws NodeLocMissingError when operation has no source', () => {
+      const operationCode = new GeneratorOutputCode({
+        id: 'operation-1',
+        type: 'operation',
+        name: 'TestQuery',
+        graphqlName: 'test',
+        identifier: 'query',
+        code: { ts: '', 'd.ts': '', js: '' },
+        source: null, // Missing source
+      })
+
+      expect(() => generateOperationsFile([operationCode])).toThrow('test')
+    })
   })
 })

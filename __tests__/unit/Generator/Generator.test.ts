@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { parse, buildSchema } from 'graphql'
 import schemaContent from './schema.graphql?raw'
 import { Generator } from '../../../src/classes/Generator'
@@ -159,7 +159,10 @@ describe('Generator', () => {
 
       expect(() =>
         generator.update(
-          toDocument('query test { getHomepage { title } }', 'nonexistent.graphql'),
+          toDocument(
+            'query test { getHomepage { title } }',
+            'nonexistent.graphql',
+          ),
         ),
       ).toThrow(LogicError)
     })
@@ -283,7 +286,10 @@ describe('Generator', () => {
         output: { typeComment: false },
       })
       generator.add(
-        toDocument('query getPage { getHomepage { title, body } }', 'query.graphql'),
+        toDocument(
+          'query getPage { getHomepage { title, body } }',
+          'query.graphql',
+        ),
       )
 
       const result = generator.build()
@@ -338,7 +344,10 @@ describe('Generator', () => {
         output: { typeComment: false },
       })
       generator.add([
-        toDocument('fragment pageFields on NodePage { title, body }', 'fragment.graphql'),
+        toDocument(
+          'fragment pageFields on NodePage { title, body }',
+          'fragment.graphql',
+        ),
         toDocument(
           'query getPage { getHomepage { ...pageFields } }',
           'query.graphql',
@@ -501,16 +510,16 @@ describe('Generator', () => {
           'fragment page on NodePage { title, body }',
           'fragment.graphql',
         ),
-        toDocument(
-          'query test { getHomepage { ...page } }',
-          'query.graphql',
-        ),
+        toDocument('query test { getHomepage { ...page } }', 'query.graphql'),
       ]
 
       generatorWithCache.add(docs)
       generatorWithoutCache.add(docs)
 
-      const resultWithCache = generatorWithCache.build().getOperations('ts').getSource()
+      const resultWithCache = generatorWithCache
+        .build()
+        .getOperations('ts')
+        .getSource()
       const resultWithoutCache = generatorWithoutCache
         .build()
         .getOperations('ts')
@@ -529,7 +538,10 @@ describe('Generator', () => {
         output: { typeComment: false },
       })
       generator.add(
-        toDocument('query test { getHomepage { title, body } }', 'test.graphql'),
+        toDocument(
+          'query test { getHomepage { title, body } }',
+          'test.graphql',
+        ),
       )
 
       const source = generator.build().getOperations('ts').getSource()
@@ -546,7 +558,10 @@ describe('Generator', () => {
         },
       })
       generator.add(
-        toDocument('query test { getHomepage { title, body } }', 'test.graphql'),
+        toDocument(
+          'query test { getHomepage { title, body } }',
+          'test.graphql',
+        ),
       )
 
       const source = generator.build().getOperations('ts').getSource()
@@ -563,7 +578,10 @@ describe('Generator', () => {
         },
       })
       generator.add(
-        toDocument('query test { getHomepage { title, body } }', 'test.graphql'),
+        toDocument(
+          'query test { getHomepage { title, body } }',
+          'test.graphql',
+        ),
       )
 
       const source = generator.build().getOperations('ts').getSource()
@@ -700,7 +718,9 @@ describe('Generator', () => {
       )
 
       expect(articleFragment).toBeDefined()
-      expect(articleFragment!.getGraphQLFragmentDependencies()).toContain('author')
+      expect(articleFragment!.getGraphQLFragmentDependencies()).toContain(
+        'author',
+      )
     })
 
     it('should work without dependency tracking', () => {
@@ -856,6 +876,242 @@ describe('Generator', () => {
       const source = result.getOperations('ts').getSource()
 
       expect(source).toContain('deprecatedTitle')
+    })
+  })
+
+  // ===========================================================================
+  // Dependency Tracking Disabled
+  // ===========================================================================
+  describe('with dependencyTracking disabled', () => {
+    it('should generate types without dependency tracking', () => {
+      const generator = new Generator(schema, {
+        dependencyTracking: false,
+        output: { typeComment: false },
+      })
+
+      generator.add(
+        toDocument(
+          `query getHomepageNoTracking {
+            getHomepage {
+              id
+              title
+              body
+            }
+          }`,
+          'query.graphql',
+        ),
+      )
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      expect(source).toContain('GetHomepageNoTrackingQuery')
+      expect(source).toContain('id')
+      expect(source).toContain('title')
+      expect(source).toContain('body')
+    })
+
+    it('should handle fragments without dependency tracking', () => {
+      const generator = new Generator(schema, {
+        dependencyTracking: false,
+        output: { typeComment: false },
+      })
+
+      generator.add(
+        toDocument(
+          `fragment pageFields on NodePage {
+            title
+            body
+          }
+
+          query getPage {
+            getHomepage {
+              ...pageFields
+            }
+          }`,
+          'page.graphql',
+        ),
+      )
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      expect(source).toContain('PageFieldsFragment')
+      expect(source).toContain('GetPageQuery')
+    })
+
+    it('should handle multiple files without dependency tracking', () => {
+      const generator = new Generator(schema, {
+        dependencyTracking: false,
+        output: { typeComment: false },
+      })
+
+      generator.add(
+        toDocument(
+          `fragment sharedPageFields on NodePage {
+            id
+            title
+          }`,
+          'fragments.graphql',
+        ),
+      )
+
+      generator.add(
+        toDocument(
+          `query listPages {
+            getHomepage {
+              ...sharedPageFields
+              body
+            }
+          }`,
+          'queries.graphql',
+        ),
+      )
+
+      const result = generator.build()
+      expect(result.getOperations('ts').getSource()).toContain('ListPagesQuery')
+      expect(result.getFragments().length).toBeGreaterThan(0)
+    })
+
+    it('should handle caching without dependency tracking', () => {
+      const generator = new Generator(schema, {
+        dependencyTracking: false,
+        useCache: true,
+        output: { typeComment: false },
+      })
+
+      generator.add(
+        toDocument(
+          `query first {
+            getHomepage { title }
+          }`,
+          'first.graphql',
+        ),
+      )
+
+      generator.add(
+        toDocument(
+          `query second {
+            getHomepage { title }
+          }`,
+          'second.graphql',
+        ),
+      )
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      expect(source).toContain('FirstQuery')
+      expect(source).toContain('SecondQuery')
+    })
+
+    it('should handle enums and input types without dependency tracking', () => {
+      const generator = new Generator(schema, {
+        dependencyTracking: false,
+        output: { typeComment: false },
+      })
+
+      generator.add(
+        toDocument(
+          `mutation submitContactForm($input: SubmitContactForm!) {
+            submitForm(input: $input)
+          }`,
+          'mutation.graphql',
+        ),
+      )
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      expect(source).toContain('SubmitContactFormMutation')
+      expect(source).toContain('SubmitContactForm')
+    })
+
+    it('should handle unions and interfaces without dependency tracking', () => {
+      const generator = new Generator(schema, {
+        dependencyTracking: false,
+        output: { typeComment: false },
+      })
+
+      generator.add(
+        toDocument(
+          `query searchContent {
+            search(text: "test") {
+              ... on MediaVideo { videoUrl }
+              ... on NodeArticle { title }
+            }
+            getRandomEntity {
+              ... on Node { title }
+              ... on Media { provider }
+            }
+          }`,
+          'search.graphql',
+        ),
+      )
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      expect(source).toContain('SearchContentQuery')
+      expect(source).toContain('videoUrl')
+      expect(source).toContain('title')
+    })
+
+    it('should handle generateOnce without dependency tracking', () => {
+      const generator = new Generator(schema, {
+        dependencyTracking: false,
+        output: { typeComment: false },
+      })
+
+      generator.add(
+        toDocument(`query q1 { getHomepage { title } }`, 'q1.graphql'),
+      )
+
+      const result1 = generator.build()
+
+      generator.add(
+        toDocument(`query q2 { getHomepage { title } }`, 'q2.graphql'),
+      )
+
+      const result2 = generator.build()
+
+      // Both should work without dependency tracking
+      expect(result1.getOperations('ts').getSource()).toContain('Q1Query')
+      expect(result2.getOperations('ts').getSource()).toContain('Q2Query')
+    })
+
+    it('should handle nested fragments without dependency tracking', () => {
+      const generator = new Generator(schema, {
+        dependencyTracking: false,
+        output: { typeComment: false },
+      })
+
+      generator.add(
+        toDocument(
+          `fragment innerPageFields on NodePage {
+            id
+          }
+
+          fragment outerPageFields on NodePage {
+            ...innerPageFields
+            title
+          }
+
+          query getPageNested {
+            getHomepage {
+              ...outerPageFields
+            }
+          }`,
+          'nested.graphql',
+        ),
+      )
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      expect(source).toContain('InnerPageFieldsFragment')
+      expect(source).toContain('OuterPageFieldsFragment')
+      expect(source).toContain('GetPageNestedQuery')
     })
   })
 })

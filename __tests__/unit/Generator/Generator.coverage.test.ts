@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from 'vitest'
-import { parse, buildSchema } from 'graphql'
 import schemaContent from './schema.graphql?raw'
 import { Generator } from '../../../src/classes/Generator'
 import { loadSchemaSync } from '@graphql-tools/load'
@@ -316,7 +315,10 @@ describe('Generator Coverage Tests', () => {
         output: { typeComment: false },
       })
       generator.add([
-        toDocument('fragment authorInfo on Author { name, email }', 'author.graphql'),
+        toDocument(
+          'fragment authorInfo on Author { name, email }',
+          'author.graphql',
+        ),
         toDocument(
           'fragment categoryInfo on Category { label, url }',
           'category.graphql',
@@ -850,6 +852,169 @@ describe('Generator Coverage Tests', () => {
   })
 
   // ===========================================================================
+  // ArrayShape with generics
+  // ===========================================================================
+  describe('arrayShape with generics', () => {
+    it('should handle arrayShape using generics syntax', () => {
+      const generator = new Generator(schema, {
+        output: {
+          typeComment: false,
+          arrayShape: 'Array<$T$>',
+        },
+      })
+      generator.add(
+        toDocument(
+          `query test {
+            nonNullableArray {
+              nullableId
+            }
+          }`,
+          'query.graphql',
+        ),
+      )
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      expect(source).toContain('Array<')
+    })
+
+    it('should handle arrayShape with ReadonlyArray generics', () => {
+      const generator = new Generator(schema, {
+        output: {
+          typeComment: false,
+          arrayShape: 'ReadonlyArray<$T$>',
+        },
+      })
+      generator.add(
+        toDocument(
+          `query test {
+            getRandomEntity {
+              ... on NodeArticle {
+                tags
+              }
+            }
+          }`,
+          'query.graphql',
+        ),
+      )
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      expect(source).toContain('ReadonlyArray<')
+    })
+  })
+
+  // ===========================================================================
+  // Unnamed operations
+  // ===========================================================================
+  describe('unnamed operations', () => {
+    it('should skip unnamed operations in debug mode', () => {
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+      const generator = new Generator(schema, {
+        debugMode: true,
+        output: { typeComment: false },
+      })
+      generator.add(toDocument(`{ getHomepage { title } }`, 'query.graphql'))
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      // No operation types should be generated for unnamed operations
+      expect(source).not.toContain('Query')
+
+      consoleSpy.mockRestore()
+    })
+
+    it('should silently skip unnamed operations without debug mode', () => {
+      const generator = new Generator(schema, {
+        output: { typeComment: false },
+      })
+      generator.add(toDocument(`{ getHomepage { title } }`, 'query.graphql'))
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      // Should produce empty or minimal output
+      expect(source).not.toContain('Query')
+    })
+  })
+
+  // ===========================================================================
+  // useCache with dependencyTracking disabled
+  // ===========================================================================
+  describe('useCache with dependencyTracking disabled', () => {
+    it('should cache fragment IR fields when useCache true and dependencyTracking false', () => {
+      const generator = new Generator(schema, {
+        useCache: true,
+        dependencyTracking: false,
+        output: { typeComment: false },
+      })
+      generator.add([
+        toDocument('fragment user on User { email, name }', 'fragment.graphql'),
+        toDocument('query q1 { getRandomEntity { ...user } }', 'q1.graphql'),
+        toDocument('query q2 { getRandomEntity { ...user } }', 'q2.graphql'),
+      ])
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      expect(source).toContain('UserFragment')
+      expect(source).toContain('Q1Query')
+      expect(source).toContain('Q2Query')
+    })
+
+    it('should cache input type TS when useCache true and dependencyTracking false', () => {
+      const generator = new Generator(schema, {
+        useCache: true,
+        dependencyTracking: false,
+        output: { typeComment: false },
+      })
+      // Use mutations with input types to trigger createInputTS with caching
+      generator.add([
+        toDocument(
+          `mutation m1($input: SubmitContactForm!) { submitForm(input: $input) }`,
+          'm1.graphql',
+        ),
+        toDocument(
+          `mutation m2($input: SubmitContactForm!) { submitForm(input: $input) }`,
+          'm2.graphql',
+        ),
+      ])
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      expect(source).toContain('SubmitContactForm')
+      expect(source).toContain('M1Mutation')
+      expect(source).toContain('M2Mutation')
+    })
+
+    it('should handle nested input types with cache and no dependency tracking', () => {
+      const generator = new Generator(schema, {
+        useCache: true,
+        dependencyTracking: false,
+        output: { typeComment: false },
+      })
+      generator.add(
+        toDocument(
+          `mutation submit($input: SubmitContactForm!) { submitForm(input: $input) }`,
+          'mutation.graphql',
+        ),
+      )
+
+      const result = generator.build()
+      const source = result.getOperations('ts').getSource()
+
+      // SubmitContactForm has nested Address input type
+      expect(source).toContain('Address')
+      expect(source).toContain('street')
+    })
+  })
+
+  // ===========================================================================
   // Format code options
   // ===========================================================================
   describe('formatCode options', () => {
@@ -857,7 +1022,7 @@ describe('Generator Coverage Tests', () => {
       const generator = new Generator(schema, {
         output: {
           typeComment: false,
-          formatCode: (code: string) => `/* FORMATTED */\n${code}`,
+          formatCode: (code): string => `/* FORMATTED */\n${code}`,
         },
       })
       generator.add(

@@ -14,6 +14,7 @@ export default defineConfig({
         'build/**/*',
         'benchmark/**/*',
         'helpers/**/*',
+        'scripts/**/*',
         'examples/**/*',
         'knip.ts',
       ],
