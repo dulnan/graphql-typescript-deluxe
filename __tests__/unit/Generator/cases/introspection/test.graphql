@@ -1,0 +1,87 @@
+# The introspection fields __schema and __type only exist on the query root
+# type.
+#
+# __Directive.locations is not selected on purpose: the __DirectiveLocation
+# enum has more values in graphql 17 than in graphql 16.
+
+query schemaTypes {
+  __schema {
+    queryType {
+      name
+    }
+    mutationType {
+      name
+    }
+    types {
+      ...fullType
+    }
+    directives {
+      name
+      args {
+        name
+      }
+    }
+  }
+}
+
+query typeByName($name: String!) {
+  __type(name: $name) {
+    __typename
+    kind
+    name
+    ofType {
+      ...typeRef
+    }
+  }
+  user: __type(name: "User") {
+    name
+  }
+}
+
+# The introspection field in a fragment on the query type.
+query rootFragment {
+  ...schemaQueryTypeName
+}
+
+fragment schemaQueryTypeName on Query {
+  __schema {
+    queryType {
+      name
+    }
+  }
+}
+
+fragment fullType on __Type {
+  kind
+  name
+  fields(includeDeprecated: true) {
+    name
+    args {
+      name
+      type {
+        ...typeRef
+      }
+      defaultValue
+    }
+    type {
+      ...typeRef
+    }
+    isDeprecated
+    deprecationReason
+  }
+  enumValues(includeDeprecated: true) {
+    name
+  }
+  possibleTypes {
+    ...typeRef
+  }
+}
+
+fragment typeRef on __Type {
+  kind
+  name
+  ofType {
+    kind
+    name
+  }
+}

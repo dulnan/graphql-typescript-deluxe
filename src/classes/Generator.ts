@@ -1021,7 +1021,6 @@ export class Generator {
     objectType: GraphQLObjectType,
     selectionSet: SelectionSetNode,
   ): IRNode {
-    const objFields = objectType.getFields()
     const fields: Record<string, IRNode> = {}
     let hasTypenameFromSpread = false
     let directFieldCount = 0
@@ -1040,7 +1039,7 @@ export class Generator {
         }
 
         const alias = sel.alias?.value || sel.name.value
-        const fieldDef = objFields[sel.name.value]
+        const fieldDef = this.schema.getFieldDef(objectType, sel.name.value)
         if (!fieldDef) {
           throw new FieldNotFoundError(
             sel.name.value,

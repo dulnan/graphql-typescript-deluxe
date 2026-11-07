@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { loadSchemaSync } from '@graphql-tools/load'
 import {
   GraphQLSchema,
+  SchemaMetaFieldDef,
+  TypeMetaFieldDef,
   parse,
   parseType,
   type OperationDefinitionNode,
@@ -180,6 +182,40 @@ describe('SchemaProvider', () => {
       expect(() => schemaProvider.getType('NonExistentType')).toThrow(
         TypeNotFoundError,
       )
+    })
+  })
+
+  describe('getFieldDef', () => {
+    it('should return a field of the type', () => {
+      const field = schemaProvider.getFieldDef(schema.getQueryType()!, 'search')
+
+      expect(field?.name).toBe('search')
+    })
+
+    it('should return the introspection fields on the query type', () => {
+      const queryType = schema.getQueryType()!
+
+      expect(schemaProvider.getFieldDef(queryType, '__schema')).toBe(
+        SchemaMetaFieldDef,
+      )
+      expect(schemaProvider.getFieldDef(queryType, '__type')).toBe(
+        TypeMetaFieldDef,
+      )
+    })
+
+    it('should not return the introspection fields on other types', () => {
+      const mutationType = schema.getMutationType()!
+
+      expect(schemaProvider.getFieldDef(mutationType, '__schema')).toBe(
+        undefined,
+      )
+      expect(schemaProvider.getFieldDef(mutationType, '__type')).toBe(undefined)
+    })
+
+    it('should return undefined for a non-existent field', () => {
+      expect(
+        schemaProvider.getFieldDef(schema.getQueryType()!, 'nonExistent'),
+      ).toBe(undefined)
     })
   })
 

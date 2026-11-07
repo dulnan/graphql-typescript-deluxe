@@ -39,7 +39,7 @@ export class FieldNotFoundError extends Error {
     public typeName: string,
     public context?: ErrorContext,
   ) {
-    super(`Field "${fieldName} not found on type "${typeName}"`)
+    super(`Field "${fieldName}" not found on type "${typeName}"`)
     this.name = 'FieldNotFoundError'
     Object.setPrototypeOf(this, FieldNotFoundError.prototype)
   }

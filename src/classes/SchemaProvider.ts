@@ -1,9 +1,12 @@
 import {
   GraphQLObjectType,
   Kind,
+  SchemaMetaFieldDef,
+  TypeMetaFieldDef,
   isAbstractType,
   typeFromAST,
   type GraphQLAbstractType,
+  type GraphQLField,
   type GraphQLNamedType,
   type GraphQLSchema,
   type GraphQLType,
@@ -97,6 +100,33 @@ export class SchemaProvider {
     }
 
     return type
+  }
+
+  /**
+   * Get the definition of a field selected on an object type.
+   *
+   * Besides the fields of the type, this includes the `__schema` and `__type`
+   * introspection fields, which only exist on the query root type. The
+   * `__typename` field is not included.
+   *
+   * @param type - The object type.
+   * @param fieldName - The name of the field.
+   *
+   * @returns The field definition, or undefined if the field does not exist.
+   */
+  public getFieldDef(
+    type: GraphQLObjectType,
+    fieldName: string,
+  ): GraphQLField<unknown, unknown> | undefined {
+    if (type === this.schema.getQueryType()) {
+      if (fieldName === SchemaMetaFieldDef.name) {
+        return SchemaMetaFieldDef
+      } else if (fieldName === TypeMetaFieldDef.name) {
+        return TypeMetaFieldDef
+      }
+    }
+
+    return type.getFields()[fieldName]
   }
 
   /**
