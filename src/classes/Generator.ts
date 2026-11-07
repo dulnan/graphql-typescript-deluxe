@@ -1128,6 +1128,47 @@ export class Generator {
   }
 
   /**
+   * Whether a fragment selects anything on the given type.
+   *
+   * A fragment on an abstract type may only select fields for some of its
+   * types. For the others, the fragment type is an empty object.
+   *
+   * @param fragmentName - The name of the fragment.
+   * @param typeName - The name of the type in which it's spread.
+   *
+   * @returns False if the type is an object type on which the fragment selects nothing.
+   */
+  private fragmentSelectsFields(
+    fragmentName: string,
+    typeName: string,
+  ): boolean {
+    return this.withCache(
+      'fragmentSelectsFields',
+      fragmentName + ' ' + typeName,
+      () => {
+        if (!isObjectType(this.schema.getType(typeName))) {
+          return true
+        }
+
+        // A field that all types of the fragment select.
+        const isSelectedByAll = Object.values(
+          this.getFragmentIRFields(fragmentName),
+        ).some((field) => field.kind !== 'FRAGMENT_SPREAD' && !field.optional)
+        if (isSelectedByAll) {
+          return true
+        }
+
+        const fields = this.getFragmentIRFieldsForType(fragmentName, typeName)
+        return Object.values(fields).some(
+          (field) =>
+            field.kind !== 'FRAGMENT_SPREAD' ||
+            this.fragmentSelectsFields(field.name, typeName),
+        )
+      },
+    )
+  }
+
+  /**
    * Build the IR of the selection set of an object type.
    *
    * @param objectType - The object type.
@@ -1635,12 +1676,19 @@ export class Generator {
           { fragments: FragmentDefinitionNode[]; typeNames: string[] }
         >()
         for (const possibleTypeName of possibleTypes) {
-          const fragments = concreteFragmentTypes.flatMap((typeName) =>
+          let fragments = concreteFragmentTypes.flatMap((typeName) =>
             possibleTypeName === typeName ||
             this.schema.objectImplements(possibleTypeName, typeName)
               ? fragmentsByConcreteType[typeName]!
               : [],
           )
+          // In an intersection, a fragment that selects nothing on the type is
+          // left out.
+          if (fragments.length > 1) {
+            fragments = fragments.filter((fragment) =>
+              this.fragmentSelectsFields(fragment.name.value, possibleTypeName),
+            )
+          }
           const key = fragments.map((v) => v.name.value).join(' ')
           const group = groups.get(key) ?? { fragments, typeNames: [] }
           group.typeNames.push(possibleTypeName)
@@ -1738,7 +1786,7 @@ export class Generator {
             IR.FRAGMENT_SPREAD({
               name: fragment.name.value,
               fragmentTypeName: fragTypeName,
-              parentType: abstractType.name,
+              parentType: typeConditionType.name,
               fragmentTypeCondition: fragment.typeCondition.name.value,
               optional: isConditional,
             }),
@@ -1888,14 +1936,26 @@ export class Generator {
    */
   private mergeFragmentSpreads(
     fields: Map<string, IRNode>,
-    spreads: IRNodeFragmentSpread[],
+    allSpreads: IRNodeFragmentSpread[],
   ): string {
+    // A single spread without other fields is not an intersection, so the
+    // fragment type is used as is.
+    if (allSpreads.length === 1 && fields.size === 0) {
+      return this.IRToCode(allSpreads[0]!)
+    }
+
+    // A fragment that selects nothing on the type is an empty object, which
+    // is left out of the intersection. With an empty object type such as
+    // Record<string, never>, the intersection would have no valid value.
+    const spreads = allSpreads.filter((spread) =>
+      this.fragmentSelectsFields(spread.name, spread.parentType),
+    )
+
     // No fragment spreads.
     if (spreads.length === 0) {
       return this.fieldMapToCode(fields)
     }
 
-    // Single fragment with only typename - simple intersection
     if (spreads.length === 1 && fields.size === 0) {
       return this.IRToCode(spreads[0]!)
     }
@@ -2226,7 +2286,9 @@ export class Generator {
       }
 
       case 'UNION': {
-        const parts = ir.types.map((t) => this.IRToCode(t)).sort()
+        // Branches can generate the same code, for example when a fragment
+        // that selects nothing is left out.
+        const parts = [...new Set(ir.types.map((t) => this.IRToCode(t)))].sort()
         if (parts.length === 1) {
           return parts[0]!
         }

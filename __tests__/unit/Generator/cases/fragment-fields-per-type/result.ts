@@ -130,7 +130,7 @@ export type PageArticleLinkQuery = {
     link?: {
       url?: string;
     };
-  } & ArticleLinkFragment;
+  };
 };
 
 /**

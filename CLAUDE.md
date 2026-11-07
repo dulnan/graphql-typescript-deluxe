@@ -92,6 +92,7 @@ __tests__/unit/Generator/cases/
     test.graphql      # Input GraphQL document
     result.ts         # Expected TypeScript output (snapshot)
     schema.graphql    # Optional custom schema (uses default if not present)
+    options.json      # Optional generator options, e.g. { "output": { ... } }
     runtime.ts        # Optional runtime type tests
 ```
 

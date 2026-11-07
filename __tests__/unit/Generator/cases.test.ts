@@ -63,11 +63,21 @@ describe('Generator', () => {
         'result-codegen.ts',
       )
 
+      // A case can override the output options in an options.json file.
+      const optionsPath = customSchemaPath.replace(
+        'schema.graphql',
+        'options.json',
+      )
+      const caseOptions: GeneratorOptions = fs.existsSync(optionsPath)
+        ? JSON.parse(fs.readFileSync(optionsPath).toString())
+        : {}
+
       const baseOptions: GeneratorOptions = {
         output: {
           nullableField: 'optional',
           nonOptionalTypename: false,
           mergeTypenames: true,
+          ...caseOptions.output,
         },
       }
 

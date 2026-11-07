@@ -1,0 +1,6 @@
+{
+  "output": {
+    "emptyObject": "Record<string, never>",
+    "nullableField": "null"
+  }
+}

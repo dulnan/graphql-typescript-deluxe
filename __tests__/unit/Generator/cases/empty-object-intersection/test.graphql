@@ -1,0 +1,107 @@
+# With an empty object type such as Record<string, never>, an intersection with
+# an empty object has no valid value. A fragment that selects nothing on the
+# type is left out of intersections.
+
+fragment userName on Entity {
+  ... on User {
+    name
+  }
+}
+
+fragment domainLabel on Entity {
+  ... on Domain {
+    label
+  }
+}
+
+fragment pageTitle on NodePage {
+  title
+}
+
+fragment pageUserName on NodePage {
+  ...userName
+}
+
+fragment userWithName on User {
+  ...userName
+}
+
+fragment pageOrUser on Entity {
+  ... on NodePage {
+    body
+  }
+  ... on User {
+    name
+  }
+}
+
+fragment imageOnly on Media {
+  ... on MediaImage {
+    image
+  }
+}
+
+fragment video on MediaVideo {
+  id
+  videoUrl
+}
+
+# The fragment selects nothing on NodePage.
+query nextToFields {
+  getHomepage {
+    ...userName
+    title
+  }
+}
+
+query nextToFragment {
+  getHomepage {
+    ...userName
+    ...pageTitle
+  }
+}
+
+# The nested fragment selects nothing on NodePage.
+query nested {
+  getHomepage {
+    ...pageUserName
+    title
+  }
+}
+
+query conditional($withName: Boolean!) {
+  getHomepage {
+    ...userName @include(if: $withName)
+    title
+  }
+}
+
+query onlyEmptyFragments {
+  getHomepage {
+    ...userName
+    ...domainLabel
+  }
+}
+
+# The fragment selects the body on NodePage, so it stays.
+query selectsOnType {
+  getHomepage {
+    ...pageOrUser
+    title
+  }
+}
+
+query abstractBranch {
+  getRandomEntity {
+    id
+    ...userWithName
+  }
+}
+
+# imageOnly selects nothing on MediaVideo.
+query shortcut {
+  search {
+    ...imageOnly
+    ...video
+  }
+}
