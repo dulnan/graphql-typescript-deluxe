@@ -34,3 +34,6 @@ benchmark/graphql
 examples/debug-test-case/output/*
 
 **.0x
+
+# Local scratch files
+.tmp/
