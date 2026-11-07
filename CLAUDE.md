@@ -110,3 +110,7 @@ Default test schema is at `__tests__/unit/Generator/schema.graphql`.
 - Enums generate both a `const` object and a type union (not TypeScript `enum`)
 - Nullable fields default to optional (`field?: T`) but can be configured for
   `| null` or `Maybe<T>`
+- `graphql` is a peer dependency (`^16 || ^17`), so the generator uses the same
+  instance as the schema passed in. Development uses graphql 17; CI also runs
+  against 16. The graphql 17 parser may leave empty AST lists (such as
+  `variableDefinitions`) `undefined` instead of `[]`.

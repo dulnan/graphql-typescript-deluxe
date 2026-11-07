@@ -795,9 +795,10 @@ export class Generator {
 
     const hasVariables = !!operation.variableDefinitions?.length
 
-    const needsVariables = !operation.variableDefinitions?.every((v: any) => {
-      return v.defaultValue
-    })
+    // graphql 17 leaves empty AST collections undefined instead of [].
+    const needsVariables = !!operation.variableDefinitions?.some(
+      (v) => !v.defaultValue,
+    )
 
     this.operations.set(opName, {
       operationType: operation.operation,
