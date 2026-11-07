@@ -27,13 +27,13 @@ npm run test -- -t "handles case \"aliases\""
 # Type checking
 npm run typecheck
 
-# Linting
+# Linting (oxlint)
 npm run lint
 npm run lint:fix
 
-# Formatting
-npm run prettier
-npm run prettier:fix
+# Formatting (oxfmt)
+npm run format
+npm run format:fix
 
 # Run benchmark
 npm run benchmark

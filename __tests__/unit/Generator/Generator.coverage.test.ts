@@ -4,6 +4,7 @@ import { Generator } from '../../../src/classes/Generator'
 import { loadSchemaSync } from '@graphql-tools/load'
 import { buildSchema } from 'graphql'
 import { toDocument } from '../../helpers'
+import { FieldNotFoundError } from '../../../src/errors'
 
 const schema = loadSchemaSync(schemaContent, { loaders: [] })
 
@@ -559,7 +560,7 @@ describe('Generator Coverage Tests', () => {
         ),
       )
 
-      expect(() => generator.build()).toThrow()
+      expect(() => generator.build()).toThrow(FieldNotFoundError)
     })
   })
 
@@ -1665,7 +1666,7 @@ describe('Generator Coverage Tests', () => {
         ),
       )
 
-      expect(() => generator.build()).toThrow()
+      expect(() => generator.build()).toThrow(FieldNotFoundError)
     })
   })
 

@@ -27,11 +27,11 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: ESlint
+      - name: Oxlint
         run: npm run lint
 
-      - name: Prettier
-        run: npm run prettier
+      - name: Oxfmt
+        run: npm run format
 
       - name: Vitest
         run: npm run test
