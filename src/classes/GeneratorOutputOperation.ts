@@ -37,7 +37,8 @@ export class GeneratorOutputOperation
   public readonly hasVariables: boolean
 
   /**
-   * True if the operation has variables and at least one of the variables is non-null.
+   * True if at least one of the variables is non-null and has no default
+   * value. The variables type then has a required key.
    */
   public readonly needsVariables: boolean
 

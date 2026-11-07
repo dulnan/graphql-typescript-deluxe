@@ -926,9 +926,11 @@ export class Generator {
 
     const hasVariables = !!operation.variableDefinitions?.length
 
-    // graphql 17 leaves empty AST collections undefined instead of [].
+    // Variables are needed if one of them is non-null and has no default
+    // value, so the variables type has a required key. graphql 17 leaves
+    // empty AST collections undefined instead of [].
     const needsVariables = !!operation.variableDefinitions?.some(
-      (v) => !v.defaultValue,
+      (v) => v.type.kind === Kind.NON_NULL_TYPE && !v.defaultValue,
     )
 
     this.operations.set(opName, {
