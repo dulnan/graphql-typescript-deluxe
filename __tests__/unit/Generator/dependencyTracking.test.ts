@@ -630,4 +630,53 @@ query foobar {
       'urlRenamed',
     )
   })
+
+  describe('a fragment generated while generating another file', () => {
+    const documents = [
+      toDocument('fragment page on NodePage { title }', 'fragments.graphql'),
+      toDocument(
+        'query one { getHomepage { ...page } } query two { isAvailable }',
+        'operations.graphql',
+      ),
+    ]
+
+    it('attributes later operations to their own file', () => {
+      const generator = new Generator(schema, { skipUnusedFragments: true })
+      const output = generator.add(documents).build()
+
+      expect(
+        output.getCollectedOperations().map((v) => [v.graphqlName, v.filePath]),
+      ).toEqual([
+        ['one', 'operations.graphql'],
+        ['two', 'operations.graphql'],
+      ])
+      expect(
+        output.getGeneratedCode().map((v) => [v.type, v.name, v.filePath]),
+      ).toContainEqual(['fragment', 'PageFragment', 'fragments.graphql'])
+    })
+
+    it('removes operations and unused fragments from the output', () => {
+      const generator = new Generator(schema, { skipUnusedFragments: true })
+      generator.add(documents).build()
+
+      generator.update(
+        toDocument(
+          'query one { getHomepage { ...page } } query three { isAvailable }',
+          'operations.graphql',
+        ),
+      )
+      expect(
+        generator
+          .build()
+          .getCollectedOperations()
+          .map((v) => v.graphqlName),
+      ).toEqual(['one', 'three'])
+
+      generator.remove('operations.graphql')
+      const output = generator.build()
+      expect(output.getCollectedOperations()).toEqual([])
+      // The fragment is not used anymore.
+      expect(output.getGeneratedCode().map((v) => v.name)).toEqual([])
+    })
+  })
 })

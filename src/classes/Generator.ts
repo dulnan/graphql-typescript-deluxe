@@ -275,11 +275,12 @@ export class Generator {
     }
     this.incrementDebugCount('Cache MISS: ' + prefix)
     this.dependencyTracker?.start()
+    const filePath = this.dependencyTracker?.getCurrentFile() || ''
     const result = fn()
     const dependencies = this.dependencyTracker?.end() || []
     this.cache.set(cacheKey, {
       result,
-      filePath: this.dependencyTracker?.getCurrentFile() || '',
+      filePath,
       dependencies,
     })
     return result
@@ -305,6 +306,7 @@ export class Generator {
       identifier?: GeneratedCodeIdentifier | null
       source?: string | null
     },
+    filePath?: string,
   ): string {
     const existing = this.generatedCode.get(key)
     if (existing) {
@@ -312,7 +314,9 @@ export class Generator {
       return existing.name
     }
 
-    this.dependencyTracker?.start()
+    // The code belongs to the given file, or else to the current one.
+    this.dependencyTracker?.start(filePath)
+    const codeFilePath = this.dependencyTracker?.getCurrentFile() || ''
     const result = cb()
     this.dependencyTracker?.add(generatedTypeType, result.typeName)
     const dependencies = this.dependencyTracker?.end() || []
@@ -347,7 +351,7 @@ export class Generator {
       name: result.typeName,
       code,
       comment,
-      filePath: this.dependencyTracker?.getCurrentFile() || '',
+      filePath: codeFilePath,
       dependencies,
       source: result.source,
       graphqlName: result.graphqlName,
@@ -712,44 +716,52 @@ export class Generator {
    * @throws {@link TypeNotFoundError} if the fragment's condition type does not exist.
    */
   private generateFragmentType(fragmentName: string): string {
-    return this.generateCodeOnce('fragment', fragmentName, () => {
-      const item = this.fragments.get(fragmentName)
+    // The fragment can be generated while generating something from another
+    // file, but its code belongs to the file of the fragment.
+    const item = this.fragments.get(fragmentName)
 
-      /* v8 ignore if -- @preserve */
-      if (!item) {
-        throw new FragmentNotFoundError(fragmentName, this.getErrorContext())
-      }
-      const source = getAstSource(item.node)
-      const typeName = this.options.buildFragmentTypeName(item.node)
+    /* v8 ignore if -- @preserve */
+    if (!item) {
+      throw new FragmentNotFoundError(fragmentName, this.getErrorContext())
+    }
 
-      const graphqlTypeName = item.node.typeCondition.name.value
-      const type = this.schema.getType(graphqlTypeName)
+    return this.generateCodeOnce(
+      'fragment',
+      fragmentName,
+      () => {
+        const source = getAstSource(item.node)
+        const typeName = this.options.buildFragmentTypeName(item.node)
 
-      this.dependencyTracker?.start(item.filePath)
-      this.dependencyTracker?.addFragment(fragmentName)
-      const ir = this.buildSelectionSet(type, item.node.selectionSet)
-      const processedIR = this.postProcessIR(ir)
-      const dependencies = this.dependencyTracker?.end() || []
-      this.fragmentIRs.set(item.node.name.value, {
-        map: buildFragmentIRFields(processedIR),
-        isObject: this.isObjectTypeIR(processedIR),
-        dependencies,
-        filePath: this.dependencyTracker?.getCurrentFile() || NO_FILE_PATH,
-      })
-      const code = makeExport(typeName, this.IRToCode(processedIR))
+        const graphqlTypeName = item.node.typeCondition.name.value
+        const type = this.schema.getType(graphqlTypeName)
 
-      return {
-        code,
-        typeName,
-        context: {
-          filePath: item.filePath,
-          definition: item.node,
-        },
-        source,
-        graphqlName: fragmentName,
-        identifier: 'fragment',
-      }
-    })
+        this.dependencyTracker?.start(item.filePath)
+        this.dependencyTracker?.addFragment(fragmentName)
+        const ir = this.buildSelectionSet(type, item.node.selectionSet)
+        const processedIR = this.postProcessIR(ir)
+        const dependencies = this.dependencyTracker?.end() || []
+        this.fragmentIRs.set(item.node.name.value, {
+          map: buildFragmentIRFields(processedIR),
+          isObject: this.isObjectTypeIR(processedIR),
+          dependencies,
+          filePath: this.dependencyTracker ? item.filePath : NO_FILE_PATH,
+        })
+        const code = makeExport(typeName, this.IRToCode(processedIR))
+
+        return {
+          code,
+          typeName,
+          context: {
+            filePath: item.filePath,
+            definition: item.node,
+          },
+          source,
+          graphqlName: fragmentName,
+          identifier: 'fragment',
+        }
+      },
+      item.filePath,
+    )
   }
 
   /**
@@ -899,6 +911,7 @@ export class Generator {
     )
 
     this.dependencyTracker?.start()
+    const filePath = this.dependencyTracker?.getCurrentFile() || NO_FILE_PATH
 
     this.generateCodeOnce('operation', opName + '-base', () => {
       this.logDebug('Generating operation: ' + opName)
@@ -984,7 +997,7 @@ export class Generator {
       needsVariables,
       hasVariables,
       dependencies,
-      filePath: this.dependencyTracker?.getCurrentFile() || NO_FILE_PATH,
+      filePath,
       timestamp: Date.now(),
     })
   }
@@ -2563,6 +2576,32 @@ export class Generator {
   }
 
   /**
+   * Get the generated code that is part of the output.
+   *
+   * With skipUnusedFragments, only the code that the operations use is
+   * output. Code that was only used by a removed operation, such as a
+   * fragment, stays in the state until its file changes.
+   *
+   * @returns The generated code.
+   */
+  private getUsedCode(): GeneratedCode[] {
+    const code = [...this.generatedCode.values()]
+    if (!this.options.skipUnusedFragments || !this.dependencyTracker) {
+      return code
+    }
+
+    // The dependencies of an operation include the code it uses, also
+    // through fragments.
+    const used = new Set<string>()
+    for (const operation of this.operations.values()) {
+      for (const dependency of operation.dependencies) {
+        used.add(dependency)
+      }
+    }
+    return code.filter((item) => used.has(item.id))
+  }
+
+  /**
    * Build the output from the current state.
    *
    * If any error happens during the build phase, the entire state (excluding
@@ -2640,9 +2679,8 @@ export class Generator {
         'Finished processing documents, but there is still a dependency tracker stack. This is likely due to a bug in the library. Set "dependencyTracking: false" to disable dependency tracking.',
       )
     }
-    const code = this.generatedCode.values()
     return new GeneratorOutput(
-      [...code, ...this.options.additionalOutputCode()],
+      [...this.getUsedCode(), ...this.options.additionalOutputCode()],
       [...this.operations.values()],
       [...this.fragments.values()],
     )

@@ -6,19 +6,9 @@ export const KEY_SEPARATOR = '#####'
 
 export class DependencyTracker {
   /**
-   * The current file path.
+   * The stack of dependency sets, each with the file it belongs to.
    */
-  private currentFilePath = NO_FILE_PATH
-
-  /**
-   * The created sets.
-   */
-  private stack: Set<string>[] = []
-
-  /**
-   * The current stack index.
-   */
-  private currentIndex = -1
+  private stack: { dependencies: Set<string>; filePath: string }[] = []
 
   /**
    * Add a dependency to the current stack.
@@ -45,10 +35,11 @@ export class DependencyTracker {
    * Adds a key to the current set.
    */
   private addToCurrent(key: string): void {
-    if (!this.stack[this.currentIndex]) {
+    const current = this.stack.at(-1)
+    if (!current) {
       throw new LogicError('Tried to add dependency but no stack available.')
     }
-    this.stack[this.currentIndex]!.add(key)
+    current.dependencies.add(key)
   }
 
   /**
@@ -68,9 +59,9 @@ export class DependencyTracker {
 
     // Also bubble the dependencies to all upper stacks.
     if (data.dependencies) {
-      for (let i = 0; i <= this.currentIndex; i++) {
-        for (let j = 0; j < data.dependencies.length; j++) {
-          this.stack[i]?.add(data.dependencies[j]!)
+      for (const item of this.stack) {
+        for (const dependency of data.dependencies) {
+          item.dependencies.add(dependency)
         }
       }
     }
@@ -78,57 +69,55 @@ export class DependencyTracker {
 
   /**
    * Start a new dependency tracking stack.
+   *
+   * @param currentFile - The file that the stack belongs to. Defaults to the file of the parent stack.
    */
   public start(currentFile?: string): void {
-    this.stack.push(new Set())
-    this.currentIndex++
-    if (currentFile) {
-      this.currentFilePath = currentFile
-    }
-    if (this.currentFilePath) {
-      this.addFileDependency(this.currentFilePath)
+    const filePath = currentFile || this.getCurrentFile()
+    this.stack.push({ dependencies: new Set(), filePath })
+    if (filePath) {
+      this.addFileDependency(filePath)
     }
   }
 
   /**
    * End the current dependency tracking stack, merging its dependencies
    * to the parent stack (if any) and returning the collected dependencies.
+   *
+   * The current file is then the one of the parent stack again.
    */
   public end(): string[] {
-    if (this.currentIndex < 0) {
+    const current = this.stack.pop()
+    if (!current) {
       throw new LogicError(
         'Tried to pop dependency stack, but no stack available.',
       )
     }
-    const currentSet = this.stack.pop()!
-    // Always add the file dependency for the current file.
-    currentSet.add(DependencyTracker.toKey('file', this.currentFilePath))
-    const dependencies = Array.from(currentSet)
-    this.currentIndex--
+    // Always add the file dependency for the file of the stack.
+    current.dependencies.add(DependencyTracker.toKey('file', current.filePath))
+    const dependencies = Array.from(current.dependencies)
     // If there’s a parent stack, merge the popped dependencies into it.
-    if (this.currentIndex >= 0) {
-      this.merge({ dependencies, filePath: this.getCurrentFile() })
+    if (this.stack.length) {
+      this.merge({ dependencies })
     }
     return dependencies
   }
 
   public reset(): void {
     this.stack = []
-    this.currentIndex = -1
-    this.currentFilePath = NO_FILE_PATH
   }
 
   /**
-   * Get the current file.
+   * Get the file of the current stack.
    */
   public getCurrentFile(): string {
-    return this.currentFilePath
+    return this.stack.at(-1)?.filePath ?? NO_FILE_PATH
   }
 
   /**
    * Whether we have a current stack.
    */
   public hasStack(): boolean {
-    return this.currentIndex >= 0
+    return this.stack.length > 0
   }
 }
