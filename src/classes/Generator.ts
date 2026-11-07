@@ -133,10 +133,18 @@ export class Generator {
 
   /**
    * The IRs of all fragments.
+   *
+   * isObject is true if the TS type of the fragment is an object type, and
+   * not a union.
    */
   private fragmentIRs: Map<
     string,
-    { map: Record<string, IRNode>; filePath: string; dependencies: string[] }
+    {
+      map: Record<string, IRNode>
+      isObject: boolean
+      filePath: string
+      dependencies: string[]
+    }
   > = new Map()
 
   /**
@@ -449,12 +457,23 @@ export class Generator {
    *
    * @throws {@link LogicError} if the helper type could not be found.
    */
-  private getOrCreateTypeHelper(type: 'exact' | 'maybe'): string {
+  private getOrCreateTypeHelper(
+    type: 'exact' | 'maybe' | 'distributiveOmit',
+  ): string {
     if (type === 'exact') {
       return this.generateCodeOnce('type-helpers', type, () => {
         return {
           typeName: 'Exact',
           code: `type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };`,
+        }
+      })
+    } else if (type === 'distributiveOmit') {
+      // Omit<> is not distributive: For a union, it only keeps the keys that
+      // all types of the union have.
+      return this.generateCodeOnce('type-helpers', type, () => {
+        return {
+          typeName: 'DistributiveOmit',
+          code: `type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;`,
         }
       })
     }
@@ -612,6 +631,7 @@ export class Generator {
       const dependencies = this.dependencyTracker?.end() || []
       this.fragmentIRs.set(item.node.name.value, {
         map: buildFragmentIRFields(processedIR),
+        isObject: this.isObjectTypeIR(processedIR),
         dependencies,
         filePath: this.dependencyTracker?.getCurrentFile() || NO_FILE_PATH,
       })
@@ -629,6 +649,41 @@ export class Generator {
         identifier: 'fragment',
       }
     })
+  }
+
+  /**
+   * Whether the TS type of the IR is an object type, and not a union.
+   *
+   * An object that spreads a fragment whose type is a union is an
+   * intersection with a union, which is a union too. Anything else, such as a
+   * fragment type returned by a shortcut, may be a union.
+   *
+   * @param ir - The processed IR of a fragment.
+   *
+   * @returns True if the type is an object type.
+   */
+  private isObjectTypeIR(ir: IRNode): boolean {
+    if (ir.kind !== 'OBJECT') {
+      return false
+    }
+
+    return Object.values(ir.fields).every(
+      (field) =>
+        field.kind !== 'FRAGMENT_SPREAD' || this.isObjectFragment(field.name),
+    )
+  }
+
+  /**
+   * Whether the TS type of the fragment is an object type, and not a union.
+   *
+   * @param fragmentName - The name of the fragment.
+   *
+   * @returns True if the type is an object type.
+   */
+  private isObjectFragment(fragmentName: string): boolean {
+    // Generates the fragment and its IR, if that didn't happen yet.
+    this.generateFragmentType(fragmentName)
+    return this.fragmentIRs.get(fragmentName)?.isObject ?? false
   }
 
   // ===========================================================================
@@ -1901,10 +1956,14 @@ export class Generator {
       // Start with the fragment name.
       let replacedType = spread.fragmentTypeName
 
-      // Apply Omit for conflicting fields.
+      // Apply Omit for conflicting fields. If the fragment type may be a union,
+      // a distributive Omit is needed to keep the fields of all types.
       if (conflictsForThisFrag.length > 0) {
         const omitFields = conflictsForThisFrag.map((f) => `"${f}"`).join(' | ')
-        replacedType = `Omit<${spread.fragmentTypeName}, ${omitFields}>`
+        const omit = this.isObjectFragment(spread.name)
+          ? 'Omit'
+          : this.getOrCreateTypeHelper('distributiveOmit')
+        replacedType = `${omit}<${spread.fragmentTypeName}, ${omitFields}>`
       }
 
       // The fields of a conditional spread may be missing.

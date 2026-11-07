@@ -1,0 +1,90 @@
+# A fragment that selects a field with a different nested selection than its
+# parent: The merged field is emitted directly and omitted from the fragment.
+# Omit<> is not distributive. If the fragment type may be a union,
+# DistributiveOmit<> is used, which keeps the fields of all types.
+
+# A fragment on an interface: Its type is a union.
+query unionFragment {
+  getRandomEntity {
+    ... on NodeArticle {
+      author {
+        name
+      }
+      ...nodeAuthor
+    }
+  }
+}
+
+# A fragment on an object type: Omit<> is enough.
+query objectFragment {
+  getRandomEntity {
+    ... on NodeArticle {
+      author {
+        name
+      }
+      ...articleAuthor
+    }
+  }
+}
+
+# A fragment on an object type that spreads a fragment on an interface: Its
+# type is an intersection with a union, which is a union. The spread fragment
+# has no __typename, so nothing removes the branches of other types.
+query objectFragmentWithUnion {
+  getRandomEntity {
+    ... on NodeArticle {
+      author {
+        name
+      }
+      ...articleAuthorWithNodeBody
+    }
+  }
+}
+
+# A conditional spread of a fragment on an interface.
+query conditionalUnionFragment($withAuthor: Boolean!) {
+  getRandomEntity {
+    ... on NodeArticle {
+      author {
+        name
+      }
+      ...nodeAuthor @include(if: $withAuthor)
+    }
+  }
+}
+
+fragment nodeAuthor on Node {
+  __typename
+  ... on NodeArticle {
+    tags
+    author {
+      email
+    }
+  }
+  ... on NodePage {
+    body
+  }
+}
+
+fragment articleAuthor on NodeArticle {
+  tags
+  author {
+    email
+  }
+}
+
+fragment articleAuthorWithNodeBody on NodeArticle {
+  author {
+    email
+  }
+  ...nodeBody
+}
+
+fragment nodeBody on Node {
+  ... on NodeArticle {
+    tags
+  }
+  ... on NodePage {
+    body
+  }
+}
