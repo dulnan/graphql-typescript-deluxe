@@ -1254,6 +1254,43 @@ export class Generator {
   }
 
   /**
+   * Build the IR for an object that only spreads the given fragments.
+   *
+   * @param parentType - The type in which the fragments are spread.
+   * @param fragments - The fragment definitions.
+   *
+   * @returns The IR node.
+   */
+  private buildFragmentsIntersection(
+    parentType: GraphQLAbstractType,
+    fragments: FragmentDefinitionNode[],
+  ): IRNode {
+    if (fragments.length === 0) {
+      return this.emptyObjectScalar()
+    } else if (fragments.length === 1) {
+      return IR.SCALAR({
+        tsType: this.generateFragmentType(fragments[0]!.name.value),
+      })
+    }
+
+    // The fields are merged when the IR is converted to code, which also
+    // handles conflicts between the fragments.
+    const fields: Record<string, IRNode> = {}
+    for (const fragment of fragments) {
+      mergeFragmentSpread(
+        fields,
+        IR.FRAGMENT_SPREAD({
+          name: fragment.name.value,
+          fragmentTypeName: this.generateFragmentType(fragment.name.value),
+          parentType: parentType.name,
+          fragmentTypeCondition: fragment.typeCondition.name.value,
+        }),
+      )
+    }
+    return IR.OBJECT({ graphQLTypeName: parentType.name, fields })
+  }
+
+  /**
    * Return a scalar node for an empty object.
    */
   private emptyObjectScalar(): IRNodeScalar {
@@ -1408,7 +1445,6 @@ export class Generator {
     const possibleTypes = this.schema.getPossibleObjectTypeNames(
       abstractType.name,
     )
-    const totalPossibleTypes = possibleTypes.length
 
     // Fields requested on interface/union level.
     const baseFields: Record<string, IRNode> = {}
@@ -1536,55 +1572,29 @@ export class Generator {
         !hasConcreteInlineFragments &&
         hasConcreteFragments
       ) {
-        // We only have spreads for a single type.
-        if (concreteFragmentTypes.length === 1) {
-          const typeName = concreteFragmentTypes[0]!
-          const fragments = fragmentsByConcreteType[typeName]!
-
-          // We have just a single fragment.
-          if (fragments.length === 1) {
-            const fragmentType = IR.SCALAR({
-              tsType: this.generateFragmentType(fragments[0]!.name.value),
-            })
-
-            // If there are other possible types not covered by this fragment,
-            // we need to include empty object in the union.
-            if (totalPossibleTypes > 1) {
-              return IR.UNION({
-                types: [fragmentType, this.emptyObjectScalar()],
-              })
-            }
-
-            return fragmentType
-          }
-        } else {
-          // We have exactly one fragment per type.
-          const allTargetDifferent = concreteFragmentTypes.every((typeName) => {
-            const fragments = fragmentsByConcreteType[typeName]!
-            return fragments.length === 1
-          })
-
-          if (allTargetDifferent) {
-            // If all fragment spreads target different types we can create an
-            // union type.
-            const unionTypes = concreteFragmentTypes.map((typeName) => {
-              const fragment = fragmentsByConcreteType[typeName]![0]!
-              return IR.SCALAR({
-                tsType: this.generateFragmentType(fragment.name.value),
-              })
-            })
-            const totalTargets = concreteFragmentTypes.length
-
-            // If there are still types left that aren't targeted by any of the
-            // fragments: Add an empty object.
-            if (totalTargets !== totalPossibleTypes) {
-              unionTypes.push(this.emptyObjectScalar())
-            }
-            return IR.UNION({
-              types: unionTypes,
-            })
-          }
+        // Group the possible types by the fragments that apply to them. A
+        // type condition can be an abstract type, which applies to several
+        // possible types, so a type can have the fields of several fragments.
+        const groups = new Map<string, FragmentDefinitionNode[]>()
+        for (const possibleTypeName of possibleTypes) {
+          const fragments = concreteFragmentTypes.flatMap((typeName) =>
+            possibleTypeName === typeName ||
+            this.schema.objectImplements(possibleTypeName, typeName)
+              ? fragmentsByConcreteType[typeName]!
+              : [],
+          )
+          groups.set(fragments.map((v) => v.name.value).join(' '), fragments)
         }
+
+        // Each group is the intersection of its fragments. A group without
+        // fragments is an empty object.
+        const unionTypes = [...groups.values()].map((fragments) =>
+          this.buildFragmentsIntersection(abstractType, fragments),
+        )
+        if (unionTypes.length > 1) {
+          return IR.UNION({ types: unionTypes })
+        }
+        return unionTypes[0] ?? this.emptyObjectScalar()
       }
     }
 

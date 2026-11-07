@@ -97,7 +97,7 @@ export type RouteEntityFragment = {
  * ```
  */
 export type RouteFragment = {
-  route?: (RouteEntityFragment | RouteInternalFragment | object | {
+  route?: (RouteInternalFragment | RouteInternalFragment & RouteEntityFragment | object | {
     __typename: DefaultEntityUrl;
     entity?: {
       title: string;
@@ -139,7 +139,7 @@ export type RouteInternalFragment = {
  * ```
  */
 export type RouteOneFragment = {
-  route?: (RouteEntityFragment | RouteInternalFragment | object);
+  route?: (RouteInternalFragment | RouteInternalFragment & RouteEntityFragment | object);
 };
 
 /**

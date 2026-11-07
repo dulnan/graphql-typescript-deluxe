@@ -1,0 +1,88 @@
+# Fragment spreads on an abstract type, whose type conditions apply to some or
+# all of its types. SearchResult is MediaVideo | NodeArticle.
+
+fragment entityId on Entity {
+  id
+}
+
+fragment media on Media {
+  entityType
+  provider
+}
+
+fragment nodeTitle on Node {
+  title
+}
+
+fragment video on MediaVideo {
+  id
+  videoUrl
+}
+
+fragment articleTags on NodeArticle {
+  tags
+}
+
+fragment articleAuthorName on NodeArticle {
+  author {
+    name
+  }
+}
+
+fragment articleAuthorEmail on NodeArticle {
+  author {
+    email
+  }
+}
+
+# Both fragments apply to MediaVideo, none to NodeArticle.
+query overlap {
+  search {
+    ...media
+    ...video
+  }
+}
+
+# Entity applies to all types, so there is no empty object.
+query coverAll {
+  search {
+    ...entityId
+  }
+}
+
+query coverAllWithOverlap {
+  search {
+    ...entityId
+    ...video
+  }
+}
+
+query disjointCoverAll {
+  search {
+    ...video
+    ...articleTags
+  }
+}
+
+# Media also applies to MediaImage, which is not a SearchResult.
+query interfaceOutsideParent {
+  search {
+    ...media
+  }
+}
+
+query severalInterfaces {
+  getRandomEntity {
+    ...media
+    ...nodeTitle
+    ...video
+  }
+}
+
+# Both fragments select the author of an article.
+query conflict {
+  search {
+    ...articleAuthorName
+    ...articleAuthorEmail
+  }
+}

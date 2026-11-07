@@ -99,7 +99,7 @@ export type RouteEntityFragment = {
  * ```
  */
 export type RouteFragment = {
-  route?: (RouteEntityFragment | RouteInternalFragment | object);
+  route?: (RouteInternalFragment | RouteInternalFragment & RouteEntityFragment | object);
 };
 
 /**
