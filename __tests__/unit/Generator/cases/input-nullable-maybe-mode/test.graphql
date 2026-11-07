@@ -1,0 +1,10 @@
+# With nullableField 'maybe', nullable variables and input fields may still be
+# left out or be null.
+
+query search($filter: Filter, $text: String, $page: Int! = 1) {
+  search(filter: $filter, text: $text, page: $page)
+}
+
+query requiredFilter($filter: Filter!) {
+  search(filter: $filter)
+}

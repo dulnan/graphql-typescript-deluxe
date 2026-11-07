@@ -17,6 +17,7 @@ import {
   type GraphQLInputObjectType,
   type GraphQLInterfaceType,
   type GraphQLNamedType,
+  type GraphQLNullableType,
   type GraphQLObjectType,
   type GraphQLSchema,
   type GraphQLType,
@@ -533,17 +534,62 @@ export class Generator {
     return this.withCache(
       'createInputTS',
       () => type.toString(),
-      () => {
-        const isNonNull = isNonNullType(type)
-        const nullableType = isNonNull ? type.ofType : type
-
-        const output = isListType(nullableType)
-          ? this.toArrayString(this.createInputTS(nullableType.ofType))
-          : this.IRToCode(this.buildOutputTypeIR(nullableType))
-
-        return isNonNull ? output : output + ' | null'
-      },
+      () =>
+        isNonNullType(type)
+          ? this.createNonNullInputTS(type.ofType)
+          : this.createNonNullInputTS(type) + ' | null',
     )
+  }
+
+  /**
+   * Generate the TS code for the type of a variable or input field, without
+   * null.
+   *
+   * @param type - The type, without its non-null wrapper.
+   *
+   * @returns The TS code.
+   */
+  private createNonNullInputTS(type: GraphQLNullableType): string {
+    return isListType(type)
+      ? this.toArrayString(this.createInputTS(type.ofType))
+      : this.IRToCode(this.buildOutputTypeIR(type))
+  }
+
+  /**
+   * Build the IR for a variable or an input field.
+   *
+   * A nullable value may be left out or be null, independent of the
+   * nullableField option. Only the null part uses the style of the option.
+   *
+   * @param type - The type, including its list and non-null wrappers.
+   * @param hasDefault - Whether it has a default value.
+   * @param description - The description.
+   *
+   * @returns The IR node.
+   */
+  private buildInputFieldIR(
+    type: GraphQLType,
+    hasDefault: boolean,
+    description?: string | null,
+  ): IRNodeScalar {
+    if (isNonNullType(type)) {
+      // A non-null value can only be left out if it has a default value.
+      return IR.SCALAR({
+        tsType: this.createInputTS(type),
+        optional: hasDefault,
+        description,
+      })
+    }
+
+    const tsType = this.createNonNullInputTS(type)
+    return IR.SCALAR({
+      tsType:
+        this.options.output.nullableField === 'maybe'
+          ? `${this.getOrCreateTypeHelper('maybe')}<${tsType}>`
+          : `${tsType} | null`,
+      optional: true,
+      description,
+    })
   }
 
   /**
@@ -570,15 +616,11 @@ export class Generator {
       const fields = Object.entries(type.getFields()).reduce<
         Record<string, IRNode>
       >((acc, [name, field]) => {
-        const required = isNonNullType(field.type)
-        const tsType = this.createInputTS(field.type)
-        acc[name] = IR.SCALAR({
-          tsType,
-          nullable: !required,
-          // A field with a default value may be left out.
-          optional: this.schema.hasDefaultValue(field),
-          description: field.description,
-        })
+        acc[name] = this.buildInputFieldIR(
+          field.type,
+          this.schema.hasDefaultValue(field),
+          field.description,
+        )
         return acc
       }, {})
 
@@ -835,14 +877,10 @@ export class Generator {
               fields: operation.variableDefinitions.reduce<
                 Record<string, IRNode>
               >((acc, vd) => {
-                acc[vd.variable.name.value] = IR.SCALAR({
-                  tsType: this.createInputTS(
-                    this.schema.getTypeFromNode(vd.type),
-                  ),
-                  nullable: vd.type.kind !== Kind.NON_NULL_TYPE,
-                  // A variable with a default value may be left out.
-                  optional: !!vd.defaultValue,
-                })
+                acc[vd.variable.name.value] = this.buildInputFieldIR(
+                  this.schema.getTypeFromNode(vd.type),
+                  !!vd.defaultValue,
+                )
                 return acc
               }, {}),
             }),
