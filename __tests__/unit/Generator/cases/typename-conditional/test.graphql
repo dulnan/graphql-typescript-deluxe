@@ -1,0 +1,100 @@
+# A __typename with @include or @skip may be missing.
+
+query object($withTypename: Boolean!) {
+  getHomepage {
+    __typename @include(if: $withTypename)
+    title
+  }
+}
+
+query objectSkip($withoutTypename: Boolean!) {
+  getHomepage {
+    __typename @skip(if: $withoutTypename)
+    title
+  }
+}
+
+query objectAlias($withTypename: Boolean!) {
+  getHomepage {
+    kind: __typename @include(if: $withTypename)
+    title
+  }
+}
+
+# The second selection is always included.
+query objectPlusPlain($withTypename: Boolean!) {
+  getHomepage {
+    __typename @include(if: $withTypename)
+    __typename
+    title
+  }
+}
+
+query root($withTypename: Boolean!) {
+  __typename @include(if: $withTypename)
+  isAvailable
+}
+
+query abstract($withTypename: Boolean!) {
+  getRandomEntity {
+    __typename @include(if: $withTypename)
+    id
+  }
+}
+
+query abstractWithBranches($withTypename: Boolean!) {
+  getRandomEntity {
+    __typename @include(if: $withTypename)
+    ... on User {
+      name
+    }
+  }
+}
+
+# The inline fragment always selects the __typename of a User.
+query abstractPlusInline($withTypename: Boolean!) {
+  getRandomEntity {
+    __typename @include(if: $withTypename)
+    ... on User {
+      __typename
+      name
+    }
+  }
+}
+
+query union($withTypename: Boolean!) {
+  search {
+    __typename @include(if: $withTypename)
+    ... on NodeArticle {
+      title
+    }
+  }
+}
+
+fragment pageId on NodePage {
+  __typename @include(if: $withTypename)
+  id
+}
+
+query fragmentInObject($withTypename: Boolean!) {
+  getHomepage {
+    ...pageId
+    title
+  }
+}
+
+fragment pageTitle on NodePage {
+  title
+}
+
+fragment pageBody on NodePage {
+  body
+}
+
+query onlyTypenameAndSpreads($withTypename: Boolean!) {
+  getHomepage {
+    __typename @include(if: $withTypename)
+    ...pageTitle
+    ...pageBody
+  }
+}

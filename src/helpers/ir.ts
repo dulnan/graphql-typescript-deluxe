@@ -611,7 +611,11 @@ function unifyObjectsIgnoringTypename(objects: IRNodeObject[]): IRNodeObject {
         typename = mergeTypenameNodes(typename, tnField)
       }
     }
-    mergedFields[key] = typename
+    // The fields of all objects are optional, or none, because the objects
+    // were grouped by how their fields are generated.
+    mergedFields[key] = field.optional
+      ? { ...typename, optional: true }
+      : typename
   }
 
   return IR.OBJECT({
@@ -811,6 +815,17 @@ export function hasNestedSelections(ir: IRNode): boolean {
  */
 export function hasTypenameField(fields: Record<string, IRNode>): boolean {
   return fields[TYPENAME] !== undefined
+}
+
+/**
+ * Whether the fields have a __typename field that is always present, so not
+ * conditional.
+ */
+export function hasRequiredTypenameField(
+  fields: Record<string, IRNode>,
+): boolean {
+  const field = fields[TYPENAME]
+  return !!field && !field.optional
 }
 
 export function buildFragmentIRFields(ir: IRNode): Record<string, IRNode> {

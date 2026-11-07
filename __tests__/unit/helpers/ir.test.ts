@@ -7,6 +7,7 @@ import {
   isIdenticalIR,
   postProcessIR,
   hasTypenameField,
+  hasRequiredTypenameField,
   buildFragmentIRFields,
   typenameToCode,
   type IRNode,
@@ -1078,6 +1079,41 @@ describe('postProcessIR', () => {
       expect(branches(spread(true), spread(true))).toBe(1)
     })
   })
+
+  it('keeps an optional __typename when merging branches', () => {
+    const branch = (typeName: string): IRNodeObject =>
+      IR.OBJECT({
+        graphQLTypeName: typeName,
+        fields: {
+          __typename: { ...IR.TYPENAME(typeName), optional: true },
+          id: IR.SCALAR({ tsType: 'string' }),
+        },
+      })
+    const union = IR.UNION({ types: [branch('Cat'), branch('Dog')] })
+    const result = postProcessIR(union) as IRNodeUnion
+    expect(result.types.length).toBe(1)
+    const typename = (result.types[0] as IRNodeObject).fields
+      .__typename as IRNodeTypename
+    expect(typename.types).toEqual(['Cat', 'Dog'])
+    expect(typename.optional).toBe(true)
+  })
+
+  it('does not merge branches if only one has an optional __typename', () => {
+    const union = IR.UNION({
+      types: [
+        IR.OBJECT({
+          graphQLTypeName: 'Cat',
+          fields: { __typename: IR.TYPENAME('Cat') },
+        }),
+        IR.OBJECT({
+          graphQLTypeName: 'Dog',
+          fields: { __typename: { ...IR.TYPENAME('Dog'), optional: true } },
+        }),
+      ],
+    })
+    const result = postProcessIR(union) as IRNodeUnion
+    expect(result.types.length).toBe(2)
+  })
 })
 
 describe('hasTypenameField', () => {
@@ -1098,6 +1134,25 @@ describe('hasTypenameField', () => {
 
   it('returns false for empty fields', () => {
     expect(hasTypenameField({})).toBe(false)
+  })
+})
+
+describe('hasRequiredTypenameField', () => {
+  it('returns true for a __typename that is always selected', () => {
+    expect(hasRequiredTypenameField({ __typename: IR.TYPENAME('User') })).toBe(
+      true,
+    )
+  })
+
+  it('returns false for a conditional __typename', () => {
+    const fields: Record<string, IRNode> = {
+      __typename: { ...IR.TYPENAME('User'), optional: true },
+    }
+    expect(hasRequiredTypenameField(fields)).toBe(false)
+  })
+
+  it('returns false without __typename', () => {
+    expect(hasRequiredTypenameField({})).toBe(false)
   })
 })
 

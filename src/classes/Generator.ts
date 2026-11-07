@@ -62,6 +62,7 @@ import {
   IR,
   buildFragmentIRFields,
   hasNestedSelections,
+  hasRequiredTypenameField,
   hasTypenameField,
   isIdenticalIR,
   mergeFragmentSpread,
@@ -1113,9 +1114,13 @@ export class Generator {
         if (sel.name.value === TYPENAME) {
           // The user explicitly requests __typename for this object type
           // => we know exactly what that string is
-          fields[sel.alias?.value || TYPENAME] = IR.TYPENAME(
-            this.getOrCreateObjectTypeName(objectType),
-          )
+          const alias = sel.alias?.value || TYPENAME
+          const typename: IRNodeTypename = {
+            ...IR.TYPENAME(this.getOrCreateObjectTypeName(objectType)),
+            optional: hasConditionalDirective(sel),
+          }
+          const current = fields[alias]
+          fields[alias] = current ? mergeIR(current, typename) : typename
           directFieldCount++
           // Continue since __typename is not a field that exists.
           continue
@@ -1149,9 +1154,10 @@ export class Generator {
         // If the fragment selects __typename, the parent object also gets one,
         // with the exact type of the object. In the intersection with the
         // fragment type, it selects the fragment's branch for this type. A
-        // conditional spread doesn't add it, because it may be missing.
+        // conditional spread or __typename doesn't add it, because it may be
+        // missing.
         if (
-          hasTypenameField(fragmentFields) &&
+          hasRequiredTypenameField(fragmentFields) &&
           !isConditional &&
           !hasTypenameField(fields)
         ) {
@@ -1468,12 +1474,16 @@ export class Generator {
         const fieldName = sel.name.value
         const aliasName = sel.alias?.value || fieldName
         if (fieldName === TYPENAME) {
-          // It may already be there because of the nonOptionalTypename option.
-          if (!baseFields[aliasName]) {
-            baseFields[aliasName] = IR.TYPENAME(
-              this.getOrCreateUnionTypenameType(abstractType),
-            )
+          // It may already be there because of the nonOptionalTypename option,
+          // or because it is selected more than once.
+          const typename: IRNodeTypename = {
+            ...IR.TYPENAME(this.getOrCreateUnionTypenameType(abstractType)),
+            optional: hasConditionalDirective(sel),
           }
+          const current = baseFields[aliasName]
+          baseFields[aliasName] = current
+            ? mergeIR(current, typename)
+            : typename
         }
         // If it's an interface, we can also gather interface-level fields directly
         else if (isInterfaceType(abstractType)) {
@@ -1775,7 +1785,11 @@ export class Generator {
 
       if (branchTypename) {
         for (const key of typenameKeys) {
-          mergedFields[key] = branchTypename
+          // A conditional __typename may be missing, unless an inline
+          // fragment for this type also selects it.
+          mergedFields[key] = mergedFields[key]!.optional
+            ? { ...branchTypename, optional: true }
+            : branchTypename
         }
       }
 
@@ -1908,7 +1922,11 @@ export class Generator {
       }
     }
 
-    const hasOnlyTypename = fields.has(TYPENAME) && fields.size === 1
+    // A conditional __typename is merged like any other field.
+    const hasOnlyTypename =
+      !!fields.get(TYPENAME) &&
+      !fields.get(TYPENAME)!.optional &&
+      fields.size === 1
     const hasConflicts = !!conflictFields.size
 
     // Special case: Only __typename field and multiple fragment spreads:
@@ -1922,9 +1940,7 @@ export class Generator {
 
       for (const spread of spreads) {
         const fragmentFields = this.getFragmentIRFields(spread.name)
-        const hasFragmentTypename = fragmentFields && TYPENAME in fragmentFields
-
-        if (hasFragmentTypename && !spread.optional) {
+        if (hasRequiredTypenameField(fragmentFields) && !spread.optional) {
           // Fragment already has __typename, we can use as is.
           parts.push(spread.fragmentTypeName)
         } else {
