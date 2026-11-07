@@ -1,0 +1,43 @@
+# A fragment on an abstract type, spread in a selection on an object type, has
+# a branch for each possible type. With __typename, the parent object gets the
+# __typename of its type. The intersection with the fragment then only
+# contains the fragment's branch for that type.
+
+# A fragment on an interface, spread next to a field.
+query interfaceFragment {
+  getHomepage {
+    title
+    ...entityInfo
+  }
+}
+
+# A fragment on a union, spread in an inline fragment on one of its types.
+query unionFragment {
+  getRandomEntity {
+    ... on NodeArticle {
+      title
+      ...searchResultInfo
+    }
+  }
+}
+
+fragment entityInfo on Entity {
+  __typename
+  id
+  ... on NodePage {
+    body
+  }
+  ... on User {
+    name
+  }
+}
+
+fragment searchResultInfo on SearchResult {
+  __typename
+  ... on NodeArticle {
+    body
+  }
+  ... on MediaVideo {
+    videoUrl
+  }
+}

@@ -1078,9 +1078,16 @@ export class Generator {
         // The __typename of a conditional spread is not moved to the parent
         // object, because it may be missing.
         const isConditional = hasConditionalDirective(sel)
-        const hasTypename = hasTypenameField(fragmentFields) && !isConditional
 
-        if (hasTypename && !hasTypenameField(fields)) {
+        // If the fragment selects __typename, the parent object also gets one,
+        // with the exact type of the object. In the intersection with the
+        // fragment type, it selects the fragment's branch for this type. A
+        // conditional spread doesn't add it, because it may be missing.
+        if (
+          hasTypenameField(fragmentFields) &&
+          !isConditional &&
+          !hasTypenameField(fields)
+        ) {
           hasTypenameFromSpread = true
         }
 
@@ -1098,7 +1105,6 @@ export class Generator {
               fragmentTypeName: fragTypeName,
               parentType: objectType.name,
               fragmentTypeCondition: condName,
-              omit: hasTypename && directFieldCount >= 1 ? [TYPENAME] : [],
               optional: isConditional,
             }),
           )
@@ -2059,14 +2065,11 @@ export class Generator {
       }
 
       case 'FRAGMENT_SPREAD': {
-        // Merges as an intersection into the parent's object.
-        let code = ir.fragmentTypeName
-        if (ir.omit?.length) {
-          const omit = ir.omit.map((type) => `'${type}'`).join(' | ')
-          code = `Omit<${code}, ${omit}>`
-        }
-        // The fields of a conditional spread may be missing.
-        return ir.optional ? `Partial<${code}>` : code
+        // Merges as an intersection into the parent's object. The fields of a
+        // conditional spread may be missing.
+        return ir.optional
+          ? `Partial<${ir.fragmentTypeName}>`
+          : ir.fragmentTypeName
       }
     }
   }

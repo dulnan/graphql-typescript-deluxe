@@ -49,7 +49,7 @@ export type MediaImageFragment = {
   __typename: MediaImage;
   /** The image URL. */
   image?: string;
-} & Omit<MediaFragment, '__typename'>;
+} & MediaFragment;
 
 /**
  * @see {@link file://./test.graphql}
@@ -85,7 +85,7 @@ export type MediaVideoFragment = {
   __typename: MediaVideo;
   /** The URL of the video (external). */
   videoUrl?: string;
-} & Omit<MediaFragment, '__typename'>;
+} & MediaFragment;
 
 /**
  * @see {@link file://./test.graphql}
@@ -102,7 +102,7 @@ export type MediaVideoGrandchildFragment = {
   __typename: MediaVideo;
   /** The URL of the video (external). */
   videoUrl?: string;
-} & Omit<MediaIntermediateFragment, '__typename'>;
+} & MediaIntermediateFragment;
 
 /**
  * @see {@link file://./test.graphql}

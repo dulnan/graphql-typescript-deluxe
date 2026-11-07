@@ -62,7 +62,6 @@ export type IRNodeFragmentSpread = {
   description?: string | null
   optional?: boolean
   nullable?: boolean
-  omit?: string[]
 
   /**
    * The name of the fragment definition node.
