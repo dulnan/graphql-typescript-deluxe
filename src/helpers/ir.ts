@@ -834,15 +834,18 @@ export function buildFragmentIRFields(ir: IRNode): Record<string, IRNode> {
     return ir.fields
   }
 
-  // If it's a UNION, unify all OBJECT branches.
+  // If it's a UNION, unify all OBJECT branches. Only one of them applies to
+  // an object, so a field is only present if all branches select it.
   if (ir.kind === 'UNION') {
-    let merged: Record<string, IRNode> = {}
+    let merged: Record<string, IRNode> | null = null
     for (const branch of ir.types) {
       if (branch.kind === 'OBJECT') {
-        merged = mergeObjectFields(merged, branch.fields)
+        merged = merged
+          ? mergeObjectFields(merged, branch.fields, true, true)
+          : { ...branch.fields }
       }
     }
-    return merged
+    return merged ?? {}
   }
 
   // There are no fields.

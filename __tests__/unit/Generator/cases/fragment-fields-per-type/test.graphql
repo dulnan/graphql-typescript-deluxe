@@ -1,0 +1,63 @@
+# A fragment on an interface selects different fields for each type. Spread in
+# an object, only the fields for the type of the object apply.
+
+fragment linkId on Node {
+  ... on Article {
+    link {
+      id
+    }
+  }
+  ... on Page {
+    link @include(if: $withLink) {
+      id
+    }
+  }
+}
+
+fragment articleLink on Node {
+  ... on Article {
+    link {
+      id
+      label
+    }
+  }
+}
+
+# The link of a page is conditional.
+query pageLinkId($withLink: Boolean!) {
+  page {
+    ...linkId
+    link {
+      url
+    }
+  }
+}
+
+# The link of an article is always selected.
+query articleLinkId($withLink: Boolean!) {
+  article {
+    ...linkId
+    link {
+      url
+    }
+  }
+}
+
+# The fragment selects nothing on a page.
+query pageArticleLink {
+  page {
+    ...articleLink
+    link {
+      url
+    }
+  }
+}
+
+query articleArticleLink {
+  article {
+    ...articleLink
+    link {
+      url
+    }
+  }
+}

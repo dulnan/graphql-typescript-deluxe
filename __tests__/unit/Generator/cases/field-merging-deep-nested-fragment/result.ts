@@ -97,12 +97,14 @@ export type RouteEntityFragment = {
  * ```
  */
 export type RouteFragment = {
-  route?: (RouteInternalFragment | RouteInternalFragment & RouteEntityFragment | object | {
-    __typename: DefaultEntityUrl;
+  route?: (({
     entity?: {
+      id: string;
       title: string;
     };
-  } | {
+  } & {
+    __typename: DefaultEntityUrl;
+  } & RouteInternalFragment & Omit<RouteEntityFragment, "entity">) | RouteInternalFragment | object | {
     __typename: DefaultInternalUrl | DefaultUrl;
   });
 };

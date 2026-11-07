@@ -1091,6 +1091,43 @@ export class Generator {
   }
 
   /**
+   * Get the fields that a fragment selects on the type in which it's spread.
+   *
+   * A fragment on an abstract type can select different fields for each of
+   * its types. Spread in an object, only the fields for that object type
+   * apply.
+   *
+   * @param fragmentName - The name of the fragment.
+   * @param parentTypeName - The name of the type in which it's spread.
+   *
+   * @returns The map, where the key is the name of the field and the value is the IR node.
+   */
+  private getFragmentIRFieldsForType(
+    fragmentName: string,
+    parentTypeName: string,
+  ): Record<string, IRNode> {
+    const fragment = this.getFragmentNode(fragmentName)
+    const parentType = this.schema.getType(parentTypeName)
+    if (
+      !isObjectType(parentType) ||
+      fragment.typeCondition.name.value === parentTypeName
+    ) {
+      return this.getFragmentIRFields(fragmentName)
+    }
+
+    return this.withCache(
+      'getFragmentIRFieldsForType',
+      fragmentName + ' ' + parentTypeName,
+      () => {
+        const ir = this.postProcessIR(
+          this.buildObjectSelectionSet(parentType, fragment.selectionSet),
+        )
+        return ir.kind === 'OBJECT' ? ir.fields : {}
+      },
+    )
+  }
+
+  /**
    * Build the IR of the selection set of an object type.
    *
    * @param objectType - The object type.
@@ -1146,7 +1183,10 @@ export class Generator {
       if (sel.kind === Kind.FRAGMENT_SPREAD) {
         const fragName = sel.name.value
         const fragDef = this.getFragmentNode(fragName)
-        const fragmentFields = this.getFragmentIRFields(fragName)
+        const fragmentFields = this.getFragmentIRFieldsForType(
+          fragName,
+          objectType.name,
+        )
         // The __typename of a conditional spread is not moved to the parent
         // object, because it may be missing.
         const isConditional = hasConditionalDirective(sel)
@@ -1262,14 +1302,16 @@ export class Generator {
   /**
    * Build the IR for an object that only spreads the given fragments.
    *
-   * @param parentType - The type in which the fragments are spread.
+   * @param abstractType - The type in which the fragments are spread.
    * @param fragments - The fragment definitions.
+   * @param typeNames - The possible types to which the fragments apply.
    *
    * @returns The IR node.
    */
   private buildFragmentsIntersection(
-    parentType: GraphQLAbstractType,
+    abstractType: GraphQLAbstractType,
     fragments: FragmentDefinitionNode[],
+    typeNames: string[],
   ): IRNode {
     if (fragments.length === 0) {
       return this.emptyObjectScalar()
@@ -1280,7 +1322,10 @@ export class Generator {
     }
 
     // The fields are merged when the IR is converted to code, which also
-    // handles conflicts between the fragments.
+    // handles conflicts between the fragments. If the fragments only apply to
+    // a single type, only their fields for this type are merged.
+    const parentTypeName =
+      typeNames.length === 1 ? typeNames[0]! : abstractType.name
     const fields: Record<string, IRNode> = {}
     for (const fragment of fragments) {
       mergeFragmentSpread(
@@ -1288,12 +1333,12 @@ export class Generator {
         IR.FRAGMENT_SPREAD({
           name: fragment.name.value,
           fragmentTypeName: this.generateFragmentType(fragment.name.value),
-          parentType: parentType.name,
+          parentType: parentTypeName,
           fragmentTypeCondition: fragment.typeCondition.name.value,
         }),
       )
     }
-    return IR.OBJECT({ graphQLTypeName: parentType.name, fields })
+    return IR.OBJECT({ graphQLTypeName: parentTypeName, fields })
   }
 
   /**
@@ -1585,7 +1630,10 @@ export class Generator {
         // Group the possible types by the fragments that apply to them. A
         // type condition can be an abstract type, which applies to several
         // possible types, so a type can have the fields of several fragments.
-        const groups = new Map<string, FragmentDefinitionNode[]>()
+        const groups = new Map<
+          string,
+          { fragments: FragmentDefinitionNode[]; typeNames: string[] }
+        >()
         for (const possibleTypeName of possibleTypes) {
           const fragments = concreteFragmentTypes.flatMap((typeName) =>
             possibleTypeName === typeName ||
@@ -1593,13 +1641,20 @@ export class Generator {
               ? fragmentsByConcreteType[typeName]!
               : [],
           )
-          groups.set(fragments.map((v) => v.name.value).join(' '), fragments)
+          const key = fragments.map((v) => v.name.value).join(' ')
+          const group = groups.get(key) ?? { fragments, typeNames: [] }
+          group.typeNames.push(possibleTypeName)
+          groups.set(key, group)
         }
 
         // Each group is the intersection of its fragments. A group without
         // fragments is an empty object.
-        const unionTypes = [...groups.values()].map((fragments) =>
-          this.buildFragmentsIntersection(abstractType, fragments),
+        const unionTypes = [...groups.values()].map((group) =>
+          this.buildFragmentsIntersection(
+            abstractType,
+            group.fragments,
+            group.typeNames,
+          ),
         )
         if (unionTypes.length > 1) {
           return IR.UNION({ types: unionTypes })
@@ -1851,7 +1906,10 @@ export class Generator {
     const fragmentFieldMaps: Record<string, Record<string, IRNode>> = {}
 
     for (const spread of spreads) {
-      const fragmentFields = this.getFragmentIRFields(spread.name)
+      const fragmentFields = this.getFragmentIRFieldsForType(
+        spread.name,
+        spread.parentType,
+      )
       fragmentFieldMaps[spread.fragmentTypeName] = fragmentFields
     }
 
@@ -1939,7 +1997,10 @@ export class Generator {
       const parts: string[] = []
 
       for (const spread of spreads) {
-        const fragmentFields = this.getFragmentIRFields(spread.name)
+        const fragmentFields = this.getFragmentIRFieldsForType(
+          spread.name,
+          spread.parentType,
+        )
         if (hasRequiredTypenameField(fragmentFields) && !spread.optional) {
           // Fragment already has __typename, we can use as is.
           parts.push(spread.fragmentTypeName)

@@ -1,0 +1,24 @@
+interface Node {
+  id: ID!
+}
+
+type Link implements Node {
+  id: ID!
+  url: String
+  label: String
+}
+
+type Article implements Node {
+  id: ID!
+  link: Link
+}
+
+type Page implements Node {
+  id: ID!
+  link: Link
+}
+
+type Query {
+  article: Article
+  page: Page
+}

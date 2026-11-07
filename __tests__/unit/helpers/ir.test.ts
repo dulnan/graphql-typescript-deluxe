@@ -1188,6 +1188,35 @@ describe('buildFragmentIRFields', () => {
     expect(result.role).toBeDefined()
   })
 
+  it('makes fields optional that not all branches select', () => {
+    const link = (fields: Record<string, IRNode>, optional = false): IRNode =>
+      IR.OBJECT({ graphQLTypeName: 'Link', fields, optional })
+    const id = IR.SCALAR({ tsType: 'string' })
+    const url = IR.SCALAR({ tsType: 'string' })
+    const union = IR.UNION({
+      types: [
+        IR.OBJECT({
+          graphQLTypeName: 'Article',
+          fields: { id, link: link({ id, url }), main: link({ id }) },
+        }),
+        IR.OBJECT({
+          graphQLTypeName: 'Page',
+          fields: { id, link: link({ id }), main: link({ id }, true) },
+        }),
+      ],
+    })
+    const result = buildFragmentIRFields(union)
+    // Selected by all branches.
+    expect(result.id!.optional).toBeUndefined()
+    expect(result.link!.optional).toBeUndefined()
+    const linkFields = (result.link as IRNodeObject).fields
+    expect(linkFields.id!.optional).toBeUndefined()
+    // Only selected by Article.
+    expect(linkFields.url!.optional).toBe(true)
+    // Conditional on Page.
+    expect(result.main!.optional).toBe(true)
+  })
+
   it('skips non-object branches in union', () => {
     const union = IR.UNION({
       types: [
