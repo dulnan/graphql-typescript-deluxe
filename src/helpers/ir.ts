@@ -188,7 +188,7 @@ function mergeScalar(oldIR: IRNodeScalar, newIR: IRNodeScalar): IRNodeScalar {
     return IR.SCALAR({
       tsType: oldIR.tsType,
       nullable: oldIR.nullable && newIR.nullable,
-      description: newIR.description || newIR.description,
+      description: newIR.description || oldIR.description,
     })
   }
 
