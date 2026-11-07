@@ -79,6 +79,6 @@ export type DirectivesSkipQuery = {
 
 /** @see {@link file://./test.graphql} */
 export type DirectivesSkipQueryVariables = Exact<{
-  skipAuthor?: boolean | null;
-  skipCategories?: boolean | null;
+  skipAuthor?: boolean;
+  skipCategories?: boolean;
 }>;

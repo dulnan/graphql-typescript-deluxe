@@ -226,6 +226,34 @@ describe('SchemaProvider', () => {
     })
   })
 
+  describe('getVariableUsages', () => {
+    const schema = buildSchema(`
+      input Filter {
+        language: String!
+      }
+      type Query {
+        search(text: String, filter: Filter, limit: Int!): String
+      }
+    `)
+    const provider = new SchemaProvider(schema)
+
+    it('returns variables used where a non-null value is required', () => {
+      const document = parse(`
+        query q($a: Boolean, $b: String, $c: String, $d: Int, $e: String) {
+          search(text: $b, filter: { language: $c }, limit: $d) @include(if: $a)
+          other: search(text: $e, limit: 1)
+          ...f
+        }
+        fragment f on Query { search(limit: 1) }
+      `)
+      const usages = provider.getVariableUsages(
+        document.definitions[0] as OperationDefinitionNode,
+      )
+      expect(usages.nonNull.sort()).toEqual(['a', 'c', 'd'])
+      expect(usages.fragments).toEqual(['f'])
+    })
+  })
+
   describe('hasDefaultValue', () => {
     const sdl = `
       input Filter {

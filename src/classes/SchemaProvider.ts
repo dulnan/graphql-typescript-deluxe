@@ -2,14 +2,19 @@ import {
   GraphQLObjectType,
   Kind,
   SchemaMetaFieldDef,
+  TypeInfo,
   TypeMetaFieldDef,
   isAbstractType,
+  isNonNullType,
   typeFromAST,
+  visit,
+  visitWithTypeInfo,
   type GraphQLAbstractType,
   type GraphQLField,
   type GraphQLInputField,
   type GraphQLNamedType,
   type GraphQLSchema,
+  type FragmentDefinitionNode,
   type GraphQLType,
   type OperationDefinitionNode,
   type TypeNode,
@@ -188,6 +193,42 @@ export class SchemaProvider {
     return this.schemaImplementation.has(
       `implements:${abstractName}---${objectName}`,
     )
+  }
+
+  /**
+   * Get the variables that are used where a non-null value is required, in
+   * the given operation or fragment, without the fragments it spreads.
+   *
+   * Such a variable can't be null, even if its type is nullable. GraphQL
+   * allows this if the variable or the argument has a default value.
+   *
+   * @param node - The operation or fragment definition.
+   *
+   * @returns The names of the variables and of the spread fragments.
+   */
+  public getVariableUsages(
+    node: OperationDefinitionNode | FragmentDefinitionNode,
+  ): { nonNull: string[]; fragments: string[] } {
+    const typeInfo = new TypeInfo(this.schema)
+    const nonNull = new Set<string>()
+    const fragments = new Set<string>()
+    visit(
+      node,
+      visitWithTypeInfo(typeInfo, {
+        // The variable definitions are not usages.
+        VariableDefinition: () => false,
+        Variable: (variable) => {
+          const type = typeInfo.getInputType()
+          if (type && isNonNullType(type)) {
+            nonNull.add(variable.name.value)
+          }
+        },
+        FragmentSpread: (spread) => {
+          fragments.add(spread.name.value)
+        },
+      }),
+    )
+    return { nonNull: [...nonNull], fragments: [...fragments] }
   }
 
   /**

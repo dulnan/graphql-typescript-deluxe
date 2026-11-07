@@ -572,6 +572,7 @@ export class Generator {
    * @param type - The type, including its list and non-null wrappers.
    * @param hasDefault - Whether it has a default value.
    * @param description - The description.
+   * @param isUsedAsNonNull - Whether a nullable variable is used where a non-null value is required, so it may be left out, but not be null.
    *
    * @returns The IR node.
    */
@@ -579,6 +580,7 @@ export class Generator {
     type: GraphQLType,
     hasDefault: boolean,
     description?: string | null,
+    isUsedAsNonNull = false,
   ): IRNodeScalar {
     if (isNonNullType(type)) {
       // A non-null value can only be left out if it has a default value.
@@ -590,6 +592,10 @@ export class Generator {
     }
 
     const tsType = this.createNonNullInputTS(type)
+    if (isUsedAsNonNull) {
+      return IR.SCALAR({ tsType, optional: true, description })
+    }
+
     return IR.SCALAR({
       tsType:
         this.options.output.nullableField === 'maybe'
@@ -598,6 +604,34 @@ export class Generator {
       optional: true,
       description,
     })
+  }
+
+  /**
+   * Get the variables of an operation that are used where a non-null value is
+   * required, also in the fragments it spreads.
+   *
+   * @param operation - The operation definition.
+   *
+   * @returns The names of the variables.
+   */
+  private getNonNullVariables(operation: OperationDefinitionNode): Set<string> {
+    const { nonNull, fragments } = this.schema.getVariableUsages(operation)
+    const result = new Set(nonNull)
+    const visited = new Set<string>()
+    const queue = [...fragments]
+    while (queue.length) {
+      const fragmentName = queue.pop()!
+      if (visited.has(fragmentName)) {
+        continue
+      }
+      visited.add(fragmentName)
+      const usages = this.withCache('getVariableUsages', fragmentName, () =>
+        this.schema.getVariableUsages(this.getFragmentNode(fragmentName)),
+      )
+      usages.nonNull.forEach((name) => result.add(name))
+      queue.push(...usages.fragments)
+    }
+    return result
   }
 
   /**
@@ -892,6 +926,12 @@ export class Generator {
 
     this.generateCodeOnce('operation-variables', opName + '-variables', () => {
       const exact = this.getOrCreateTypeHelper('exact')
+      // A nullable variable can't be null where a non-null value is required.
+      const nonNullVariables = operation.variableDefinitions?.some(
+        (vd) => vd.type.kind !== Kind.NON_NULL_TYPE,
+      )
+        ? this.getNonNullVariables(operation)
+        : new Set<string>()
       const typeCode = operation.variableDefinitions?.length
         ? this.objectNodeToCode(
             IR.OBJECT({
@@ -902,6 +942,8 @@ export class Generator {
                 acc[vd.variable.name.value] = this.buildInputFieldIR(
                   this.schema.getTypeFromNode(vd.type),
                   !!vd.defaultValue,
+                  undefined,
+                  nonNullVariables.has(vd.variable.name.value),
                 )
                 return acc
               }, {}),

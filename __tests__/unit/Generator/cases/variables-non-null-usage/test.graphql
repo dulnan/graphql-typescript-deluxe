@@ -1,0 +1,29 @@
+# A nullable variable may be used where a non-null value is required, if it or
+# the argument has a default value. It may be left out, but can't be null.
+
+fragment pageBody on Page {
+  body @include(if: $withBody)
+}
+
+# Used in a directive, in a spread fragment.
+query directive($withBody: Boolean = false) {
+  page {
+    title
+    ...pageBody
+  }
+}
+
+# Used in a field of an input object and in a list.
+query inputValues($language: String = "en", $tag: String = "news") {
+  search(filter: { language: $language }, tags: [$tag])
+}
+
+# The argument has a default value.
+query argumentDefault($limit: Int) {
+  search(limit: $limit)
+}
+
+# Used where null is allowed, so it can be null.
+query nullable($text: String = "news") {
+  search(text: $text)
+}

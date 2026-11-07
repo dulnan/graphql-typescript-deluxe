@@ -1,0 +1,18 @@
+input Filter {
+  language: String!
+}
+
+type Query {
+  page: Page
+  search(
+    text: String
+    filter: Filter
+    limit: Int! = 10
+    tags: [String!]
+  ): [String]
+}
+
+type Page {
+  title: String!
+  body: String
+}

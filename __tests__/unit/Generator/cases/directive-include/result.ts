@@ -70,6 +70,6 @@ export type DirectivesIncludeQuery = {
 
 /** @see {@link file://./test.graphql} */
 export type DirectivesIncludeQueryVariables = Exact<{
-  withAuthor?: boolean | null;
-  withCategories?: boolean | null;
+  withAuthor?: boolean;
+  withCategories?: boolean;
 }>;
