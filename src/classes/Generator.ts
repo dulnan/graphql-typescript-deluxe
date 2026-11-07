@@ -24,15 +24,12 @@ import {
   type OperationDefinitionNode,
   type SelectionNode,
   type SelectionSetNode,
-  type TypeNode,
 } from 'graphql'
 import {
   getAstSource,
   getInlineFragmentTypeName,
-  getTypeNodeKey,
   hasConditionalDirective,
   mergeSameFieldSelections,
-  unwrapNonNull,
 } from '../helpers/ast'
 import { unreachable } from '../helpers/unreachable'
 import type { GeneratorOptions, TypeCommentOptions } from '../types/options'
@@ -499,36 +496,28 @@ export class Generator {
   // ===========================================================================
 
   /**
-   * Generate the TS code for the given input type node.
+   * Generate the TS code for the type of a variable or of an input field.
    *
-   * @param typeNode - The input type node.
+   * This uses the schema type, not its AST node, so that it also works for
+   * schemas without AST nodes (e.g. from `buildClientSchema()` or code-first).
+   *
+   * @param type - The type, including its list and non-null wrappers.
    *
    * @returns The TS code.
-   *
-   * @throws {@link TypeNotFoundError} if the type could not be found.
    */
-  private createInputTS(typeNode: TypeNode): string {
+  private createInputTS(type: GraphQLType): string {
     return this.withCache(
       'createInputTS',
-      () => getTypeNodeKey(typeNode),
+      () => type.toString(),
       () => {
-        const { type, isNonNull } = unwrapNonNull(typeNode)
+        const isNonNull = isNonNullType(type)
+        const nullableType = isNonNull ? type.ofType : type
 
-        let output = 'any'
+        const output = isListType(nullableType)
+          ? this.toArrayString(this.createInputTS(nullableType.ofType))
+          : this.IRToCode(this.buildOutputTypeIR(nullableType))
 
-        if (type.kind === Kind.LIST_TYPE) {
-          const element = this.createInputTS(type.type)
-          output = this.toArrayString(element)
-        } else if (type.kind === Kind.NAMED_TYPE) {
-          const namedType = this.schema.getType(type.name.value)
-          output = this.IRToCode(this.buildOutputTypeIR(namedType))
-        }
-
-        if (!isNonNull) {
-          output += ' | null'
-        }
-
-        return output
+        return isNonNull ? output : output + ' | null'
       },
     )
   }
@@ -539,8 +528,6 @@ export class Generator {
    * @param type - The input type.
    *
    * @returns The TS name of the type.
-   *
-   * @throws {@link LogicError} when the AST node is missing on the input field.
    */
   private getOrCreateInputType(type: GraphQLInputObjectType): string {
     // It's possible to end up in (valid) infinite recursion here, because an
@@ -560,12 +547,7 @@ export class Generator {
         Record<string, IRNode>
       >((acc, [name, field]) => {
         const required = isNonNullType(field.type)
-        /* v8 ignore start -- @preserve */
-        if (!field.astNode) {
-          unreachable('Missing astNode on input field: ' + field.name)
-        }
-        /* v8 ignore stop */
-        const tsType = this.createInputTS(field.astNode.type)
+        const tsType = this.createInputTS(field.type)
         acc[name] = IR.SCALAR({
           tsType,
           nullable: !required,
@@ -770,7 +752,9 @@ export class Generator {
                 Record<string, IRNode>
               >((acc, vd) => {
                 acc[vd.variable.name.value] = IR.SCALAR({
-                  tsType: this.createInputTS(vd.type),
+                  tsType: this.createInputTS(
+                    this.schema.getTypeFromNode(vd.type),
+                  ),
                   nullable: vd.type.kind !== Kind.NON_NULL_TYPE,
                 })
                 return acc

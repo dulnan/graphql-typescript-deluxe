@@ -3,6 +3,7 @@ import { loadSchemaSync } from '@graphql-tools/load'
 import {
   GraphQLSchema,
   parse,
+  parseType,
   type OperationDefinitionNode,
   GraphQLInterfaceType,
   GraphQLUnionType,
@@ -179,6 +180,20 @@ describe('SchemaProvider', () => {
       expect(() => schemaProvider.getType('NonExistentType')).toThrow(
         TypeNotFoundError,
       )
+    })
+  })
+
+  describe('getTypeFromNode', () => {
+    it('should return the type including list and non-null wrappers', () => {
+      const type = schemaProvider.getTypeFromNode(parseType('[[ID!]]!'))
+
+      expect(type.toString()).toBe('[[ID!]]!')
+    })
+
+    it('should throw TypeNotFoundError for a non-existent wrapped type', () => {
+      expect(() =>
+        schemaProvider.getTypeFromNode(parseType('[NonExistentType!]!')),
+      ).toThrow(new TypeNotFoundError('NonExistentType'))
     })
   })
 

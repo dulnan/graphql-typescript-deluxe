@@ -6,18 +6,7 @@ import {
   Kind,
   type OperationDefinitionNode,
   type SelectionSetNode,
-  type TypeNode,
 } from 'graphql'
-
-export function unwrapNonNull(typeNode: TypeNode): {
-  type: TypeNode
-  isNonNull: boolean
-} {
-  if (typeNode.kind === Kind.NON_NULL_TYPE) {
-    return { type: typeNode.type, isNonNull: true }
-  }
-  return { type: typeNode, isNonNull: false }
-}
 
 /**
  * Determines if the field node has any of the two default conditional directives.
@@ -119,21 +108,6 @@ export function mergeSameFieldSelections(
     ...selectionSet,
     selections: [...mergedFieldNodes, ...otherSelections],
   }
-}
-
-/**
- * Inline fragments on operations.
- */
-export function getTypeNodeKey(node: TypeNode): string {
-  let key = ''
-  if (node.kind === Kind.NAMED_TYPE) {
-    key += node.name.value
-  } else if (node.kind === Kind.LIST_TYPE) {
-    key += 'list-' + getTypeNodeKey(node.type)
-  } else {
-    key += 'non-null-' + getTypeNodeKey(node.type)
-  }
-  return key
 }
 
 export function getAstSource(

@@ -2,36 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { Kind, parse } from 'graphql'
 import type { FieldNode, SelectionSetNode } from 'graphql'
 import {
-  unwrapNonNull,
   hasConditionalDirective,
   mergeSameFieldSelections,
-  getTypeNodeKey,
   getAstSource,
 } from '../../../src/helpers/ast'
 
 describe('ast helpers', () => {
-  describe('unwrapNonNull', () => {
-    it('should unwrap non-null type', () => {
-      const doc = parse('type Query { field: String! }')
-      const typeDef = doc.definitions[0] as any
-      const fieldType = typeDef.fields[0].type
-
-      const result = unwrapNonNull(fieldType)
-      expect(result.isNonNull).toBe(true)
-      expect(result.type.kind).toBe(Kind.NAMED_TYPE)
-    })
-
-    it('should return type as-is for nullable type', () => {
-      const doc = parse('type Query { field: String }')
-      const typeDef = doc.definitions[0] as any
-      const fieldType = typeDef.fields[0].type
-
-      const result = unwrapNonNull(fieldType)
-      expect(result.isNonNull).toBe(false)
-      expect(result.type).toBe(fieldType)
-    })
-  })
-
   describe('hasConditionalDirective', () => {
     it('should return false when field has no directives', () => {
       const doc = parse('{ field }')
@@ -153,40 +129,6 @@ describe('ast helpers', () => {
       expect(result.selections.length).toBe(1)
       const userField = result.selections[0] as FieldNode
       expect(userField.alias?.value).toBe('u')
-    })
-  })
-
-  describe('getTypeNodeKey', () => {
-    it('should generate key for named type', () => {
-      const doc = parse('type Query { field: String }')
-      const typeDef = doc.definitions[0] as any
-      const fieldType = typeDef.fields[0].type
-
-      expect(getTypeNodeKey(fieldType)).toBe('String')
-    })
-
-    it('should generate key for list type', () => {
-      const doc = parse('type Query { field: [String] }')
-      const typeDef = doc.definitions[0] as any
-      const fieldType = typeDef.fields[0].type
-
-      expect(getTypeNodeKey(fieldType)).toBe('list-String')
-    })
-
-    it('should generate key for non-null type', () => {
-      const doc = parse('type Query { field: String! }')
-      const typeDef = doc.definitions[0] as any
-      const fieldType = typeDef.fields[0].type
-
-      expect(getTypeNodeKey(fieldType)).toBe('non-null-String')
-    })
-
-    it('should generate key for nested list/non-null types', () => {
-      const doc = parse('type Query { field: [String!]! }')
-      const typeDef = doc.definitions[0] as any
-      const fieldType = typeDef.fields[0].type
-
-      expect(getTypeNodeKey(fieldType)).toBe('non-null-list-non-null-String')
     })
   })
 

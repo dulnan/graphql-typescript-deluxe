@@ -1,10 +1,14 @@
 import {
   GraphQLObjectType,
+  Kind,
   isAbstractType,
+  typeFromAST,
   type GraphQLAbstractType,
   type GraphQLNamedType,
   type GraphQLSchema,
+  type GraphQLType,
   type OperationDefinitionNode,
+  type TypeNode,
 } from 'graphql'
 import { TypeNotFoundError } from '../errors'
 
@@ -90,6 +94,28 @@ export class SchemaProvider {
     const type = this.schema.getType(name)
     if (!type) {
       throw new TypeNotFoundError(name)
+    }
+
+    return type
+  }
+
+  /**
+   * Get the type for a type node, such as the type of a variable definition.
+   *
+   * @param node - The type node.
+   *
+   * @returns The type, including its list and non-null wrappers.
+   *
+   * @throws {@link TypeNotFoundError} if the named type does not exist.
+   */
+  public getTypeFromNode(node: TypeNode): GraphQLType {
+    const type = typeFromAST(this.schema, node)
+    if (!type) {
+      let namedNode = node
+      while (namedNode.kind !== Kind.NAMED_TYPE) {
+        namedNode = namedNode.type
+      }
+      throw new TypeNotFoundError(namedNode.name.value)
     }
 
     return type
