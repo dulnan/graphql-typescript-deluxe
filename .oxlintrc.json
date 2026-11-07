@@ -1,0 +1,80 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["unicorn", "oxc"],
+  "categories": {
+    "correctness": "error"
+  },
+  "env": {
+    "builtin": true,
+    "es2022": true,
+    "node": true
+  },
+  "settings": {
+    "vitest": {
+      "typecheck": true
+    }
+  },
+  "ignorePatterns": [
+    "**/dist/**",
+    "**/tmp/**",
+    "**/coverage/**",
+    "**/output/**",
+    "scripts"
+  ],
+  "rules": {
+    "no-case-declarations": "error",
+    "no-empty": "error",
+    "no-fallthrough": "error",
+    "no-prototype-builtins": "error",
+    "no-redeclare": "error",
+    "no-regex-spaces": "error"
+  },
+  "overrides": [
+    {
+      "files": ["**/*.ts", "**/*.mts"],
+      "plugins": ["typescript"],
+      "rules": {
+        "constructor-super": "off",
+        "getter-return": "off",
+        "no-class-assign": "off",
+        "no-const-assign": "off",
+        "no-dupe-class-members": "off",
+        "no-dupe-keys": "off",
+        "no-func-assign": "off",
+        "no-import-assign": "off",
+        "no-new-native-nonconstructor": "off",
+        "no-obj-calls": "off",
+        "no-redeclare": "off",
+        "no-setter-return": "off",
+        "no-this-before-super": "off",
+        "no-unreachable": "off",
+        "no-unsafe-negation": "off",
+        "no-with": "off",
+        "no-var": "error",
+        "prefer-const": "error",
+        "prefer-rest-params": "error",
+        "prefer-spread": "error",
+        "no-array-constructor": "error",
+        "typescript/ban-ts-comment": "error",
+        "typescript/no-namespace": "error",
+        "typescript/no-require-imports": "error",
+        "typescript/no-unnecessary-type-constraint": "error",
+        "typescript/no-unsafe-function-type": "error",
+        "typescript/explicit-function-return-type": "warn"
+      }
+    },
+    {
+      "files": ["__tests__/**"],
+      "plugins": ["vitest"],
+      "rules": {
+        "vitest/no-disabled-tests": "warn",
+        "vitest/no-commented-out-tests": "error",
+        "vitest/no-identical-title": "error",
+        "vitest/no-import-node-test": "error",
+        "vitest/no-interpolation-in-snapshots": "error",
+        "vitest/no-mocks-import": "error",
+        "vitest/prefer-called-exactly-once-with": "error"
+      }
+    }
+  ]
+}

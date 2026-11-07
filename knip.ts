@@ -3,7 +3,6 @@ import type { KnipConfig } from 'knip'
 const config: KnipConfig = {
   entry: [
     'src/index.ts',
-    'benchmark/index.cjs',
     'benchmark/app.ts',
     'examples/*/index.mjs',
     'examples/*/app.ts',
@@ -19,13 +18,10 @@ const config: KnipConfig = {
   ignoreDependencies: [
     // Used via jiti for TypeScript runtime compilation
     'jiti',
-    '@typescript-eslint/parser',
     // Used via tsconfig paths
     'tslib',
     // Used for vitest types
     'vite',
-    // Transitive dependency from @graphql-codegen/typescript-operations
-    '@graphql-codegen/typescript',
   ],
   ignore: [
     // Generated output files

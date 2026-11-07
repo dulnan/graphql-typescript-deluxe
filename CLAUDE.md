@@ -27,13 +27,13 @@ npm run test -- -t "handles case \"aliases\""
 # Type checking
 npm run typecheck
 
-# Linting
+# Linting (oxlint)
 npm run lint
 npm run lint:fix
 
-# Formatting
-npm run prettier
-npm run prettier:fix
+# Formatting (oxfmt)
+npm run format
+npm run format:fix
 
 # Run benchmark
 npm run benchmark
@@ -110,3 +110,7 @@ Default test schema is at `__tests__/unit/Generator/schema.graphql`.
 - Enums generate both a `const` object and a type union (not TypeScript `enum`)
 - Nullable fields default to optional (`field?: T`) but can be configured for
   `| null` or `Maybe<T>`
+- `graphql` is a peer dependency (`^16 || ^17`), so the generator uses the same
+  instance as the schema passed in. Development uses graphql 17; CI also runs
+  against 16. The graphql 17 parser may leave empty AST lists (such as
+  `variableDefinitions`) `undefined` instead of `[]`.

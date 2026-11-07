@@ -1,0 +1,12 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "proseWrap": "always",
+  "semi": false,
+  "singleQuote": true,
+  "arrowParens": "always",
+  "printWidth": 80,
+  "trailingComma": "all",
+  "insertFinalNewline": true,
+  "sortPackageJson": false,
+  "ignorePatterns": ["__tests__/**/result.ts", "examples/watcher/output"]
+}

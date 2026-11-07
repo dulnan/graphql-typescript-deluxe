@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module'
 import {
   configDefaults,
   coverageConfigDefaults,
@@ -22,8 +23,15 @@ export default defineConfig({
   },
 
   resolve: {
-    alias: {
-      graphql: 'graphql/index.js',
-    },
+    alias: [
+      // Resolve "graphql" to the same file Node.js loads for externalized
+      // dependencies such as @graphql-tools/load. Vite resolves with different
+      // conditions ("module", "development"), which would load a second
+      // instance and fail graphql's instanceof checks.
+      {
+        find: /^graphql$/,
+        replacement: createRequire(import.meta.url).resolve('graphql'),
+      },
+    ],
   },
 })
