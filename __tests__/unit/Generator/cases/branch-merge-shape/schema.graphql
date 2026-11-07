@@ -1,0 +1,36 @@
+interface Node {
+  id: ID!
+}
+
+type Person implements Node {
+  id: ID!
+  name: String
+}
+
+type Company implements Node {
+  id: ID!
+  name: String
+}
+
+type Article implements Node {
+  id: ID!
+  title: String!
+  author: Person
+  related: Node
+}
+
+type Page implements Node {
+  id: ID!
+  title: String!
+  author: Company
+  related: Node
+}
+
+type Video implements Node {
+  id: ID!
+  url: String
+}
+
+type Query {
+  node: Node
+}

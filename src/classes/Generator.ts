@@ -627,7 +627,7 @@ export class Generator {
       this.dependencyTracker?.start(item.filePath)
       this.dependencyTracker?.addFragment(fragmentName)
       const ir = this.buildSelectionSet(type, item.node.selectionSet)
-      const processedIR = postProcessIR(ir)
+      const processedIR = this.postProcessIR(ir)
       const dependencies = this.dependencyTracker?.end() || []
       this.fragmentIRs.set(item.node.name.value, {
         map: buildFragmentIRFields(processedIR),
@@ -684,6 +684,18 @@ export class Generator {
     // Generates the fragment and its IR, if that didn't happen yet.
     this.generateFragmentType(fragmentName)
     return this.fragmentIRs.get(fragmentName)?.isObject ?? false
+  }
+
+  /**
+   * Merge the branches of unions that generate the same type, apart from
+   * their __typename.
+   *
+   * @param ir - The IR node.
+   *
+   * @returns The processed IR node.
+   */
+  private postProcessIR(ir: IRNode): IRNode {
+    return postProcessIR(ir, this.options.output.nullableField === 'optional')
   }
 
   // ===========================================================================
@@ -800,7 +812,7 @@ export class Generator {
         code: makeExport(
           typeName,
           this.IRToCode(
-            postProcessIR(this.buildSelectionSet(rootType, merged)),
+            this.postProcessIR(this.buildSelectionSet(rootType, merged)),
           ),
         ),
         context: { input, definition: operation },

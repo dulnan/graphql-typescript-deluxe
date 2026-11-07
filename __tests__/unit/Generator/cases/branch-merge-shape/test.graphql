@@ -1,0 +1,146 @@
+# Branches are only merged when they generate the same type, apart from their
+# __typename.
+
+# The title is only conditional on Page.
+query includeInOneBranch($withTitle: Boolean!) {
+  node {
+    __typename
+    ... on Article {
+      title
+    }
+    ... on Page {
+      title @include(if: $withTitle)
+    }
+  }
+}
+
+# The nested unions select different fields.
+query nestedUnion {
+  node {
+    __typename
+    ... on Article {
+      related {
+        __typename
+        ... on Article {
+          title
+        }
+      }
+    }
+    ... on Page {
+      related {
+        __typename
+        ... on Page {
+          title
+        }
+      }
+    }
+  }
+}
+
+# The author is a Person on Article and a Company on Page.
+query nestedTypename {
+  node {
+    __typename
+    ... on Article {
+      author {
+        __typename
+        name
+      }
+    }
+    ... on Page {
+      author {
+        __typename
+        name
+      }
+    }
+  }
+}
+
+query nestedAliasedTypename {
+  node {
+    __typename
+    ... on Article {
+      author {
+        kind: __typename
+      }
+    }
+    ... on Page {
+      author {
+        kind: __typename
+      }
+    }
+  }
+}
+
+query nestedInclude($withId: Boolean!) {
+  node {
+    __typename
+    ... on Article {
+      author {
+        id
+      }
+    }
+    ... on Page {
+      author {
+        id @include(if: $withId)
+      }
+    }
+  }
+}
+
+# The name is nullable on Article and conditional on Page. With the default
+# nullableField option, both are generated as optional fields.
+query nullableOrConditional($withName: Boolean!) {
+  node {
+    __typename
+    ... on Article {
+      author {
+        name
+      }
+    }
+    ... on Page {
+      author {
+        name @include(if: $withName)
+      }
+    }
+  }
+}
+
+fragment authorId on Node {
+  id
+}
+
+query nestedConditionalSpread($withId: Boolean!) {
+  node {
+    __typename
+    ... on Article {
+      author {
+        ...authorId
+      }
+    }
+    ... on Page {
+      author {
+        ...authorId @include(if: $withId)
+      }
+    }
+  }
+}
+
+# The branches generate the same type and are merged.
+query sameShape {
+  node {
+    __typename
+    ... on Article {
+      title
+      author {
+        name
+      }
+    }
+    ... on Page {
+      title
+      author {
+        name
+      }
+    }
+  }
+}

@@ -964,6 +964,120 @@ describe('postProcessIR', () => {
     expect(result.kind).toBe('UNION')
     expect(result.types.length).toBe(2)
   })
+
+  describe('branches whose fields generate different types', () => {
+    function branches(
+      cat: IRNode,
+      dog: IRNode,
+      nullableIsOptional = false,
+    ): number {
+      const union = IR.UNION({
+        types: [
+          IR.OBJECT({
+            graphQLTypeName: 'Cat',
+            fields: { __typename: IR.TYPENAME(['Cat']), field: cat },
+          }),
+          IR.OBJECT({
+            graphQLTypeName: 'Dog',
+            fields: { __typename: IR.TYPENAME(['Dog']), field: dog },
+          }),
+        ],
+      })
+      const result = postProcessIR(union, nullableIsOptional) as IRNodeUnion
+      return result.types.length
+    }
+
+    const nestedUnion = (typeName: string, field: string): IRNode =>
+      IR.UNION({
+        types: [
+          IR.OBJECT({
+            graphQLTypeName: typeName,
+            fields: {
+              __typename: IR.TYPENAME(typeName),
+              [field]: IR.SCALAR({ tsType: 'string' }),
+            },
+          }),
+          IR.OBJECT({
+            graphQLTypeName: 'Animal',
+            fields: { __typename: IR.TYPENAME(typeName, 'Animal') },
+          }),
+        ],
+      })
+
+    const spread = (optional: boolean): IRNode =>
+      IR.FRAGMENT_SPREAD({
+        name: 'f',
+        fragmentTypeName: 'FFragment',
+        fragmentTypeCondition: 'Animal',
+        parentType: 'Animal',
+        optional,
+      })
+
+    it('keeps them separate if a field is only optional in one', () => {
+      expect(
+        branches(
+          IR.SCALAR({ tsType: 'string' }),
+          IR.SCALAR({ tsType: 'string', optional: true }),
+        ),
+      ).toBe(2)
+    })
+
+    it('keeps them separate if a field is only nullable in one', () => {
+      expect(
+        branches(
+          IR.SCALAR({ tsType: 'string' }),
+          IR.SCALAR({ tsType: 'string', nullable: true }),
+        ),
+      ).toBe(2)
+    })
+
+    it('merges nullable and optional fields if nullable fields are optional', () => {
+      const nullable = IR.SCALAR({ tsType: 'string', nullable: true })
+      const optional = IR.SCALAR({ tsType: 'string', optional: true })
+      expect(branches(nullable, optional)).toBe(2)
+      expect(branches(nullable, optional, true)).toBe(1)
+    })
+
+    it('keeps them separate if nested unions select different fields', () => {
+      expect(
+        branches(nestedUnion('Cat', 'meow'), nestedUnion('Dog', 'bark')),
+      ).toBe(2)
+    })
+
+    it('keeps them separate if a nested __typename differs', () => {
+      const owner = (typeName: string, field: string): IRNode =>
+        IR.OBJECT({
+          graphQLTypeName: typeName,
+          fields: { [field]: IR.TYPENAME(typeName) },
+        })
+      expect(
+        branches(owner('Person', '__typename'), owner('Shelter', '__typename')),
+      ).toBe(2)
+      expect(branches(owner('Person', 'kind'), owner('Shelter', 'kind'))).toBe(
+        2,
+      )
+    })
+
+    it('keeps them separate if a spread is only conditional in one', () => {
+      expect(branches(spread(false), spread(true))).toBe(2)
+    })
+
+    it('keeps them separate if the scalar types differ', () => {
+      expect(
+        branches(
+          IR.SCALAR({ tsType: 'string' }),
+          IR.SCALAR({ tsType: 'number' }),
+        ),
+      ).toBe(2)
+    })
+
+    it('merges them if they generate the same type', () => {
+      expect(
+        branches(nestedUnion('Cat', 'meow'), nestedUnion('Cat', 'meow')),
+      ).toBe(1)
+      expect(branches(spread(true), spread(true))).toBe(1)
+    })
+  })
 })
 
 describe('hasTypenameField', () => {

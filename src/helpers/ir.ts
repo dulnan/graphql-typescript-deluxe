@@ -622,46 +622,67 @@ function unifyObjectsIgnoringTypename(objects: IRNodeObject[]): IRNodeObject {
 }
 
 /**
- * Create a key from an IR node.
+ * Create a key that describes the generated type of an IR node.
+ *
+ * Two nodes with the same key generate the same type, except for descriptions.
+ *
+ * @param ir - The node.
+ * @param nullableIsOptional - Whether nullable fields are generated as
+ * optional fields.
  */
-function buildNodeKeyWithoutTypename(ir: IRNode, isBranch = false): string {
-  let key = ir.kind
+function buildNodeKey(ir: IRNode, nullableIsOptional: boolean): string {
   switch (ir.kind) {
-    case 'SCALAR': {
-      key += ir.tsType
-      break
-    }
-    case 'OBJECT': {
-      // We'll do a shallow marker. If you want to unify nested objects,
-      // you can recursively call buildObjectSignatureIgnoringTypename again,
-      // but that can get complicated. For 100% correctness, you'd do so:
-      for (const [k, child] of Object.entries(ir.fields)) {
-        key += k
-        // The __typename of a branch, also an aliased one, is merged
-        // separately.
-        if (child.kind === 'TYPENAME' && (k === TYPENAME || isBranch)) {
-          key += '__TYPENAME_PLACEHOLDER__'
-        } else {
-          key += buildNodeKeyWithoutTypename(child)
-        }
-      }
-      break
-    }
-    case 'ARRAY': {
-      key += buildNodeKeyWithoutTypename(ir.ofType)
-      break
-    }
+    case 'SCALAR':
+      return `S${JSON.stringify(ir.tsType)}`
+    case 'TYPENAME':
+      return `T(${ir.excludeType ?? ''}:${[...ir.types].sort().join('|')})`
+    case 'OBJECT':
+      return `O${buildFieldsKey(ir.fields, nullableIsOptional, false)}`
+    case 'ARRAY':
+      return `A${ir.nullableElement ? '?' : ''}[${buildNodeKey(ir.ofType, nullableIsOptional)}]`
     case 'UNION': {
-      key += ir.types.map((v) => v.kind).join('-')
-      break
+      // The members are sorted in the output.
+      const members = ir.types.map((v) => buildNodeKey(v, nullableIsOptional))
+      return `U(${members.sort().join('|')})`
     }
-    case 'FRAGMENT_SPREAD': {
-      key += ir.fragmentTypeName
-      break
-    }
+    case 'FRAGMENT_SPREAD':
+      // A conditional spread is generated as Partial<>.
+      return `F${ir.optional ? '?' : ''}:${ir.fragmentTypeName}`
   }
+}
 
-  return key
+/**
+ * Create a key from the fields of an object.
+ *
+ * The key contains how each field is generated: Whether it's optional, whether
+ * it's nullable and its type.
+ *
+ * @param fields - The fields.
+ * @param nullableIsOptional - Whether nullable fields are generated as
+ * optional fields.
+ * @param withoutTypename - Whether to leave out the types of the __typename
+ * fields, including aliased ones.
+ */
+function buildFieldsKey(
+  fields: Record<string, IRNode>,
+  nullableIsOptional: boolean,
+  withoutTypename: boolean,
+): string {
+  let key = '{'
+  for (const [name, child] of Object.entries(fields)) {
+    key += name
+    if (nullableIsOptional) {
+      key += child.nullable || child.optional ? '?:' : ':'
+    } else {
+      key += (child.optional ? '?:' : ':') + (child.nullable ? 'null|' : '')
+    }
+    key +=
+      withoutTypename && child.kind === 'TYPENAME'
+        ? 'T'
+        : buildNodeKey(child, nullableIsOptional)
+    key += ','
+  }
+  return key + '}'
 }
 
 /**
@@ -673,7 +694,10 @@ function buildNodeKeyWithoutTypename(ir: IRNode, isBranch = false): string {
  *
  * @TODO: This could already be handled in buildAbstractSelectionSet.
  */
-function mergeUnionBranchesIgnoringTypename(branches: IRNode[]): IRNode[] {
+function mergeUnionBranchesIgnoringTypename(
+  branches: IRNode[],
+  nullableIsOptional: boolean,
+): IRNode[] {
   const objectBranches: IRNodeObject[] = []
   const otherBranches: IRNode[] = []
 
@@ -685,14 +709,13 @@ function mergeUnionBranchesIgnoringTypename(branches: IRNode[]): IRNode[] {
     }
   }
 
-  // Group OBJECT branches by “shapeSignature” ignoring the literal __typename.
-  // shapeSignature is basically a stable string that describes all fields except
-  // for the literal part of __typename. For example, if __typename is `'Foo' | 'Bar'`,
-  // it's replaced by a placeholder.
+  // Group the OBJECT branches by their fields, ignoring the types of their
+  // __typename fields. The __typename fields of a group are merged. The
+  // nullable and optional flags of a branch itself are not part of its type.
   const groups = new Map<string, IRNodeObject[]>()
 
   for (const obj of objectBranches) {
-    const sig = buildNodeKeyWithoutTypename(obj, true)
+    const sig = buildFieldsKey(obj.fields, nullableIsOptional, true)
     const arr = groups.get(sig) || []
     arr.push(obj)
     groups.set(sig, arr)
@@ -722,10 +745,13 @@ function mergeUnionBranchesIgnoringTypename(branches: IRNode[]): IRNode[] {
  * Returns a new IR node (or the same node if nothing changed).
  *
  * @param ir - The node to process.
+ * @param nullableIsOptional - Whether nullable fields are generated as
+ * optional fields. Branches that only differ in whether a field is nullable or
+ * optional are then merged.
  *
  * @returns The processed, new node or the passed in node if unprocessed.
  */
-export function postProcessIR(ir: IRNode): IRNode {
+export function postProcessIR(ir: IRNode, nullableIsOptional = false): IRNode {
   switch (ir.kind) {
     case 'SCALAR':
     case 'FRAGMENT_SPREAD':
@@ -735,7 +761,7 @@ export function postProcessIR(ir: IRNode): IRNode {
     case 'OBJECT': {
       const newFields: Record<string, IRNode> = {}
       for (const [fieldName, fieldIR] of Object.entries(ir.fields)) {
-        newFields[fieldName] = postProcessIR(fieldIR)
+        newFields[fieldName] = postProcessIR(fieldIR, nullableIsOptional)
       }
 
       return {
@@ -747,16 +773,21 @@ export function postProcessIR(ir: IRNode): IRNode {
     case 'ARRAY': {
       return {
         ...ir,
-        ofType: postProcessIR(ir.ofType),
+        ofType: postProcessIR(ir.ofType, nullableIsOptional),
       }
     }
 
     case 'UNION': {
       // First recurse into each branch
-      const processedBranches = ir.types.map((t) => postProcessIR(t))
+      const processedBranches = ir.types.map((t) =>
+        postProcessIR(t, nullableIsOptional),
+      )
       return {
         ...ir,
-        types: mergeUnionBranchesIgnoringTypename(processedBranches),
+        types: mergeUnionBranchesIgnoringTypename(
+          processedBranches,
+          nullableIsOptional,
+        ),
       }
     }
   }
