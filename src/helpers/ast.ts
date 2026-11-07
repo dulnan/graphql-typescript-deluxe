@@ -37,6 +37,25 @@ export function hasConditionalDirective(node: FieldNode): boolean {
   return false
 }
 
+/**
+ * Returns the name of the type an inline fragment applies to.
+ *
+ * An inline fragment without a type condition, such as
+ * `... @include(if: $foo) { id }`, applies to the type of the selection set
+ * it is in.
+ *
+ * @param node - The inline fragment node.
+ * @param parentTypeName - The name of the type of the surrounding selection set.
+ *
+ * @returns The name of the type the inline fragment applies to.
+ */
+export function getInlineFragmentTypeName(
+  node: InlineFragmentNode,
+  parentTypeName: string,
+): string {
+  return node.typeCondition?.name.value ?? parentTypeName
+}
+
 export function mergeSameFieldSelections(
   selectionSet: SelectionSetNode,
 ): SelectionSetNode {

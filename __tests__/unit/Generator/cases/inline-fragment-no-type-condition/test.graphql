@@ -1,0 +1,129 @@
+# An inline fragment without a type condition applies to the type of the
+# selection set it is in. Each query has a "Typed" twin that uses an explicit
+# type condition on the parent type. Both must produce the same type.
+
+# On an object type field.
+query objectField {
+  getHomepage {
+    id
+    ... {
+      title
+    }
+  }
+}
+
+query objectFieldTyped {
+  getHomepage {
+    id
+    ... on NodePage {
+      title
+    }
+  }
+}
+
+# On an interface field, next to an inline fragment on a concrete type.
+query interfaceField {
+  getRandomEntity {
+    ... {
+      id
+      entityType
+    }
+    ... on NodePage {
+      title
+    }
+  }
+}
+
+query interfaceFieldTyped {
+  getRandomEntity {
+    ... on Entity {
+      id
+      entityType
+    }
+    ... on NodePage {
+      title
+    }
+  }
+}
+
+# On an interface field, containing a fragment spread on the same interface.
+query interfaceFieldWithSpread {
+  getRandomEntity {
+    id
+    ... {
+      ...entityType
+    }
+  }
+}
+
+query interfaceFieldWithSpreadTyped {
+  getRandomEntity {
+    id
+    ... on Entity {
+      ...entityType
+    }
+  }
+}
+
+# On a union field.
+query unionField {
+  search {
+    ... {
+      __typename
+    }
+    ... on NodeArticle {
+      body
+    }
+  }
+}
+
+query unionFieldTyped {
+  search {
+    ... on SearchResult {
+      __typename
+    }
+    ... on NodeArticle {
+      body
+    }
+  }
+}
+
+# On the root type, nested.
+query rootType {
+  ... {
+    isAvailable
+    ... {
+      getHomepage {
+        title
+      }
+    }
+  }
+}
+
+query rootTypeTyped {
+  ... on Query {
+    isAvailable
+    ... on Query {
+      getHomepage {
+        title
+      }
+    }
+  }
+}
+
+# Inside a fragment.
+fragment entityId on Entity {
+  ... {
+    id
+  }
+}
+
+fragment entityIdTyped on Entity {
+  ... on Entity {
+    id
+  }
+}
+
+fragment entityType on Entity {
+  entityType
+}

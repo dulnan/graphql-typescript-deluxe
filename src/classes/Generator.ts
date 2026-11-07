@@ -28,6 +28,7 @@ import {
 } from 'graphql'
 import {
   getAstSource,
+  getInlineFragmentTypeName,
   getTypeNodeKey,
   hasConditionalDirective,
   mergeSameFieldSelections,
@@ -1030,7 +1031,6 @@ export class Generator {
    * @returns The IR for the selections.
    *
    * @throws {@link FieldNotFoundError} When a selected field does not exist on the type.
-   * @throws {@link LogicError} When an inline fragment has no type condition.
    * @throws {@link TypeNotFoundError} When a type could not be found.
    */
   private buildObjectSelectionSet(
@@ -1101,12 +1101,10 @@ export class Generator {
           )
         }
       } else if (sel.kind === Kind.INLINE_FRAGMENT) {
-        const typeConditionName = sel.typeCondition?.name.value
-        /* v8 ignore start -- @preserve */
-        if (!typeConditionName) {
-          unreachable('Inline fragment has no type condition.')
-        }
-        /* v8 ignore stop */
+        const typeConditionName = getInlineFragmentTypeName(
+          sel,
+          objectType.name,
+        )
 
         // Only process inline fragment if it applies to this object type
         // (same type or object implements the interface/union)
@@ -1191,18 +1189,27 @@ export class Generator {
    * that target the exact same type.
    *
    * @param selections - The selections to process
+   * @param parentTypeName - The name of the type the selections are on, if known.
    * @returns An array of processed selections with hoisted fragment spreads
    */
   private preprocessSelections(
     selections: readonly SelectionNode[],
+    parentTypeName?: string,
   ): SelectionNode[] {
     const result: SelectionNode[] = []
     const fragmentsToHoist: SelectionNode[] = []
 
     for (const sel of selections) {
-      if (sel.kind === Kind.INLINE_FRAGMENT && sel.typeCondition) {
-        const typeConditionName = sel.typeCondition.name.value
+      // An inline fragment without a type condition applies to the parent type.
+      // When recursing into fields the parent type is unknown. Such inline
+      // fragments are kept as they are: abstract fields preprocess their own
+      // selections when they are built, and object fields don't need hoisting.
+      const typeConditionName =
+        sel.kind === Kind.INLINE_FRAGMENT
+          ? (sel.typeCondition?.name.value ?? parentTypeName)
+          : undefined
 
+      if (sel.kind === Kind.INLINE_FRAGMENT && typeConditionName) {
         // Check if this inline fragment contains fragment spreads that target the same type.
         const [fragmentsToHoistFromInline, otherSelections] =
           this.separateFragmentSpreadsByTypeCondition(
@@ -1214,8 +1221,10 @@ export class Generator {
 
         // If there are still other selections, keep the inline fragment with them.
         if (otherSelections.length > 0) {
-          const processedInnerSelections =
-            this.preprocessSelections(otherSelections)
+          const processedInnerSelections = this.preprocessSelections(
+            otherSelections,
+            typeConditionName,
+          )
           if (processedInnerSelections.length > 0) {
             result.push({
               ...sel,
@@ -1283,14 +1292,16 @@ export class Generator {
    * @returns The IR node for the selection.
    *
    * @throws {@link FieldNotFoundError} When a field was selected that does not exist.
-   * @throws {@link LogicError} When an inline fragment is missing a type condition.
    * @throws {@link TypeNotFoundError} When a type does not exist.
    */
   private buildAbstractSelectionSet(
     abstractType: GraphQLAbstractType,
     selectionSet: SelectionSetNode,
   ): IRNode {
-    const selections = this.preprocessSelections(selectionSet.selections)
+    const selections = this.preprocessSelections(
+      selectionSet.selections,
+      abstractType.name,
+    )
 
     const abstractTypeFields = isInterfaceType(abstractType)
       ? abstractType.getFields()
@@ -1345,12 +1356,10 @@ export class Generator {
           baseFields[aliasName] = current ? mergeIR(current, fieldIR) : fieldIR
         }
       } else if (sel.kind === Kind.INLINE_FRAGMENT) {
-        /* v8 ignore start -- @preserve */
-        if (!sel.typeCondition) {
-          unreachable('Missing type condition in inline fragment.')
-        }
-        /* v8 ignore stop */
-        const typeConditionName = sel.typeCondition?.name.value
+        const typeConditionName = getInlineFragmentTypeName(
+          sel,
+          abstractType.name,
+        )
         if (typeConditionName === abstractType.name) {
           inlineFragmentsForAbstract.push(sel)
         } else {
@@ -1490,12 +1499,10 @@ export class Generator {
     // Gather all field selections on interface/union level.
     for (const sel of selections) {
       if (sel.kind === Kind.INLINE_FRAGMENT) {
-        const typeConditionName = sel.typeCondition?.name.value
-        /* v8 ignore start -- @preserve */
-        if (!typeConditionName) {
-          unreachable('Inline fragment has no type condition.')
-        }
-        /* v8 ignore stop */
+        const typeConditionName = getInlineFragmentTypeName(
+          sel,
+          abstractType.name,
+        )
 
         const spreadType = this.schema.getType(typeConditionName)
 
