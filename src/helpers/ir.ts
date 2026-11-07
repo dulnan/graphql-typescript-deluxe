@@ -245,12 +245,34 @@ function mergeTypenameNodes(
 ): IRNodeTypename {
   let result: IRNodeTypename
 
+  const excludeNode = oldIR.excludeType ? oldIR : newIR
+  const otherNode = excludeNode === oldIR ? newIR : oldIR
+
   if (oldIR.excludeType && oldIR.excludeType === newIR.excludeType) {
     // Exclude<A, X> | Exclude<A, Y> is Exclude<A, X & Y>.
     const excluded = oldIR.types.filter((type) => newIR.types.includes(type))
     result = excluded.length
       ? IR.TYPENAME(excluded, oldIR.excludeType)
       : IR.TYPENAME(oldIR.excludeType)
+  } else if (
+    excludeNode.excludeType &&
+    !otherNode.excludeType &&
+    otherNode.types.includes(excludeNode.excludeType)
+  ) {
+    // Exclude<A, X> | A | Y is A | Y.
+    result = IR.TYPENAME(otherNode.types)
+  } else if (
+    excludeNode.excludeType &&
+    !otherNode.excludeType &&
+    otherNode.types.every((type) => excludeNode.types.includes(type))
+  ) {
+    // Exclude<A, X> | Y is Exclude<A, X without Y>, if X contains all of Y.
+    const excluded = excludeNode.types.filter(
+      (type) => !otherNode.types.includes(type),
+    )
+    result = excluded.length
+      ? IR.TYPENAME(excluded, excludeNode.excludeType)
+      : IR.TYPENAME(excludeNode.excludeType)
   } else {
     // A union of both, removing duplicates. An Exclude<> type is added as is.
     const toTypes = (node: IRNodeTypename): string[] =>
@@ -561,9 +583,10 @@ export function isIdenticalIR(a: IRNode, b: IRNode): boolean {
 
 function unifyObjectsIgnoringTypename(objects: IRNodeObject[]): IRNodeObject {
   // We assume these all have the same shape except for possibly
-  // different literal values of `__typename`. So we:
+  // different values of `__typename`. So we:
   // 1) Take the first object's fields as a base
-  // 2) For `__typename`, gather all the distinct literal values from each object
+  // 2) For `__typename`, merge the values of all objects. A value can be a
+  //    union of types or an Exclude<> type.
   // 3) Everything else is the same (if your signature logic is correct)
   // 4) Mark `nonNull: true` if any object is nonNull (OR them together)
   // Note: This function is only called with 2+ objects (single objects are
@@ -573,22 +596,18 @@ function unifyObjectsIgnoringTypename(objects: IRNodeObject[]): IRNodeObject {
   const mergedFields = { ...base.fields }
 
   let anyNullable = base.nullable
-  const typenames = new Set<string>()
-  let hasTypenameField = false
+  let typename: IRNodeTypename | null = null
 
-  // Collect all literal values from each object’s __typename
   for (const obj of objects) {
     anyNullable = !anyNullable || !obj.nullable
     const tnField = obj.fields[TYPENAME]
-    if (tnField && tnField.kind === 'TYPENAME' && !tnField.excludeType) {
-      hasTypenameField = true
-      tnField.types.forEach((name) => typenames.add(name))
+    if (tnField && tnField.kind === 'TYPENAME') {
+      typename = typename ? mergeTypenameNodes(typename, tnField) : tnField
     }
   }
 
-  // If we have a __typename field, unify them
-  if (hasTypenameField) {
-    mergedFields[TYPENAME] = IR.TYPENAME([...typenames.values()])
+  if (typename) {
+    mergedFields[TYPENAME] = typename
   }
 
   return IR.OBJECT({

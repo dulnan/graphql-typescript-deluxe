@@ -1,0 +1,28 @@
+# Branches of an abstract type with the same shape are merged into one. A
+# branch of a type with inline fragments has a __typename of that type, the
+# other branches have Exclude<>. Merging them must keep all types.
+
+# The inline fragment adds no fields: All branches have the same shape.
+query redundantInlineFragment {
+  getRandomEntity {
+    __typename
+    id
+    ... on User {
+      id
+    }
+  }
+}
+
+# Only the User branch has the same shape as the other branches.
+query redundantAndOtherInlineFragment {
+  getRandomEntity {
+    __typename
+    id
+    ... on User {
+      id
+    }
+    ... on Domain {
+      label
+    }
+  }
+}

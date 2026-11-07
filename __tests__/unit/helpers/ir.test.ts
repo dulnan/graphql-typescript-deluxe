@@ -206,6 +206,29 @@ describe('mergeIR', () => {
       expect(typenameToCode(result)).toBe('Entity')
     })
 
+    it('removes types from an Exclude<> type that the other node has', () => {
+      const a = IR.TYPENAME(['User', 'Admin'], 'Entity')
+      const b = IR.TYPENAME(['Admin'])
+      expect(typenameToCode(mergeIR(a, b) as IRNodeTypename)).toBe(
+        'Exclude<Entity, User>',
+      )
+      expect(typenameToCode(mergeIR(b, a) as IRNodeTypename)).toBe(
+        'Exclude<Entity, User>',
+      )
+    })
+
+    it('uses the abstract type if the other node has all excluded types', () => {
+      const a = IR.TYPENAME(['User'], 'Entity')
+      const b = IR.TYPENAME(['User'])
+      expect(typenameToCode(mergeIR(a, b) as IRNodeTypename)).toBe('Entity')
+    })
+
+    it('uses the other node if it contains the abstract type of an Exclude<> type', () => {
+      const a = IR.TYPENAME(['User'], 'Entity')
+      const b = IR.TYPENAME(['Entity'])
+      expect(typenameToCode(mergeIR(a, b) as IRNodeTypename)).toBe('Entity')
+    })
+
     it('creates a union of an Exclude<> type and other types', () => {
       const a = IR.TYPENAME(['User'], 'Entity')
       const b = IR.TYPENAME(['Admin'])
