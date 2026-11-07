@@ -10,16 +10,33 @@ import {
   print,
 } from 'graphql'
 
+/**
+ * A node that can have directives, such as a field, a fragment spread or an
+ * inline fragment.
+ */
+type NodeWithDirectives = {
+  readonly directives?: readonly DirectiveNode[]
+}
+
 function isConditionalDirective(directive: DirectiveNode): boolean {
   const name = directive.name.value
   return name === 'skip' || name === 'include'
 }
 
 /**
- * Determines if the field node has any of the two default conditional directives.
+ * Determines if the node has any of the two default conditional directives.
  */
-export function hasConditionalDirective(node: FieldNode): boolean {
+export function hasConditionalDirective(node: NodeWithDirectives): boolean {
   return !!node.directives?.some(isConditionalDirective)
+}
+
+/**
+ * Returns the @include and @skip directives of the node.
+ */
+export function getConditionalDirectives(
+  node: NodeWithDirectives,
+): DirectiveNode[] {
+  return node.directives?.filter(isConditionalDirective) ?? []
 }
 
 /**
@@ -54,8 +71,7 @@ export function mergeSameFieldSelections(
   for (const sel of selectionSet.selections) {
     if (sel.kind === Kind.FIELD) {
       const aliasOrName = sel.alias?.value || sel.name.value
-      const condition = (sel.directives ?? [])
-        .filter(isConditionalDirective)
+      const condition = getConditionalDirectives(sel)
         .map((directive) => print(directive))
         .join(' ')
       const key = aliasOrName + ' ' + condition

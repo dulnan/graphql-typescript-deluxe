@@ -10,6 +10,7 @@ import {
   type DefinitionNode,
   type FieldNode,
   type FragmentDefinitionNode,
+  type FragmentSpreadNode,
   type GraphQLAbstractType,
   type GraphQLEnumType,
   type GraphQLField,
@@ -27,6 +28,7 @@ import {
 } from 'graphql'
 import {
   getAstSource,
+  getConditionalDirectives,
   getInlineFragmentTypeName,
   hasConditionalDirective,
   mergeSameFieldSelections,
@@ -59,6 +61,7 @@ import {
 import {
   IR,
   buildFragmentIRFields,
+  hasNestedSelections,
   hasTypenameField,
   isIdenticalIR,
   mergeFragmentSpread,
@@ -652,8 +655,18 @@ export class Generator {
           fragDef.typeCondition &&
           fragDef.typeCondition.name.value === currentTypeName
         ) {
-          // Inline the fragment's selections
-          newSelections.push(...fragDef.selectionSet.selections)
+          if (hasConditionalDirective(spread)) {
+            // Keep the condition: Replace the spread with an inline fragment
+            // with the same @include/@skip directives.
+            newSelections.push({
+              kind: Kind.INLINE_FRAGMENT,
+              directives: getConditionalDirectives(spread),
+              selectionSet: fragDef.selectionSet,
+            })
+          } else {
+            // Inline the fragment's selections
+            newSelections.push(...fragDef.selectionSet.selections)
+          }
           hasChanged = true
           /* v8 ignore next -- @preserve */
         } else {
@@ -1060,7 +1073,10 @@ export class Generator {
         const fragName = sel.name.value
         const fragDef = this.getFragmentNode(fragName)
         const fragmentFields = this.getFragmentIRFields(fragName)
-        const hasTypename = hasTypenameField(fragmentFields)
+        // The __typename of a conditional spread is not moved to the parent
+        // object, because it may be missing.
+        const isConditional = hasConditionalDirective(sel)
+        const hasTypename = hasTypenameField(fragmentFields) && !isConditional
 
         if (hasTypename && !hasTypenameField(fields)) {
           hasTypenameFromSpread = true
@@ -1081,6 +1097,7 @@ export class Generator {
               parentType: objectType.name,
               fragmentTypeCondition: condName,
               omit: hasTypename && directFieldCount >= 1 ? [TYPENAME] : [],
+              optional: isConditional,
             }),
           )
         }
@@ -1089,6 +1106,7 @@ export class Generator {
           sel,
           objectType.name,
         )
+        const isConditional = hasConditionalDirective(sel)
 
         // Only process inline fragment if it applies to this object type
         // (same type or object implements the interface/union)
@@ -1102,7 +1120,7 @@ export class Generator {
         const spreadType = this.schema.getType(typeConditionName)
         const ir = this.buildSelectionSet(spreadType, sel.selectionSet)
         if (ir.kind === 'OBJECT') {
-          mergeObjectFields(fields, ir.fields)
+          mergeObjectFields(fields, ir.fields, false, isConditional)
         } else if (ir.kind === 'UNION') {
           // Find the branch matching this object type (not the type condition)
           for (const branch of ir.types) {
@@ -1110,25 +1128,29 @@ export class Generator {
               branch.kind === 'OBJECT' &&
               branch.graphQLTypeName === objectType.name
             ) {
-              mergeObjectFields(fields, branch.fields)
+              mergeObjectFields(fields, branch.fields, false, isConditional)
             }
           }
         }
       }
     }
 
-    if (!hasTypenameField(fields)) {
-      // Always add __typename field if option is set.
-      if (this.options.output.nonOptionalTypename) {
-        fields[TYPENAME] = IR.TYPENAME(
-          this.getOrCreateObjectTypeName(objectType),
-        )
-      } else if (hasTypenameFromSpread && directFieldCount >= 1) {
-        // Add a typename field if a fragment spread has one *and* if we have at least one direct field selection.
+    const typenameField = fields[TYPENAME]
+    if (this.options.output.nonOptionalTypename) {
+      // Always add __typename field if option is set. It may already be there
+      // as an optional field, from a conditional selection.
+      if (!typenameField || typenameField.optional) {
         fields[TYPENAME] = IR.TYPENAME(
           this.getOrCreateObjectTypeName(objectType),
         )
       }
+    } else if (
+      !typenameField &&
+      hasTypenameFromSpread &&
+      directFieldCount >= 1
+    ) {
+      // Add a typename field if a fragment spread has one *and* if we have at least one direct field selection.
+      fields[TYPENAME] = IR.TYPENAME(this.getOrCreateObjectTypeName(objectType))
     }
 
     const result = IR.OBJECT({
@@ -1201,7 +1223,21 @@ export class Generator {
             typeConditionName,
           )
 
-        fragmentsToHoist.push(...fragmentsToHoistFromInline)
+        // A hoisted spread keeps the condition of the inline fragment.
+        const conditionalDirectives = getConditionalDirectives(sel)
+        for (const spread of fragmentsToHoistFromInline) {
+          fragmentsToHoist.push(
+            conditionalDirectives.length
+              ? {
+                  ...spread,
+                  directives: [
+                    ...conditionalDirectives,
+                    ...(spread.directives ?? []),
+                  ],
+                }
+              : spread,
+          )
+        }
 
         // If there are still other selections, keep the inline fragment with them.
         if (otherSelections.length > 0) {
@@ -1245,8 +1281,8 @@ export class Generator {
   private separateFragmentSpreadsByTypeCondition(
     selections: readonly SelectionNode[],
     targetType: string,
-  ): [SelectionNode[], SelectionNode[]] {
-    const matchingFragments: SelectionNode[] = []
+  ): [FragmentSpreadNode[], SelectionNode[]] {
+    const matchingFragments: FragmentSpreadNode[] = []
     const otherSelections: SelectionNode[] = []
 
     for (const sel of selections) {
@@ -1380,7 +1416,11 @@ export class Generator {
     const hasConcreteInlineFragments = concreteInlineFragmentTypes.length > 0
     const hasConcreteFragments = concreteFragmentTypes.length > 0
 
-    const useShortcuts = true
+    // The shortcuts don't handle conditional fragment spreads and inline
+    // fragments, so they are only used without them.
+    const useShortcuts = !selections.some(
+      (sel) => sel.kind !== Kind.FIELD && hasConditionalDirective(sel),
+    )
 
     // ====================================================================
     // Shortcuts for common use cases.
@@ -1489,6 +1529,7 @@ export class Generator {
         )
 
         const spreadType = this.schema.getType(typeConditionName)
+        const isConditional = hasConditionalDirective(sel)
 
         // Build the IR node for the selection for this object type.
         const ir = this.buildSelectionSet(spreadType, sel.selectionSet)
@@ -1504,6 +1545,8 @@ export class Generator {
               const merged = mergeObjectFields(
                 objectTypeMap.get(type.name) || {},
                 ir.fields,
+                false,
+                isConditional,
               )
               objectTypeMap.set(type.name, merged)
             } else if (ir.kind === 'UNION') {
@@ -1515,6 +1558,8 @@ export class Generator {
                   const merged = mergeObjectFields(
                     objectTypeMap.get(type.name) || {},
                     branch.fields,
+                    false,
+                    isConditional,
                   )
                   objectTypeMap.set(type.name, merged)
                 }
@@ -1525,6 +1570,7 @@ export class Generator {
       } else if (sel.kind === Kind.FRAGMENT_SPREAD) {
         const fragName = sel.name.value
         const fragment = this.getFragmentNode(fragName)
+        const isConditional = hasConditionalDirective(sel)
 
         const typeConditionName = fragment.typeCondition.name.value
         const typeConditionType = this.schema.getType(typeConditionName)
@@ -1539,6 +1585,7 @@ export class Generator {
               fragmentTypeName: fragTypeName,
               parentType: abstractType.name,
               fragmentTypeCondition: fragment.typeCondition.name.value,
+              optional: isConditional,
             }),
           )
           objectTypeMap.set(typeConditionType.name, existing)
@@ -1552,6 +1599,8 @@ export class Generator {
             const merged = mergeObjectFields(
               objectTypeMap.get(ir.graphQLTypeName) || {},
               ir.fields,
+              false,
+              isConditional,
             )
             objectTypeMap.set(ir.graphQLTypeName, merged)
           } else if (ir.kind === 'UNION') {
@@ -1560,6 +1609,8 @@ export class Generator {
                 const merged = mergeObjectFields(
                   objectTypeMap.get(branch.graphQLTypeName) || {},
                   branch.fields,
+                  false,
+                  isConditional,
                 )
                 objectTypeMap.set(branch.graphQLTypeName, merged)
               }
@@ -1702,6 +1753,7 @@ export class Generator {
 
     for (const fieldName of allFieldNames) {
       const nodes: IRNode[] = []
+      let hasConditionalSpread = false
 
       // Add direct field if it exists
       const directField = fields.get(fieldName)
@@ -1713,7 +1765,9 @@ export class Generator {
       for (const spread of spreads) {
         const node = fragmentFieldMaps[spread.fragmentTypeName]?.[fieldName]
         if (node) {
-          nodes.push(node)
+          // The fields of a conditional spread may be missing.
+          nodes.push(spread.optional ? { ...node, optional: true } : node)
+          hasConditionalSpread ||= !!spread.optional
         }
       }
 
@@ -1734,6 +1788,14 @@ export class Generator {
           conflictFound = true
         }
         merged = m
+      }
+
+      // A conditional spread is emitted as Partial<>, which only makes its
+      // own fields optional. When another selection also selects the field,
+      // an intersection would make the nested fields of the spread required.
+      // So the merged field is used, where these are optional.
+      if (hasConditionalSpread && hasNestedSelections(merged)) {
+        conflictFound = true
       }
 
       if (
@@ -1761,12 +1823,12 @@ export class Generator {
         const fragmentFields = this.getFragmentIRFields(spread.name)
         const hasFragmentTypename = fragmentFields && TYPENAME in fragmentFields
 
-        if (hasFragmentTypename) {
+        if (hasFragmentTypename && !spread.optional) {
           // Fragment already has __typename, we can use as is.
           parts.push(spread.fragmentTypeName)
         } else {
           parts.push(
-            `(${spread.fragmentTypeName} & { __typename: ${spread.fragmentTypeCondition} })`,
+            `(${this.IRToCode(spread)} & { __typename: ${spread.fragmentTypeCondition} })`,
           )
         }
       }
@@ -1830,6 +1892,11 @@ export class Generator {
       if (conflictsForThisFrag.length > 0) {
         const omitFields = conflictsForThisFrag.map((f) => `"${f}"`).join(' | ')
         replacedType = `Omit<${spread.fragmentTypeName}, ${omitFields}>`
+      }
+
+      // The fields of a conditional spread may be missing.
+      if (spread.optional) {
+        replacedType = `Partial<${replacedType}>`
       }
 
       intersectionParts.push(replacedType)
@@ -1985,12 +2052,14 @@ export class Generator {
       }
 
       case 'FRAGMENT_SPREAD': {
+        // Merges as an intersection into the parent's object.
+        let code = ir.fragmentTypeName
         if (ir.omit?.length) {
           const omit = ir.omit.map((type) => `'${type}'`).join(' | ')
-          return `Omit<${ir.fragmentTypeName}, ${omit}>`
+          code = `Omit<${code}, ${omit}>`
         }
-        // Merges as an intersection into the parent's object.
-        return ir.fragmentTypeName
+        // The fields of a conditional spread may be missing.
+        return ir.optional ? `Partial<${code}>` : code
       }
     }
   }

@@ -1,0 +1,238 @@
+# @include and @skip on fragment spreads and inline fragments: The fields of
+# the fragment are only there if the fragment is included.
+#
+# A conditional inline fragment produces the same type as putting the
+# directive on each of its fields. The "Fields" queries are the equivalent with
+# directives on the fields.
+
+# ==============================================================================
+# Object types
+# ==============================================================================
+
+query spreadObject($x: Boolean!) {
+  getHomepage {
+    id
+    ...pageTitle @include(if: $x)
+  }
+}
+
+query spreadObjectOnly($x: Boolean!) {
+  getHomepage {
+    ...pageTitle @skip(if: $x)
+  }
+}
+
+query inlineObject($x: Boolean!) {
+  getHomepage {
+    id
+    ... on NodePage @include(if: $x) {
+      title
+    }
+  }
+}
+
+query inlineObjectFields($x: Boolean!) {
+  getHomepage {
+    id
+    title @include(if: $x)
+  }
+}
+
+query inlineObjectNoTypeCondition($x: Boolean!) {
+  getHomepage {
+    id
+    ... @include(if: $x) {
+      title
+    }
+  }
+}
+
+# The __typename of a conditional spread is not moved to the parent object.
+query spreadObjectTypename($x: Boolean!) {
+  getHomepage {
+    id
+    ...pageTypename @include(if: $x)
+  }
+}
+
+# ==============================================================================
+# A conditional fragment and another selection select the same field.
+# ==============================================================================
+
+# Nested fields only selected by the fragment are optional.
+query overlapSpread($x: Boolean!) {
+  getMenu {
+    links {
+      link {
+        label
+      }
+    }
+    ...menuUrls @include(if: $x)
+  }
+}
+
+query overlapInline($x: Boolean!) {
+  getMenu {
+    links {
+      link {
+        label
+      }
+    }
+    ... @include(if: $x) {
+      links {
+        link {
+          url
+        }
+      }
+    }
+  }
+}
+
+query overlapInlineFields($x: Boolean!) {
+  getMenu {
+    links {
+      link {
+        label
+      }
+    }
+    links @include(if: $x) {
+      link {
+        url
+      }
+    }
+  }
+}
+
+# Two conditional spreads with different nested selections.
+query overlapTwoSpreads($x: Boolean!, $y: Boolean!) {
+  getMenu {
+    ...menuUrls @include(if: $x)
+    ...menuLabels @include(if: $y)
+  }
+}
+
+# ==============================================================================
+# Abstract types
+# ==============================================================================
+
+query spreadAbstract($x: Boolean!) {
+  getRandomEntity {
+    __typename
+    id
+    ...pageTitle @skip(if: $x)
+  }
+}
+
+# Without the condition, a single spread uses the fragment type directly.
+query spreadAbstractOnly($x: Boolean!) {
+  getNonNullEntity {
+    ...entityId @include(if: $x)
+  }
+}
+
+query inlineAbstract($x: Boolean!) {
+  getRandomEntity {
+    __typename
+    id
+    ... on NodePage @include(if: $x) {
+      title
+    }
+  }
+}
+
+query inlineAbstractFields($x: Boolean!) {
+  getRandomEntity {
+    __typename
+    id
+    ... on NodePage {
+      title @include(if: $x)
+    }
+  }
+}
+
+# A spread in an inline fragment on the same type keeps the condition of the
+# inline fragment.
+query inlineAbstractWithSpread($x: Boolean!) {
+  getRandomEntity {
+    __typename
+    id
+    ... on NodePage @include(if: $x) {
+      ...pageTitle
+    }
+  }
+}
+
+query spreadAbstractOnAbstract($x: Boolean!) {
+  getNonNullEntity {
+    __typename
+    ...entityType @include(if: $x)
+  }
+}
+
+# ==============================================================================
+# Operation root
+# ==============================================================================
+
+query rootSpread($x: Boolean!) {
+  ...rootEntity @include(if: $x)
+}
+
+query rootInline($x: Boolean!) {
+  ... on Query @include(if: $x) {
+    getNonNullEntity {
+      entityType
+    }
+  }
+}
+
+query rootSpreadOverlap($x: Boolean!) {
+  getNonNullEntity {
+    id
+  }
+  ...rootEntity @include(if: $x)
+}
+
+# ==============================================================================
+# Fragments
+# ==============================================================================
+
+fragment pageTitle on NodePage {
+  title
+  body
+}
+
+fragment pageTypename on NodePage {
+  __typename
+  title
+}
+
+fragment menuUrls on Menu {
+  name
+  links {
+    link {
+      url
+    }
+  }
+}
+
+fragment menuLabels on Menu {
+  links {
+    link {
+      label
+    }
+  }
+}
+
+fragment entityId on Entity {
+  id
+}
+
+fragment entityType on Entity {
+  entityType
+}
+
+fragment rootEntity on Query {
+  getNonNullEntity {
+    entityType
+  }
+}

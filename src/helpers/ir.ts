@@ -740,6 +740,19 @@ export function postProcessIR(ir: IRNode): IRNode {
 }
 
 /**
+ * Whether the node has nested selections, such as an object, a union or a list
+ * of them.
+ */
+export function hasNestedSelections(ir: IRNode): boolean {
+  if (ir.kind === 'OBJECT' || ir.kind === 'UNION') {
+    return true
+  } else if (ir.kind === 'ARRAY') {
+    return hasNestedSelections(ir.ofType)
+  }
+  return false
+}
+
+/**
  * If we have a field named __typename in the given fields, return true
  */
 export function hasTypenameField(fields: Record<string, IRNode>): boolean {

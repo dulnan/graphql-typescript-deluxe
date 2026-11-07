@@ -637,7 +637,7 @@ article?: ({
 } & {
   __typename: Article;
   title: string;
-} & ArticleBasicFragment & Omit<ArticleDetailsFragment, "author"> & ArticleMediaFragment);
+} & ArticleBasicFragment & Omit<ArticleDetailsFragment, "author"> & Partial<ArticleMediaFragment>);
 content?: ({
   __typename: Article;
   contributors?: PersonBasicFragment[];
@@ -647,7 +647,7 @@ content?: ({
   title: string;
   updatedAt?: number;
   uuid: string;
-} & ArticleDetailsFragment & ArticleMediaFragment | {
+} & ArticleDetailsFragment & Partial<ArticleMediaFragment> | {
   __typename: Page;
   createdAt: number;
   id: string | number;
