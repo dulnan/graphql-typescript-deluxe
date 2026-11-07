@@ -1,0 +1,26 @@
+"""
+Load an entity by exactly one of the fields.
+"""
+input EntityBy @oneOf {
+  """
+  The ID.
+  """
+  id: ID
+
+  """
+  The path.
+  """
+  path: String
+
+  filter: Filter
+}
+
+input Filter {
+  language: String
+  by: EntityBy
+}
+
+type Query {
+  entity(by: EntityBy!): String
+  entities(by: [EntityBy!], filter: Filter): [String]
+}

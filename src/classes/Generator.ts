@@ -460,7 +460,7 @@ export class Generator {
    * @throws {@link LogicError} if the helper type could not be found.
    */
   private getOrCreateTypeHelper(
-    type: 'exact' | 'maybe' | 'distributiveOmit',
+    type: 'exact' | 'maybe' | 'distributiveOmit' | 'oneOf',
   ): string {
     if (type === 'exact') {
       return this.generateCodeOnce('type-helpers', type, () => {
@@ -476,6 +476,14 @@ export class Generator {
         return {
           typeName: 'DistributiveOmit',
           code: `type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;`,
+        }
+      })
+    } else if (type === 'oneOf') {
+      // Exactly one of the keys, the others must be left out.
+      return this.generateCodeOnce('type-helpers', type, () => {
+        return {
+          typeName: 'OneOf',
+          code: `type OneOf<T> = { [K in keyof T]: { [P in K]: T[P] } & { [P in Exclude<keyof T, K>]?: never } }[keyof T];`,
         }
       })
     }
@@ -613,14 +621,24 @@ export class Generator {
     this.generatedInputTypes.set(type.name, typeName)
 
     return this.generateCodeOnce('input', type.name, () => {
+      // Exactly one field of a @oneOf input must be set, and it can't be
+      // null. Its fields are always nullable in the schema.
+      const isOneOf = !!type.isOneOf
       const fields = Object.entries(type.getFields()).reduce<
         Record<string, IRNode>
       >((acc, [name, field]) => {
-        acc[name] = this.buildInputFieldIR(
-          field.type,
-          this.schema.hasDefaultValue(field),
-          field.description,
-        )
+        acc[name] = isOneOf
+          ? IR.SCALAR({
+              tsType: this.createNonNullInputTS(
+                isNonNullType(field.type) ? field.type.ofType : field.type,
+              ),
+              description: field.description,
+            })
+          : this.buildInputFieldIR(
+              field.type,
+              this.schema.hasDefaultValue(field),
+              field.description,
+            )
         return acc
       }, {})
 
@@ -629,9 +647,13 @@ export class Generator {
         graphQLTypeName: '',
         description: type.description,
       })
+      const code = this.objectNodeToCode(obj)
 
       return {
-        code: makeExport(typeName, this.objectNodeToCode(obj)),
+        code: makeExport(
+          typeName,
+          isOneOf ? `${this.getOrCreateTypeHelper('oneOf')}<${code}>` : code,
+        ),
         typeName,
         context: { definition: type.astNode, type },
         source: null,

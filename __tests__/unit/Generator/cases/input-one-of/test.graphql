@@ -1,0 +1,9 @@
+# Exactly one field of a @oneOf input must be set, and it can't be null.
+
+query entity($by: EntityBy!) {
+  entity(by: $by)
+}
+
+query entities($by: [EntityBy!], $filter: Filter) {
+  entities(by: $by, filter: $filter)
+}
