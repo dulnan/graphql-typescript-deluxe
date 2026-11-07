@@ -1,8 +1,15 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { loadSchemaSync } from '@graphql-tools/load'
 import {
+  GraphQLInputObjectType,
+  GraphQLNonNull,
+  GraphQLObjectType,
   GraphQLSchema,
+  GraphQLString,
   SchemaMetaFieldDef,
+  buildClientSchema,
+  buildSchema,
+  introspectionFromSchema,
   TypeMetaFieldDef,
   parse,
   parseType,
@@ -216,6 +223,71 @@ describe('SchemaProvider', () => {
       expect(
         schemaProvider.getFieldDef(schema.getQueryType()!, 'nonExistent'),
       ).toBe(undefined)
+    })
+  })
+
+  describe('hasDefaultValue', () => {
+    const sdl = `
+      input Filter {
+        withDefault: String! = "x"
+        nullDefault: String = null
+        noDefault: String
+      }
+      type Query {
+        search(filter: Filter): String
+      }
+    `
+
+    function getFields(schema: GraphQLSchema): Record<string, unknown> {
+      const filter = schema.getType('Filter') as GraphQLInputObjectType
+      const provider = new SchemaProvider(schema)
+      return Object.fromEntries(
+        Object.entries(filter.getFields()).map(([name, field]) => [
+          name,
+          provider.hasDefaultValue(field),
+        ]),
+      )
+    }
+
+    it('detects defaults from SDL', () => {
+      expect(getFields(buildSchema(sdl))).toEqual({
+        withDefault: true,
+        nullDefault: true,
+        noDefault: false,
+      })
+    })
+
+    it('detects defaults from introspection', () => {
+      const schema = buildClientSchema(
+        introspectionFromSchema(buildSchema(sdl)),
+      )
+      expect(getFields(schema)).toEqual({
+        withDefault: true,
+        nullDefault: true,
+        noDefault: false,
+      })
+    })
+
+    it('detects defaults from a field config', () => {
+      const filter = new GraphQLInputObjectType({
+        name: 'Filter',
+        fields: {
+          withDefault: {
+            type: new GraphQLNonNull(GraphQLString),
+            defaultValue: 'x',
+          },
+          noDefault: { type: GraphQLString },
+        },
+      })
+      const schema = new GraphQLSchema({
+        query: new GraphQLObjectType({
+          name: 'Query',
+          fields: {
+            search: { type: GraphQLString, args: { filter: { type: filter } } },
+          },
+        }),
+      })
+      expect(getFields(schema)).toEqual({ withDefault: true, noDefault: false })
     })
   })
 

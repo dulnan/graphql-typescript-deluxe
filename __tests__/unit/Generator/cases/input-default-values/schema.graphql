@@ -1,0 +1,33 @@
+input Filter {
+  """
+  Required, with a default.
+  """
+  language: String! = "en"
+
+  """
+  Nullable, without a default.
+  """
+  limit: Int
+
+  """
+  A required list, with a default.
+  """
+  tags: [String!]! = []
+
+  """
+  Nullable, with a default.
+  """
+  sort: String = "title"
+
+  nested: Filter
+}
+
+type Query {
+  search(filter: Filter, page: Int! = 1, text: String): [String]
+  page: Page
+}
+
+type Page {
+  title: String!
+  body: String
+}

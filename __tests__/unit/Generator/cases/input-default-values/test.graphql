@@ -1,0 +1,20 @@
+# Variables and input fields with a default value may be left out.
+
+query searchWithDefaults($filter: Filter, $page: Int! = 1, $text: String) {
+  search(filter: $filter, page: $page, text: $text)
+}
+
+query requiredFilter($filter: Filter!) {
+  search(filter: $filter)
+}
+
+query nullableWithDefault($text: String = "news") {
+  search(text: $text)
+}
+
+query includeWithDefault($withBody: Boolean! = false) {
+  page {
+    title
+    body @include(if: $withBody)
+  }
+}

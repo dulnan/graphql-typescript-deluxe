@@ -7,6 +7,7 @@ import {
   typeFromAST,
   type GraphQLAbstractType,
   type GraphQLField,
+  type GraphQLInputField,
   type GraphQLNamedType,
   type GraphQLSchema,
   type GraphQLType,
@@ -187,5 +188,24 @@ export class SchemaProvider {
     return this.schemaImplementation.has(
       `implements:${abstractName}---${objectName}`,
     )
+  }
+
+  /**
+   * Whether the input field has a default value, so it may be left out.
+   *
+   * graphql 17 has the default of a schema from SDL or introspection in
+   * `default`, and a default from a field config in `defaultValue`. graphql 16
+   * only has `defaultValue`.
+   *
+   * @param field - The input field.
+   *
+   * @returns True if the field has a default value, which may be null.
+   */
+  public hasDefaultValue(field: GraphQLInputField): boolean {
+    const { default: defaultInput, defaultValue } = field as {
+      default?: unknown
+      defaultValue?: unknown
+    }
+    return defaultInput !== undefined || defaultValue !== undefined
   }
 }

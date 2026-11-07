@@ -716,9 +716,9 @@ tree?: TreeNodeRecursiveFragment;
 export type ComplexEdgeCasesQueryVariables = Exact<{
   filter?: ContentFilter | null;
   id: string | number;
-  includeMedia: boolean;
+  includeMedia?: boolean;
   limit?: number | null;
-  skipContributors: boolean;
+  skipContributors?: boolean;
 }>;
 
 

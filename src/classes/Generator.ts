@@ -575,6 +575,8 @@ export class Generator {
         acc[name] = IR.SCALAR({
           tsType,
           nullable: !required,
+          // A field with a default value may be left out.
+          optional: this.schema.hasDefaultValue(field),
           description: field.description,
         })
         return acc
@@ -838,6 +840,8 @@ export class Generator {
                     this.schema.getTypeFromNode(vd.type),
                   ),
                   nullable: vd.type.kind !== Kind.NON_NULL_TYPE,
+                  // A variable with a default value may be left out.
+                  optional: !!vd.defaultValue,
                 })
                 return acc
               }, {}),
