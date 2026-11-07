@@ -65,6 +65,7 @@ import {
   mergeIR,
   mergeObjectFields,
   postProcessIR,
+  typenameToCode,
   type IRNode,
   type IRNodeFragmentSpread,
   type IRNodeObject,
@@ -1959,13 +1960,7 @@ export class Generator {
       }
 
       case 'TYPENAME': {
-        const union = [...ir.types].sort().join(' | ')
-        if (ir.excludeType) {
-          // Special case for Exclude<A, B>: The provided types should be *excluded*
-          // from the defined excludeType (which is either a GraphQL interface or union).
-          return `Exclude<${ir.excludeType}, ${union}>`
-        }
-        return union
+        return typenameToCode(ir)
       }
 
       case 'OBJECT': {

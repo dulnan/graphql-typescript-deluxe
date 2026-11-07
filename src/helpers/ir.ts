@@ -142,9 +142,29 @@ export function mergeFragmentSpread(
   return fields
 }
 
+/**
+ * Returns a copy of the node, marked as optional.
+ */
+function asOptional<T extends IRNode>(node: T): T {
+  return { ...node, optional: true }
+}
+
+/**
+ * Returns a copy of the object node with all its fields marked as optional.
+ */
+function withOptionalFields(node: IRNodeObject): IRNodeObject {
+  const fields: Record<string, IRNode> = {}
+  for (const [key, field] of Object.entries(node.fields)) {
+    fields[key] = asOptional(field)
+  }
+  return { ...node, fields }
+}
+
 function unifyUnionBranches(
   aBranches: IRNode[],
   bBranches: IRNode[],
+  aMayBeMissing: boolean,
+  bMayBeMissing: boolean,
 ): IRNode[] {
   // A map of object branches.
   const aMap = new Map<string, IRNodeObject>()
@@ -167,11 +187,11 @@ function unifyUnionBranches(
       const existing = aMap.get(branch.graphQLTypeName)
       if (existing) {
         // Both unions have an OBJECT for the same type => unify them.
-        const merged = mergeIR(existing, branch)
+        const merged = mergeIR(existing, branch, aMayBeMissing, bMayBeMissing)
         out.push(merged)
         aMap.delete(branch.graphQLTypeName)
       } else {
-        out.push(branch)
+        out.push(bMayBeMissing ? withOptionalFields(branch) : branch)
       }
     } else {
       out.push(branch)
@@ -179,7 +199,9 @@ function unifyUnionBranches(
   }
 
   // Add in any leftover branches that were in aMap but no match in b
-  out.push(...aMap.values())
+  for (const branch of aMap.values()) {
+    out.push(aMayBeMissing ? withOptionalFields(branch) : branch)
+  }
   return out
 }
 
@@ -200,14 +222,42 @@ function mergeScalar(oldIR: IRNodeScalar, newIR: IRNodeScalar): IRNodeScalar {
   })
 }
 
+/**
+ * Returns the TS code for a typename node.
+ *
+ * @param node - The typename node.
+ *
+ * @returns The TS code, either a union of the types or an Exclude<> type.
+ */
+export function typenameToCode(node: IRNodeTypename): string {
+  const union = [...node.types].sort().join(' | ')
+  if (node.excludeType) {
+    // Special case for Exclude<A, B>: The provided types should be *excluded*
+    // from the defined excludeType (which is either a GraphQL interface or union).
+    return `Exclude<${node.excludeType}, ${union}>`
+  }
+  return union
+}
+
 function mergeTypenameNodes(
   oldIR: IRNodeTypename,
   newIR: IRNodeTypename,
 ): IRNodeTypename {
-  // Merge types while removing duplicates.
-  const mergedTypes = [...new Set([...oldIR.types, ...newIR.types])]
+  let result: IRNodeTypename
 
-  const result = IR.TYPENAME(mergedTypes)
+  if (oldIR.excludeType && oldIR.excludeType === newIR.excludeType) {
+    // Exclude<A, X> | Exclude<A, Y> is Exclude<A, X & Y>.
+    const excluded = oldIR.types.filter((type) => newIR.types.includes(type))
+    result = excluded.length
+      ? IR.TYPENAME(excluded, oldIR.excludeType)
+      : IR.TYPENAME(oldIR.excludeType)
+  } else {
+    // A union of both, removing duplicates. An Exclude<> type is added as is.
+    const toTypes = (node: IRNodeTypename): string[] =>
+      node.excludeType ? [typenameToCode(node)] : node.types
+    result = IR.TYPENAME([...new Set([...toTypes(oldIR), ...toTypes(newIR)])])
+  }
+
   result.nullable = oldIR.nullable || newIR.nullable
   return result
 }
@@ -215,9 +265,16 @@ function mergeTypenameNodes(
 function mergeObjectNodes(
   oldIR: IRNodeObject,
   newIR: IRNodeObject,
+  oldMayBeMissing: boolean,
+  newMayBeMissing: boolean,
 ): IRNodeObject {
   // Merge fields
-  const mergedFields = mergeObjectFields({ ...oldIR.fields }, newIR.fields)
+  const mergedFields = mergeObjectFields(
+    { ...oldIR.fields },
+    newIR.fields,
+    oldMayBeMissing,
+    newMayBeMissing,
+  )
   return IR.OBJECT({
     graphQLTypeName: oldIR.graphQLTypeName,
     fields: mergedFields,
@@ -226,8 +283,18 @@ function mergeObjectNodes(
   })
 }
 
-function mergeArrayNodes(oldIR: IRNodeArray, newIR: IRNodeArray): IRNodeArray {
-  const mergedElem = mergeIR(oldIR.ofType, newIR.ofType)
+function mergeArrayNodes(
+  oldIR: IRNodeArray,
+  newIR: IRNodeArray,
+  oldMayBeMissing: boolean,
+  newMayBeMissing: boolean,
+): IRNodeArray {
+  const mergedElem = mergeIR(
+    oldIR.ofType,
+    newIR.ofType,
+    oldMayBeMissing,
+    newMayBeMissing,
+  )
   return IR.ARRAY({
     ofType: mergedElem,
     nullable: oldIR.nullable || newIR.nullable,
@@ -236,8 +303,18 @@ function mergeArrayNodes(oldIR: IRNodeArray, newIR: IRNodeArray): IRNodeArray {
   })
 }
 
-function mergeUnionNodes(oldIR: IRNodeUnion, newIR: IRNodeUnion): IRNodeUnion {
-  const unifiedTypes = unifyUnionBranches(oldIR.types, newIR.types)
+function mergeUnionNodes(
+  oldIR: IRNodeUnion,
+  newIR: IRNodeUnion,
+  oldMayBeMissing: boolean,
+  newMayBeMissing: boolean,
+): IRNodeUnion {
+  const unifiedTypes = unifyUnionBranches(
+    oldIR.types,
+    newIR.types,
+    oldMayBeMissing,
+    newMayBeMissing,
+  )
   return IR.UNION({
     types: unifiedTypes,
     nullable: oldIR.nullable || newIR.nullable,
@@ -261,25 +338,27 @@ function mergeFragmentSpreadNodes(
 }
 
 /**
- * Merge a new IR node into an existing IR. If there's a mismatch,
- * we produce a union. Otherwise we unify them.
+ * Merge two IR nodes of different kinds or of the same kind.
  *
- * @param oldIR - The old IR.
- * @param newIR - The new IR.
- *
- * @returns The merged IR.
+ * The flags tell whether the selection of each node may be missing, which is
+ * passed on to the nested fields.
  */
-export function mergeIR(oldIR: IRNode, newIR: IRNode): IRNode {
+function mergeIRNodes(
+  oldIR: IRNode,
+  newIR: IRNode,
+  oldMayBeMissing: boolean,
+  newMayBeMissing: boolean,
+): IRNode {
   if (oldIR.kind === 'SCALAR' && newIR.kind === 'SCALAR') {
     return mergeScalar(oldIR, newIR)
   } else if (oldIR.kind === 'TYPENAME' && newIR.kind === 'TYPENAME') {
     return mergeTypenameNodes(oldIR, newIR)
   } else if (oldIR.kind === 'OBJECT' && newIR.kind === 'OBJECT') {
-    return mergeObjectNodes(oldIR, newIR)
+    return mergeObjectNodes(oldIR, newIR, oldMayBeMissing, newMayBeMissing)
   } else if (oldIR.kind === 'ARRAY' && newIR.kind === 'ARRAY') {
-    return mergeArrayNodes(oldIR, newIR)
+    return mergeArrayNodes(oldIR, newIR, oldMayBeMissing, newMayBeMissing)
   } else if (oldIR.kind === 'UNION' && newIR.kind === 'UNION') {
-    return mergeUnionNodes(oldIR, newIR)
+    return mergeUnionNodes(oldIR, newIR, oldMayBeMissing, newMayBeMissing)
   } else if (
     oldIR.kind === 'FRAGMENT_SPREAD' &&
     newIR.kind === 'FRAGMENT_SPREAD'
@@ -296,15 +375,87 @@ export function mergeIR(oldIR: IRNode, newIR: IRNode): IRNode {
 }
 
 /**
+ * Merge a new IR node into an existing IR. If there's a mismatch,
+ * we produce a union. Otherwise we unify them.
+ *
+ * Both nodes are selections of the same field. A field is included in the
+ * response if any of its selections is included, so the merged field is only
+ * optional if it may be missing in both selections.
+ *
+ * A selection may be missing because it is conditional itself (`@include`,
+ * `@skip`), or because its parent selection may be missing. The second case is
+ * passed in with the `MayBeMissing` arguments. For example, when merging
+ * `author { name }` with a conditional `author { email }`, the `email` field
+ * is optional: `author` can be there without the conditional selection.
+ *
+ * @param oldIR - The old IR.
+ * @param newIR - The new IR.
+ * @param oldMayBeMissing - Whether the parent selection of the old IR may be missing while the merged parent is there.
+ * @param newMayBeMissing - The same for the new IR.
+ *
+ * @returns The merged IR.
+ */
+export function mergeIR(
+  oldIR: IRNode,
+  newIR: IRNode,
+  oldMayBeMissing = false,
+  newMayBeMissing = false,
+): IRNode {
+  const oldMissing = oldMayBeMissing || !!oldIR.optional
+  const newMissing = newMayBeMissing || !!newIR.optional
+
+  // The field is guaranteed if one of the selections is guaranteed. It's also
+  // guaranteed if neither selection is conditional itself: Their parent
+  // selections may be missing, but the merged parent is only there if one of
+  // them is.
+  const isGuaranteed =
+    !oldMissing || !newMissing || (!oldIR.optional && !newIR.optional)
+
+  const merged = { ...mergeIRNodes(oldIR, newIR, oldMissing, newMissing) }
+  if (isGuaranteed) {
+    delete merged.optional
+  } else {
+    merged.optional = true
+  }
+  return merged
+}
+
+/**
  * Merge all fields from source into target (object IR).
+ *
+ * @param target - The target fields. Modified in place.
+ * @param source - The fields to merge into the target.
+ * @param targetMayBeMissing - Whether the selection of the target fields may be missing while the parent is there. Fields only the target has are then optional.
+ * @param sourceMayBeMissing - The same for the source fields.
+ *
+ * @returns The target fields.
  */
 export function mergeObjectFields(
   target: Record<string, IRNode>,
   source: Record<string, IRNode>,
+  targetMayBeMissing = false,
+  sourceMayBeMissing = false,
 ): Record<string, IRNode> {
+  if (targetMayBeMissing) {
+    for (const [key, val] of Object.entries(target)) {
+      if (!source[key]) {
+        target[key] = asOptional(val)
+      }
+    }
+  }
+
   for (const [key, val] of Object.entries(source)) {
     const targetIR = target[key]
-    target[key] = targetIR ? mergeIR(targetIR, val) : val
+    if (targetIR) {
+      target[key] = mergeIR(
+        targetIR,
+        val,
+        targetMayBeMissing,
+        sourceMayBeMissing,
+      )
+    } else {
+      target[key] = sourceMayBeMissing ? asOptional(val) : val
+    }
   }
   return target
 }

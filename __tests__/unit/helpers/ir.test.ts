@@ -8,6 +8,7 @@ import {
   postProcessIR,
   hasTypenameField,
   buildFragmentIRFields,
+  typenameToCode,
   type IRNode,
   type IRNodeArray,
   type IRNodeObject,
@@ -189,6 +190,118 @@ describe('mergeIR', () => {
       const b = IR.TYPENAME(['Admin'])
       const result = mergeIR(a, b) as IRNodeTypename
       expect(result.nullable).toBe(true)
+    })
+
+    it('excludes the types both Exclude<> types exclude', () => {
+      const a = IR.TYPENAME(['User', 'Admin'], 'Entity')
+      const b = IR.TYPENAME(['Admin', 'Guest'], 'Entity')
+      const result = mergeIR(a, b) as IRNodeTypename
+      expect(typenameToCode(result)).toBe('Exclude<Entity, Admin>')
+    })
+
+    it('uses the abstract type if the Exclude<> types exclude different types', () => {
+      const a = IR.TYPENAME(['User'], 'Entity')
+      const b = IR.TYPENAME(['Admin'], 'Entity')
+      const result = mergeIR(a, b) as IRNodeTypename
+      expect(typenameToCode(result)).toBe('Entity')
+    })
+
+    it('creates a union of an Exclude<> type and other types', () => {
+      const a = IR.TYPENAME(['User'], 'Entity')
+      const b = IR.TYPENAME(['Admin'])
+      const result = mergeIR(a, b) as IRNodeTypename
+      expect(typenameToCode(result)).toBe('Admin | Exclude<Entity, User>')
+    })
+  })
+
+  describe('merging optional nodes', () => {
+    const scalar = (optional?: boolean): IRNodeScalar => ({
+      ...IR.SCALAR({ tsType: 'string' }),
+      optional,
+    })
+
+    const object = (
+      fields: Record<string, IRNode>,
+      optional?: boolean,
+    ): IRNodeObject => ({
+      ...IR.OBJECT({ graphQLTypeName: 'User', fields }),
+      optional,
+    })
+
+    it('is optional if both nodes are optional', () => {
+      expect(mergeIR(scalar(true), scalar(true)).optional).toBe(true)
+    })
+
+    it('is not optional if one node is not optional', () => {
+      expect(mergeIR(scalar(true), scalar()).optional).toBeUndefined()
+      expect(mergeIR(scalar(), scalar(true)).optional).toBeUndefined()
+    })
+
+    it('makes nested fields of an optional node optional', () => {
+      const result = mergeIR(
+        object({ id: scalar() }),
+        object({ id: scalar(), email: scalar() }, true),
+      ) as IRNodeObject
+      expect(result.optional).toBeUndefined()
+      expect(result.fields.id?.optional).toBeUndefined()
+      expect(result.fields.email?.optional).toBe(true)
+    })
+
+    it('keeps nested fields of two optional nodes required if both have them', () => {
+      const result = mergeIR(
+        object({ id: scalar(), name: scalar() }, true),
+        object({ id: scalar(), email: scalar() }, true),
+      ) as IRNodeObject
+      expect(result.optional).toBe(true)
+      expect(result.fields.id?.optional).toBeUndefined()
+      expect(result.fields.name?.optional).toBe(true)
+      expect(result.fields.email?.optional).toBe(true)
+    })
+
+    it('makes deeply nested fields of an optional node optional', () => {
+      const result = mergeIR(
+        object({ friend: object({ id: scalar() }) }),
+        object({ friend: object({ id: scalar(), email: scalar() }) }, true),
+      ) as IRNodeObject
+      const friend = result.fields.friend as IRNodeObject
+      expect(friend.optional).toBeUndefined()
+      expect(friend.fields.id?.optional).toBeUndefined()
+      expect(friend.fields.email?.optional).toBe(true)
+    })
+
+    it('makes nested fields in array elements of an optional node optional', () => {
+      const result = mergeIR(
+        IR.ARRAY({ ofType: object({ id: scalar() }), nullableElement: false }),
+        {
+          ...IR.ARRAY({
+            ofType: object({ email: scalar() }),
+            nullableElement: false,
+          }),
+          optional: true,
+        },
+      ) as IRNodeArray
+      const element = result.ofType as IRNodeObject
+      expect(element.optional).toBeUndefined()
+      expect(element.fields.id?.optional).toBeUndefined()
+      expect(element.fields.email?.optional).toBe(true)
+    })
+
+    it('makes nested fields in union branches of an optional node optional', () => {
+      const result = mergeIR(IR.UNION({ types: [object({ id: scalar() })] }), {
+        ...IR.UNION({ types: [object({ email: scalar() })] }),
+        optional: true,
+      }) as IRNodeUnion
+      const branch = result.types[0] as IRNodeObject
+      expect(branch.fields.id?.optional).toBeUndefined()
+      expect(branch.fields.email?.optional).toBe(true)
+    })
+
+    it('does not modify the merged nodes', () => {
+      const a = object({ id: scalar() })
+      const b = object({ email: scalar() }, true)
+      mergeIR(a, b)
+      expect(a.fields.id?.optional).toBeUndefined()
+      expect(b.fields.email?.optional).toBeUndefined()
     })
   })
 
@@ -426,6 +539,21 @@ describe('mergeObjectFields', () => {
     }
     const result = mergeObjectFields(target, source)
     expect((result.id as IRNodeScalar).tsType).toBe('string | number')
+  })
+
+  it('makes fields optional that only a selection that may be missing has', () => {
+    const target: Record<string, IRNode> = {
+      id: IR.SCALAR({ tsType: 'string' }),
+      name: IR.SCALAR({ tsType: 'string' }),
+    }
+    const source: Record<string, IRNode> = {
+      id: IR.SCALAR({ tsType: 'string' }),
+      email: IR.SCALAR({ tsType: 'string' }),
+    }
+    const result = mergeObjectFields(target, source, true, true)
+    expect(result.id?.optional).toBeUndefined()
+    expect(result.name?.optional).toBe(true)
+    expect(result.email?.optional).toBe(true)
   })
 })
 

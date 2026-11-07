@@ -1,4 +1,5 @@
 import {
+  type DirectiveNode,
   type FieldNode,
   type FragmentDefinitionNode,
   type FragmentSpreadNode,
@@ -6,24 +7,19 @@ import {
   Kind,
   type OperationDefinitionNode,
   type SelectionSetNode,
+  print,
 } from 'graphql'
+
+function isConditionalDirective(directive: DirectiveNode): boolean {
+  const name = directive.name.value
+  return name === 'skip' || name === 'include'
+}
 
 /**
  * Determines if the field node has any of the two default conditional directives.
  */
 export function hasConditionalDirective(node: FieldNode): boolean {
-  if (!node.directives) {
-    return false
-  }
-
-  for (let i = 0; i < node.directives.length; i++) {
-    const name = node.directives[i]!.name.value
-    if (name === 'skip' || name === 'include') {
-      return true
-    }
-  }
-
-  return false
+  return !!node.directives?.some(isConditionalDirective)
 }
 
 /**
@@ -48,16 +44,24 @@ export function getInlineFragmentTypeName(
 export function mergeSameFieldSelections(
   selectionSet: SelectionSetNode,
 ): SelectionSetNode {
-  // 1) Group FIELD nodes by alias (or name if no alias).
+  // 1) Group FIELD nodes by alias (or name if no alias) and by their
+  // @include/@skip directives. The merged field node keeps the directives of
+  // the first node, so only fields with the same condition can be merged.
+  // Fields with different conditions are merged later, when building the IR.
   const fieldMap = new Map<string, FieldNode[]>()
   const otherSelections: (FragmentSpreadNode | InlineFragmentNode)[] = []
 
   for (const sel of selectionSet.selections) {
     if (sel.kind === Kind.FIELD) {
       const aliasOrName = sel.alias?.value || sel.name.value
-      const existing = fieldMap.get(aliasOrName) ?? []
+      const condition = (sel.directives ?? [])
+        .filter(isConditionalDirective)
+        .map((directive) => print(directive))
+        .join(' ')
+      const key = aliasOrName + ' ' + condition
+      const existing = fieldMap.get(key) ?? []
       existing.push(sel)
-      fieldMap.set(aliasOrName, existing)
+      fieldMap.set(key, existing)
     } else {
       // Inline fragments, fragment spreads, etc. do not merge by alias
       // We just keep them as is for now

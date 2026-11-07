@@ -1,0 +1,181 @@
+# A field is included if any of its selections is included. When merging
+# selections of the same field, the field is only optional if all of its
+# selections are conditional. Nested fields that only a conditional selection
+# selects are optional.
+
+# Both selections are conditional: The field is optional.
+query bothConditional($a: Boolean!, $b: Boolean!) {
+  getHomepage {
+    title @include(if: $a)
+    title @include(if: $b)
+  }
+}
+
+# One selection is not conditional: The field is required.
+query oneConditional($a: Boolean!) {
+  getHomepage {
+    title @include(if: $a)
+    title
+    id
+    id @skip(if: $a)
+  }
+}
+
+# Two conditional selections with different nested selections: Nested fields
+# selected by both are required, the others are optional.
+query nestedBothConditional($a: Boolean!, $b: Boolean!) {
+  getMenu {
+    links @include(if: $a) {
+      link {
+        label
+      }
+      subtree {
+        link {
+          url
+        }
+      }
+    }
+    links @include(if: $b) {
+      link {
+        url
+      }
+      subtree {
+        link {
+          url
+        }
+      }
+    }
+  }
+}
+
+# A conditional and an unconditional selection: Nested fields only selected by
+# the conditional selection are optional.
+query nestedOneConditional($a: Boolean!) {
+  getMenu {
+    links {
+      link {
+        label
+      }
+    }
+    links @include(if: $a) {
+      link {
+        url
+      }
+      subtree {
+        link {
+          label
+        }
+      }
+    }
+  }
+}
+
+# Fields merged from an inline fragment.
+query inlineFragment($a: Boolean!, $b: Boolean!) {
+  getHomepage {
+    id @include(if: $a)
+    title
+    ... on NodePage {
+      id @include(if: $b)
+      title @include(if: $a)
+    }
+  }
+}
+
+# Fields merged into the branches of an abstract type.
+query abstractType($a: Boolean!, $b: Boolean!) {
+  getNonNullEntity {
+    id @include(if: $a)
+    ... on NodePage {
+      id @include(if: $b)
+      title
+    }
+    ... on User {
+      id
+      name
+    }
+  }
+}
+
+# Root fields with different conditions are not merged before building the
+# types, so their conditions are kept.
+query rootField($a: Boolean!) {
+  getNonNullEntity @include(if: $a) {
+    id
+  }
+  getNonNullEntity {
+    entityType
+  }
+}
+
+# The union branches of two conditional selections are merged with the same
+# rules.
+query rootFieldAbstract($a: Boolean!, $b: Boolean!) {
+  getNonNullEntity @include(if: $a) {
+    ... on NodePage {
+      title
+    }
+  }
+  getNonNullEntity @include(if: $b) {
+    ... on NodePage {
+      id
+    }
+  }
+}
+
+# The fallback branches of both selections have the same Exclude<> type for
+# __typename, which is kept when merging.
+query rootFieldAbstractTypename($a: Boolean!, $b: Boolean!) {
+  getNonNullEntity @include(if: $a) {
+    __typename
+    ... on NodePage {
+      title
+    }
+  }
+  getNonNullEntity @include(if: $b) {
+    __typename
+    ... on NodePage {
+      id
+    }
+  }
+}
+
+# The selections have different Exclude<> types for __typename, which are
+# merged into a union.
+query rootFieldAbstractTypenameMixed($a: Boolean!, $b: Boolean!) {
+  getNonNullEntity @include(if: $a) {
+    __typename
+    ... on NodePage {
+      title
+    }
+  }
+  getNonNullEntity @include(if: $b) {
+    __typename
+    ... on User {
+      id
+    }
+  }
+}
+
+# Root fields with the same condition are still merged.
+query rootFieldSameCondition($a: Boolean!) {
+  getNonNullEntity @include(if: $a) {
+    id
+  }
+  getNonNullEntity @include(if: $a) {
+    entityType
+  }
+}
+
+# Inside a fragment.
+query fragment($a: Boolean!, $b: Boolean!) {
+  getHomepage {
+    ...pageFields
+  }
+}
+
+fragment pageFields on NodePage {
+  id
+  title @include(if: $a)
+  title @include(if: $b)
+}
