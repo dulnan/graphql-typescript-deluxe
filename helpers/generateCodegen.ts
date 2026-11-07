@@ -2,16 +2,12 @@ import { codegen } from '@graphql-codegen/core'
 import { parse } from 'graphql'
 import { loadSchema } from '@graphql-tools/load'
 import * as PluginTypescriptOperations from '@graphql-codegen/typescript-operations'
-import * as PluginTypescript from '@graphql-codegen/typescript'
 import { type TypeScriptDocumentsPluginConfig } from '@graphql-codegen/typescript-operations'
 
 const config: TypeScriptDocumentsPluginConfig = {
   exportFragmentSpreadSubTypes: false,
-  preResolveTypes: true,
   skipTypeNameForRoot: true,
-  skipTypename: true,
   useTypeImports: false,
-  onlyOperationTypes: false,
   namingConvention: {
     enumValues: 'change-case-all#upperCaseFirst',
   },
@@ -40,14 +36,10 @@ export async function generateCodegen(
     config,
     plugins: [
       {
-        typescript: {},
-      },
-      {
         typescriptOperations: {},
       },
     ],
     pluginMap: {
-      typescript: PluginTypescript,
       typescriptOperations: PluginTypescriptOperations,
     },
   })
