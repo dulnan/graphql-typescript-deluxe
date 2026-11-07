@@ -1101,7 +1101,7 @@ export class Generator {
         if (sel.name.value === TYPENAME) {
           // The user explicitly requests __typename for this object type
           // => we know exactly what that string is
-          fields[TYPENAME] = IR.TYPENAME(
+          fields[sel.alias?.value || TYPENAME] = IR.TYPENAME(
             this.getOrCreateObjectTypeName(objectType),
           )
           directFieldCount++
@@ -1420,7 +1420,8 @@ export class Generator {
         const fieldName = sel.name.value
         const aliasName = sel.alias?.value || fieldName
         if (fieldName === TYPENAME) {
-          if (!hasTypenameField(baseFields)) {
+          // It may already be there because of the nonOptionalTypename option.
+          if (!baseFields[aliasName]) {
             baseFields[aliasName] = IR.TYPENAME(
               this.getOrCreateUnionTypenameType(abstractType),
             )
@@ -1695,7 +1696,11 @@ export class Generator {
     )
     const excludedTypeCount = typesWithFragments.size
     const remainingCount = possibleTypes.length - excludedTypeCount
-    const hasTypename = hasTypenameField(baseFields)
+    // The keys of the __typename selections on the abstract type: __typename
+    // and its aliases.
+    const typenameKeys = Object.keys(baseFields).filter(
+      (key) => baseFields[key]!.kind === 'TYPENAME',
+    )
     let unionIrNode: IRNodeTypename | null = null
 
     for (const objectTypeName of possibleTypes) {
@@ -1708,13 +1713,17 @@ export class Generator {
         mergeObjectFields(mergedFields, subtypeFields)
       }
 
-      if (hasTypename) {
+      // The __typename of this branch, if it differs from the one of the
+      // abstract type.
+      let branchTypename: IRNodeTypename | null = null
+
+      if (typenameKeys.length) {
         if (
           typesWithFragments.has(objectTypeName) ||
           !this.options.output.mergeTypenames
         ) {
           // If this type has fragments, its __typename should be the name of the object type.
-          mergedFields[TYPENAME] = IR.TYPENAME(
+          branchTypename = IR.TYPENAME(
             this.getOrCreateObjectTypeName(objectTypeName),
           )
         } else if (typesWithFragments.size > 0) {
@@ -1738,11 +1747,13 @@ export class Generator {
             )
           }
 
-          if (unionIrNode) {
-            mergedFields[TYPENAME] = unionIrNode
-          } else {
-            mergedFields[TYPENAME] = IR.TYPENAME(typesWithoutFragments)
-          }
+          branchTypename = unionIrNode ?? IR.TYPENAME(typesWithoutFragments)
+        }
+      }
+
+      if (branchTypename) {
+        for (const key of typenameKeys) {
+          mergedFields[key] = branchTypename
         }
       }
 

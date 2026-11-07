@@ -595,18 +595,23 @@ function unifyObjectsIgnoringTypename(objects: IRNodeObject[]): IRNodeObject {
   const mergedFields = { ...base.fields }
 
   let anyNullable = base.nullable
-  let typename: IRNodeTypename | null = null
-
   for (const obj of objects) {
     anyNullable = !anyNullable || !obj.nullable
-    const tnField = obj.fields[TYPENAME]
-    if (tnField && tnField.kind === 'TYPENAME') {
-      typename = typename ? mergeTypenameNodes(typename, tnField) : tnField
-    }
   }
 
-  if (typename) {
-    mergedFields[TYPENAME] = typename
+  // Merge the __typename fields, including aliased ones.
+  for (const [key, field] of Object.entries(base.fields)) {
+    if (field.kind !== 'TYPENAME') {
+      continue
+    }
+    let typename: IRNodeTypename = field
+    for (const obj of objects.slice(1)) {
+      const tnField = obj.fields[key]
+      if (tnField && tnField.kind === 'TYPENAME') {
+        typename = mergeTypenameNodes(typename, tnField)
+      }
+    }
+    mergedFields[key] = typename
   }
 
   return IR.OBJECT({
@@ -619,7 +624,7 @@ function unifyObjectsIgnoringTypename(objects: IRNodeObject[]): IRNodeObject {
 /**
  * Create a key from an IR node.
  */
-function buildNodeKeyWithoutTypename(ir: IRNode): string {
+function buildNodeKeyWithoutTypename(ir: IRNode, isBranch = false): string {
   let key = ir.kind
   switch (ir.kind) {
     case 'SCALAR': {
@@ -632,9 +637,9 @@ function buildNodeKeyWithoutTypename(ir: IRNode): string {
       // but that can get complicated. For 100% correctness, you'd do so:
       for (const [k, child] of Object.entries(ir.fields)) {
         key += k
-        // watch out for infinite recursion in large shapes,
-        // but typically it's safe to do the same approach:
-        if (k === TYPENAME && child.kind === 'TYPENAME') {
+        // The __typename of a branch, also an aliased one, is merged
+        // separately.
+        if (child.kind === 'TYPENAME' && (k === TYPENAME || isBranch)) {
           key += '__TYPENAME_PLACEHOLDER__'
         } else {
           key += buildNodeKeyWithoutTypename(child)
@@ -687,7 +692,7 @@ function mergeUnionBranchesIgnoringTypename(branches: IRNode[]): IRNode[] {
   const groups = new Map<string, IRNodeObject[]>()
 
   for (const obj of objectBranches) {
-    const sig = buildNodeKeyWithoutTypename(obj)
+    const sig = buildNodeKeyWithoutTypename(obj, true)
     const arr = groups.get(sig) || []
     arr.push(obj)
     groups.set(sig, arr)

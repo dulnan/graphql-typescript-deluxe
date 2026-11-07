@@ -1,0 +1,73 @@
+# An aliased __typename is typed like __typename, under its alias.
+
+query objectType {
+  getHomepage {
+    kind: __typename
+    title
+  }
+}
+
+query objectTypeWithTypename {
+  getHomepage {
+    __typename
+    kind: __typename
+  }
+}
+
+query rootType {
+  type: __typename
+  isAvailable
+}
+
+query interfaceType {
+  getRandomEntity {
+    kind: __typename
+    id
+  }
+}
+
+# The alias can be used to narrow the type.
+query interfaceTypeWithInlineFragment {
+  getRandomEntity {
+    kind: __typename
+    ... on User {
+      name
+    }
+  }
+}
+
+query interfaceTypeWithTypename {
+  getRandomEntity {
+    __typename
+    kind: __typename
+    ... on User {
+      name
+    }
+  }
+}
+
+query unionType {
+  search {
+    kind: __typename
+    ... on NodeArticle {
+      body
+    }
+  }
+}
+
+# The aliased __typename in an inline fragment on a concrete type.
+query inlineFragment {
+  getRandomEntity {
+    ... on User {
+      kind: __typename
+      name
+    }
+  }
+}
+
+fragment entityKind on Entity {
+  kind: __typename
+  ... on Domain {
+    label
+  }
+}
