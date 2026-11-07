@@ -1,0 +1,92 @@
+# Fragment spreads inside a nested selection on an abstract type: an inline
+# fragment on an interface, or a fragment on another abstract type.
+#
+# The nested selection is built with an object node for each possible type,
+# so that the fields of the spread fragments are merged into the right type.
+
+# A "dispatch" fragment on an interface that only spreads fragments on concrete
+# types, next to another field.
+query dispatchFragment {
+  getRandomEntity {
+    __typename
+    id
+    ...teaser
+  }
+}
+
+# A fragment on an interface that only spreads another fragment on the same
+# interface, in a union field.
+query wrapperFragment {
+  search {
+    __typename
+    ...wrapper
+  }
+}
+
+# An inline fragment on an interface that contains a fragment on the same
+# interface, in an object field.
+query objectInlineInterface {
+  getHomepage {
+    id
+    ... on Node {
+      ...nodeTitle
+    }
+  }
+}
+
+# A fragment on a different type than the object is not included.
+query objectInlineInterfaceOtherType {
+  getHomepage {
+    id
+    ... on Node {
+      ...articleBody
+    }
+  }
+}
+
+# An inline fragment on an interface that contains a fragment on a concrete
+# type, in an abstract field.
+query abstractInlineInterface {
+  getRandomEntity {
+    __typename
+    id
+    ... on Node {
+      ...pageBody
+    }
+  }
+}
+
+fragment teaser on Node {
+  ...articleTeaser
+  ...pageTeaser
+}
+
+fragment articleTeaser on NodeArticle {
+  body
+  tags
+}
+
+fragment pageTeaser on NodePage {
+  title
+}
+
+fragment wrapper on Entity {
+  ...entityBase
+}
+
+fragment entityBase on Entity {
+  id
+  entityType
+}
+
+fragment nodeTitle on Node {
+  title
+}
+
+fragment articleBody on NodeArticle {
+  body
+}
+
+fragment pageBody on NodePage {
+  body
+}

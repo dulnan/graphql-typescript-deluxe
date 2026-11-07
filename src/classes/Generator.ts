@@ -955,6 +955,7 @@ export class Generator {
    *
    * @param type - The GraphQL type.
    * @param selectionSet - The selection set node.
+   * @param withBranches - For abstract types: Always return an object node for each possible type (as a union), instead of a shorter type such as a fragment type. Needed when the caller merges the fields of the object nodes.
    *
    * @returns The IR node for the selection.
    *
@@ -963,11 +964,12 @@ export class Generator {
   private buildSelectionSet(
     type: GraphQLNamedType,
     selectionSet: SelectionSetNode,
+    withBranches = false,
   ): IRNode {
     if (isObjectType(type)) {
       return this.buildObjectSelectionSet(type, selectionSet)
     } else if (isAbstractType(type)) {
-      return this.buildAbstractSelectionSet(type, selectionSet)
+      return this.buildAbstractSelectionSet(type, selectionSet, withBranches)
     }
 
     // We should never actually end up here, as there is no selection set for any other types.
@@ -1118,7 +1120,7 @@ export class Generator {
         }
 
         const spreadType = this.schema.getType(typeConditionName)
-        const ir = this.buildSelectionSet(spreadType, sel.selectionSet)
+        const ir = this.buildSelectionSet(spreadType, sel.selectionSet, true)
         if (ir.kind === 'OBJECT') {
           mergeObjectFields(fields, ir.fields, false, isConditional)
         } else if (ir.kind === 'UNION') {
@@ -1308,6 +1310,7 @@ export class Generator {
    *
    * @param abstractType - The interface/union type.
    * @param selectionSet - The selection set node.
+   * @param withBranches - Always return an object node for each possible type, without using the shortcuts.
    *
    * @returns The IR node for the selection.
    *
@@ -1317,6 +1320,7 @@ export class Generator {
   private buildAbstractSelectionSet(
     abstractType: GraphQLAbstractType,
     selectionSet: SelectionSetNode,
+    withBranches = false,
   ): IRNode {
     const selections = this.preprocessSelections(
       selectionSet.selections,
@@ -1418,9 +1422,11 @@ export class Generator {
 
     // The shortcuts don't handle conditional fragment spreads and inline
     // fragments, so they are only used without them.
-    const useShortcuts = !selections.some(
-      (sel) => sel.kind !== Kind.FIELD && hasConditionalDirective(sel),
-    )
+    const useShortcuts =
+      !withBranches &&
+      !selections.some(
+        (sel) => sel.kind !== Kind.FIELD && hasConditionalDirective(sel),
+      )
 
     // ====================================================================
     // Shortcuts for common use cases.
@@ -1532,7 +1538,7 @@ export class Generator {
         const isConditional = hasConditionalDirective(sel)
 
         // Build the IR node for the selection for this object type.
-        const ir = this.buildSelectionSet(spreadType, sel.selectionSet)
+        const ir = this.buildSelectionSet(spreadType, sel.selectionSet, true)
 
         // For each object type that implements typeConditionName, merge its IR.
         for (const possibleTypeName of possibleTypes) {
@@ -1593,6 +1599,7 @@ export class Generator {
           const ir = this.buildSelectionSet(
             typeConditionType,
             fragment.selectionSet,
+            true,
           )
 
           if (ir.kind === 'OBJECT') {
