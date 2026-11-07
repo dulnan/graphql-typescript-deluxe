@@ -97,6 +97,37 @@ export class DuplicateInputDocumentError extends Error {
 }
 
 /**
+ * Thrown when a fragment or operation name is defined more than once, in the
+ * same or in different input documents.
+ */
+export class DuplicateDefinitionError extends Error {
+  constructor(
+    public kind: 'fragment' | 'operation',
+    public definitionName: string,
+    public filePaths: string[],
+  ) {
+    const files = [...new Set(filePaths)].map((v) => `"${v}"`).join(' and ')
+    super(`The ${kind} name "${definitionName}" is defined twice in ${files}`)
+    this.name = 'DuplicateDefinitionError'
+    Object.setPrototypeOf(this, DuplicateDefinitionError.prototype)
+  }
+}
+
+/**
+ * Thrown when a fragment spreads itself, directly or through other fragments.
+ */
+export class FragmentCycleError extends Error {
+  constructor(
+    public cycle: string[],
+    public context?: ErrorContext,
+  ) {
+    super(`The fragment "${cycle[0]}" spreads itself: ${cycle.join(' -> ')}`)
+    this.name = 'FragmentCycleError'
+    Object.setPrototypeOf(this, FragmentCycleError.prototype)
+  }
+}
+
+/**
  * Thrown when the AST source code is required.
  */
 export class NodeLocMissingError extends Error {

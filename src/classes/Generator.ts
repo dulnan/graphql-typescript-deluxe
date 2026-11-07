@@ -52,8 +52,10 @@ import type {
 import { toInputDocuments } from '../helpers/generator'
 import {
   DependencyTrackingError,
+  DuplicateDefinitionError,
   DuplicateInputDocumentError,
   FieldNotFoundError,
+  FragmentCycleError,
   FragmentNotFoundError,
   LogicError,
   MissingRootTypeError,
@@ -148,6 +150,12 @@ export class Generator {
       dependencies: string[]
     }
   > = new Map()
+
+  /**
+   * The names of the fragments whose type is being generated, outermost
+   * first. Used to detect fragments that spread themselves.
+   */
+  private fragmentStack: string[] = []
 
   /**
    * Debug counts.
@@ -729,12 +737,23 @@ export class Generator {
       'fragment',
       fragmentName,
       () => {
+        // Reached again while generating its own type: The fragment spreads
+        // itself. On errors, the stack is cleared by resetCaches().
+        const cycleStart = this.fragmentStack.indexOf(fragmentName)
+        if (cycleStart !== -1) {
+          throw new FragmentCycleError(
+            [...this.fragmentStack.slice(cycleStart), fragmentName],
+            this.getErrorContext(),
+          )
+        }
+
         const source = getAstSource(item.node)
         const typeName = this.options.buildFragmentTypeName(item.node)
 
         const graphqlTypeName = item.node.typeCondition.name.value
         const type = this.schema.getType(graphqlTypeName)
 
+        this.fragmentStack.push(fragmentName)
         this.dependencyTracker?.start(item.filePath)
         this.dependencyTracker?.addFragment(fragmentName)
         const ir = this.buildSelectionSet(type, item.node.selectionSet)
@@ -746,6 +765,7 @@ export class Generator {
           dependencies,
           filePath: this.dependencyTracker ? item.filePath : NO_FILE_PATH,
         })
+        this.fragmentStack.pop()
         const code = makeExport(typeName, this.IRToCode(processedIR))
 
         return {
@@ -1173,14 +1193,12 @@ export class Generator {
    * If the fragment does not yet exist, it will be created. This can happen
    * easily when we try to generate a fragment that spreads another fragment.
    *
-   * The method will throw an error when there are circular dependencies, e.g.
-   * when fragment A spreads fragment B which spreads fragment A.
-   *
    * @param fragmentName - The name of the fragment.
    *
    * @returns The map, where the key is the name of the field and the value is the IR node.
    *
-   * @throws {@link LogicError} if the IR for the fragment could not be built. This can happen when there are circular dependencies between fragments.
+   * @throws {@link FragmentCycleError} if the fragment spreads itself, directly or through other fragments.
+   * @throws {@link LogicError} if the IR for the fragment could not be built.
    */
   private getFragmentIRFields(fragmentName: string): Record<string, IRNode> {
     return this.withCache('getFragmentIRFields', fragmentName, () => {
@@ -1198,11 +1216,10 @@ export class Generator {
 
       /* v8 ignore start -- @preserve */
       if (!item) {
-        // Likely means there are circular references between two or more
-        // fragments and we are trying to generated the IR recursively.
-        // As this is anyway not allowed in the spec, throw an error.
+        // Fragments that spread themselves already throw a
+        // FragmentCycleError, so this is a bug.
         throw new LogicError(
-          `Failed to generate IR for fragment: "${fragmentName}". There are likely circular dependencies between fragments.`,
+          `Failed to generate IR for fragment: "${fragmentName}".`,
           this.getErrorContext(),
         )
       }
@@ -2557,6 +2574,7 @@ export class Generator {
     this.generatedCode.clear()
     this.cache.clear()
     this.fragmentIRs.clear()
+    this.fragmentStack = []
     this.dependencyTracker?.reset()
     return this
   }
@@ -2573,6 +2591,30 @@ export class Generator {
   public reset(): Generator {
     this.inputDocuments.clear()
     return this.resetCaches()
+  }
+
+  /**
+   * Record the file of a definition name, and throw if it was already
+   * recorded.
+   *
+   * @param files - The file path of each name seen so far.
+   * @param kind - The kind of the definition.
+   * @param name - The name of the definition.
+   * @param input - The input document of the definition.
+   *
+   * @throws {@link DuplicateDefinitionError} if the name was already recorded.
+   */
+  private assertUniqueName(
+    files: Map<string, string>,
+    kind: 'fragment' | 'operation',
+    name: string,
+    input: GeneratorInput,
+  ): void {
+    const existing = files.get(name)
+    if (existing !== undefined) {
+      throw new DuplicateDefinitionError(kind, name, [existing, input.filePath])
+    }
+    files.set(name, input.filePath)
   }
 
   /**
@@ -2615,6 +2657,8 @@ export class Generator {
    * @throws {@link FragmentNotFoundError} if no fragment definition exists for a fragment spread.
    * @throws {@link FieldNotFoundError} if a non-existing field was selected
    * @throws {@link MissingRootTypeError} if the root type is unsupported.
+   * @throws {@link DuplicateDefinitionError} if a fragment or operation name is defined more than once.
+   * @throws {@link FragmentCycleError} if a fragment spreads itself, directly or through other fragments.
    * @throws {@link LogicError} if there is a logical error during building. This can hint at a bug in the Generator.
    */
   public build(): GeneratorOutput {
@@ -2624,7 +2668,13 @@ export class Generator {
     this.generatedInputTypes.clear()
 
     try {
-      this.forEachDefinitionKind(Kind.FRAGMENT_DEFINITION, (node) => {
+      // Fragment spreads are resolved across all input documents, and
+      // operations are looked up by name. So both names must be unique across
+      // all input documents. This is checked here and not in add(), because
+      // moving a definition to another file can take more than one update().
+      const fragmentFiles = new Map<string, string>()
+      this.forEachDefinitionKind(Kind.FRAGMENT_DEFINITION, (node, input) => {
+        this.assertUniqueName(fragmentFiles, 'fragment', node.name.value, input)
         this.dependencyTracker?.addFragment(node.name.value)
         this.fragments.set(node.name.value, {
           node,
@@ -2642,7 +2692,16 @@ export class Generator {
         })
       }
 
+      const operationFiles = new Map<string, string>()
       this.forEachDefinitionKind(Kind.OPERATION_DEFINITION, (def, input) => {
+        if (def.name) {
+          this.assertUniqueName(
+            operationFiles,
+            'operation',
+            def.name.value,
+            input,
+          )
+        }
         this.generateOperationType(def, input)
       })
 
