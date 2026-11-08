@@ -1,0 +1,107 @@
+type Query {
+  node: Node
+  result: Result
+}
+
+interface Node {
+  """
+  The ID of the node.
+  """
+  id: ID!
+}
+
+type Page implements Node {
+  """
+  The ID of the page.
+  """
+  id: ID!
+
+  """
+  The title of the page.
+  """
+  title: String!
+
+  """
+  The author of the page.
+  """
+  author: Person!
+
+  """
+  The items on the page.
+  """
+  related: [PageRelated!]!
+}
+
+type Article implements Node {
+  """
+  The ID of the article.
+  """
+  id: ID!
+
+  """
+  The title of the article.
+  """
+  title: String!
+
+  """
+  The author of the article.
+  """
+  author: Person!
+
+  """
+  The items in the article.
+  """
+  related: [ArticleRelated!]!
+}
+
+type Video implements Node {
+  id: ID!
+  title: String!
+}
+
+type Person {
+  """
+  The name of the person.
+  """
+  name: String!
+
+  """
+  The email address of the person.
+  """
+  email: String!
+}
+
+type PageImage {
+  """
+  The URL of the page image.
+  """
+  url: String!
+}
+
+type PageLink {
+  """
+  The target of the link.
+  """
+  href: String!
+}
+
+type ArticleImage {
+  """
+  The URL of the article image.
+  """
+  url: String!
+}
+
+type ArticleLink {
+  """
+  The target of the link.
+  """
+  href: String!
+}
+
+union PageRelated = PageImage | PageLink
+
+# The members are in another order than in PageRelated.
+union ArticleRelated = ArticleLink | ArticleImage
+
+union Result = Page | Article

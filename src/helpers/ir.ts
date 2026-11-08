@@ -580,19 +580,110 @@ export function isIdenticalIR(a: IRNode, b: IRNode): boolean {
   return false
 }
 
-function unifyObjectsIgnoringTypename(objects: IRNodeObject[]): IRNodeObject {
+/**
+ * Get the description that all nodes share.
+ *
+ * @param nodes - The nodes.
+ *
+ * @returns The description, or null if the nodes have different ones or there are no nodes.
+ */
+function getSharedDescription(nodes: IRNode[]): string | null {
+  const description = nodes[0]?.description || null
+  for (const node of nodes) {
+    if ((node.description || null) !== description) {
+      return null
+    }
+  }
+  return description
+}
+
+/**
+ * Keep only the descriptions of a merged node that its sources share.
+ *
+ * The sources can be fields of different types, whose descriptions may not
+ * apply to each other. A missing description counts as a different one.
+ * Nested fields are compared with the fields of the sources that have them,
+ * and union members with the members that generate the same type.
+ *
+ * @param node - The merged node.
+ * @param sources - The nodes from which it was merged.
+ * @param nullableIsOptional - Whether nullable fields are generated as
+ * optional fields.
+ *
+ * @returns The node with the shared descriptions.
+ */
+function withSharedDescriptions(
+  node: IRNode,
+  sources: IRNode[],
+  nullableIsOptional: boolean,
+): IRNode {
+  const description = getSharedDescription(sources)
+
+  if (node.kind === 'OBJECT') {
+    const objects = sources.filter((v) => v.kind === 'OBJECT')
+    const fields: Record<string, IRNode> = {}
+    for (const [key, field] of Object.entries(node.fields)) {
+      fields[key] = withSharedDescriptions(
+        field,
+        objects.flatMap((v) => v.fields[key] ?? []),
+        nullableIsOptional,
+      )
+    }
+    return { ...node, description, fields }
+  } else if (node.kind === 'ARRAY') {
+    const ofType = withSharedDescriptions(
+      node.ofType,
+      sources.flatMap((v) => (v.kind === 'ARRAY' ? [v.ofType] : [])),
+      nullableIsOptional,
+    )
+    return { ...node, description, ofType }
+  } else if (node.kind === 'UNION') {
+    // The members can be of different types, so they are matched by key.
+    const members = sources.flatMap((v) => (v.kind === 'UNION' ? v.types : [v]))
+    const keys = members.map((v) => buildNodeKey(v, nullableIsOptional))
+    const types = node.types.map((member) => {
+      const key = buildNodeKey(member, nullableIsOptional)
+      return withSharedDescriptions(
+        member,
+        members.filter((_, i) => keys[i] === key),
+        nullableIsOptional,
+      )
+    })
+    return { ...node, description, types }
+  }
+
+  return description === (node.description || null)
+    ? node
+    : { ...node, description }
+}
+
+function unifyObjectsIgnoringTypename(
+  objects: IRNodeObject[],
+  nullableIsOptional: boolean,
+): IRNodeObject {
   // We assume these all have the same shape except for possibly
   // different values of `__typename`. So we:
   // 1) Take the first object's fields as a base
   // 2) For `__typename`, merge the values of all objects. A value can be a
   //    union of types or an Exclude<> type.
-  // 3) Everything else is the same (if your signature logic is correct)
+  // 3) Everything else generates the same type. The objects can be of
+  //    different types, so only the descriptions they share are kept.
   // 4) Mark `nonNull: true` if any object is nonNull (OR them together)
   // Note: This function is only called with 2+ objects (single objects are
   // handled by the caller in mergeUnionBranchesIgnoringTypename)
 
   const base = { ...objects[0]! }
-  const mergedFields = { ...base.fields }
+  const mergedFields: Record<string, IRNode> = {}
+  for (const [key, field] of Object.entries(base.fields)) {
+    mergedFields[key] =
+      field.kind === 'TYPENAME'
+        ? field
+        : withSharedDescriptions(
+            field,
+            objects.map((obj) => obj.fields[key]!),
+            nullableIsOptional,
+          )
+  }
 
   let anyNullable = base.nullable
   for (const obj of objects) {
@@ -735,7 +826,7 @@ function mergeUnionBranchesIgnoringTypename(
     }
 
     // Merge them all
-    const merged = unifyObjectsIgnoringTypename(objs)
+    const merged = unifyObjectsIgnoringTypename(objs, nullableIsOptional)
     mergedObjects.push(merged)
   }
 
@@ -828,7 +919,19 @@ export function hasRequiredTypenameField(
   return !!field && !field.optional
 }
 
-export function buildFragmentIRFields(ir: IRNode): Record<string, IRNode> {
+/**
+ * Get the fields that a fragment selects.
+ *
+ * @param ir - The IR of the fragment.
+ * @param nullableIsOptional - Whether nullable fields are generated as
+ * optional fields.
+ *
+ * @returns The fields. For a union, the fields of all its object branches.
+ */
+export function buildFragmentIRFields(
+  ir: IRNode,
+  nullableIsOptional = false,
+): Record<string, IRNode> {
   // If it's an OBJECT node, just return its fields.
   if (ir.kind === 'OBJECT') {
     return ir.fields
@@ -837,15 +940,27 @@ export function buildFragmentIRFields(ir: IRNode): Record<string, IRNode> {
   // If it's a UNION, unify all OBJECT branches. Only one of them applies to
   // an object, so a field is only present if all branches select it.
   if (ir.kind === 'UNION') {
+    const branches = ir.types.filter((v) => v.kind === 'OBJECT')
     let merged: Record<string, IRNode> | null = null
-    for (const branch of ir.types) {
-      if (branch.kind === 'OBJECT') {
-        merged = merged
-          ? mergeObjectFields(merged, branch.fields, true, true)
-          : { ...branch.fields }
-      }
+    for (const branch of branches) {
+      merged = merged
+        ? mergeObjectFields(merged, branch.fields, true, true)
+        : { ...branch.fields }
     }
-    return merged ?? {}
+    if (!merged) {
+      return {}
+    }
+
+    // The branches are of different types, so only the descriptions they
+    // share are kept.
+    for (const [key, field] of Object.entries(merged)) {
+      merged[key] = withSharedDescriptions(
+        field,
+        branches.flatMap((v) => v.fields[key] ?? []),
+        nullableIsOptional,
+      )
+    }
+    return merged
   }
 
   // There are no fields.

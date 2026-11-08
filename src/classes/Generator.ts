@@ -810,7 +810,10 @@ export class Generator {
           ? this.dependencyTracker.end()
           : this.getUntrackedDependencies(item.node)
         this.fragmentIRs.set(item.node.name.value, {
-          map: buildFragmentIRFields(processedIR),
+          map: buildFragmentIRFields(
+            processedIR,
+            this.options.output.nullableField === 'optional',
+          ),
           isObject: this.isObjectTypeIR(processedIR),
           dependencies,
           filePath: this.dependencyTracker ? item.filePath : NO_FILE_PATH,

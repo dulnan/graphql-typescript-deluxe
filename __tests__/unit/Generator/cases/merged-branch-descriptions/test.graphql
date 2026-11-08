@@ -1,0 +1,118 @@
+# The title of a page and of an article have different descriptions, so the
+# merged branch has no description for it.
+query differentDescriptions {
+  node {
+    __typename
+    ... on Page {
+      title
+    }
+    ... on Article {
+      title
+    }
+  }
+}
+
+# The title of a video has no description, so it doesn't apply either.
+query missingDescription {
+  node {
+    __typename
+    ... on Article {
+      title
+    }
+    ... on Video {
+      title
+    }
+  }
+}
+
+# The author has different descriptions, but the nested name is the same field
+# of the same type, so it keeps its description.
+query nestedDescriptions {
+  node {
+    ... on Page {
+      author {
+        name
+      }
+    }
+    ... on Article {
+      author {
+        name
+      }
+    }
+  }
+}
+
+# The members of the unions are in a different order. The URLs have different
+# descriptions, the link targets have the same one.
+query unionMembers {
+  node {
+    ... on Page {
+      related {
+        ... on PageImage {
+          url
+        }
+        ... on PageLink {
+          href
+        }
+      }
+    }
+    ... on Article {
+      related {
+        ... on ArticleImage {
+          url
+        }
+        ... on ArticleLink {
+          href
+        }
+      }
+    }
+  }
+}
+
+# A field selected on the interface has the description of the interface.
+query interfaceField {
+  node {
+    __typename
+    id
+    ... on Page {
+      title
+    }
+  }
+}
+
+# The branches have different fields, so they aren't merged into one.
+fragment authorName on Node {
+  ... on Page {
+    author {
+      name
+    }
+  }
+  ... on Article {
+    id
+    author {
+      name
+    }
+  }
+}
+
+fragment authorEmail on Node {
+  ... on Page {
+    author {
+      email
+    }
+  }
+  ... on Article {
+    author {
+      email
+    }
+  }
+}
+
+# Both fragments apply to a page and an article. The author fields conflict,
+# so they are merged from the fields of all branches of the fragments.
+query fragmentConflict {
+  result {
+    ...authorName
+    ...authorEmail
+  }
+}

@@ -17,7 +17,9 @@ import type { GeneratedCode, GeneratedCodeByOutputType } from '.'
  * - link: Adds a link to the file where the fragment/operation originates from
  * - source: Adds a @example code block containing the source code of the fragment/operation
  * - typeDescription: Adds the description of a type from the schema
- * - fieldDescription: Adds the field description from the schema.
+ * - fieldDescription: Adds the field description from the schema. When the
+ *   same selection of several types is merged into one object, a field only
+ *   keeps its description if all these types have the same one.
  */
 export type TypeCommentOptions =
   | 'link'
