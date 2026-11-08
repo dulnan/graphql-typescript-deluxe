@@ -85,9 +85,15 @@ export function compareNames(a: string, b: string): number {
  */
 export function graphqlToString(str: string, minify = false): string {
   const strStripped = minify ? stripIgnoredCharacters(str) : str
-  // Since we are using String.raw to keep GraphQL quote escaping intact, we have to "escape" backtics ourselves.
-  const escapedBackticks = strStripped.replaceAll('`', '${"`"}')
-  return 'String.raw`' + escapedBackticks + (minify ? '`' : '\n\n`')
+  // String.raw keeps the escapes of GraphQL strings intact. But a backtick
+  // would end the template literal, and "${" would start an interpolation.
+  // So both are inserted with an interpolation of a JS string, together with
+  // the backslashes right before them, which would escape the interpolation.
+  const escaped = strStripped.replace(
+    /\\*(?:`|\$\{)/g,
+    (match) => '${' + JSON.stringify(match) + '}',
+  )
+  return 'String.raw`' + escaped + (minify ? '`' : '\n\n`')
 }
 
 export function generateHeaderComment(title: string): string {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { stripIgnoredCharacters } from 'graphql'
 import schemaContent from './schema.graphql?raw'
 import { Generator } from '../../../src/classes/Generator'
 import { GeneratorOutputCode } from '../../../src/classes/GeneratorOutputCode'
@@ -169,6 +170,48 @@ describe('Generator Operations File', () => {
 
     // Long lines should be split when not minifying
     expect(operationsFile.getSource()).toBeDefined()
+  })
+
+  describe('GraphQL strings', () => {
+    const fragment =
+      'fragment f on Query { search(text: "${foo}") { __typename } }'
+    const sources: [string, string][] = [
+      ['an interpolation', 'query q { search(text: "${foo}") { __typename } }'],
+      ['backticks', 'query q { search(text: "a `b` c") { __typename } }'],
+      [
+        'a backslash before a backtick in a block string',
+        'query q { search(text: """a\\`b""") { __typename } }',
+      ],
+      [
+        'backslashes before an interpolation in a block string',
+        'query q { search(text: """a\\\\${foo}""") { __typename } }',
+      ],
+      ['an interpolation in a fragment', 'query q { ...f } ' + fragment],
+    ]
+
+    it.each(
+      sources.flatMap(([name, source]) =>
+        [true, false].map((minify) => [name, minify, source] as const),
+      ),
+    )('keeps %s (minify: %s)', (_, minify, source) => {
+      const generator = new Generator(schema)
+      generator.add(toDocument(source))
+      const file = generator.build().getOperationsFile({ minify }).getSource()
+
+      // Evaluate the file: An interpolation would throw, because foo is not
+      // defined.
+      const operations = new Function(
+        file.replace('export const operations =', 'return'),
+      )() as { query: Record<string, string> }
+
+      const definitions = source.includes(fragment)
+        ? [source.replace(fragment, '').trim(), fragment]
+        : [source]
+      const expected = definitions
+        .map((v) => (minify ? stripIgnoredCharacters(v) : v + '\n\n'))
+        .join('')
+      expect(operations.query.q).toEqual(expected)
+    })
   })
 
   describe('error handling', () => {
