@@ -137,6 +137,36 @@ describe('GeneratorOutput.getFragmentDocumentWithFragments', () => {
   })
 
   describe('deduplication', () => {
+    it.each([true, false])(
+      'includes the fragment itself only once (dependencyTracking: %s)',
+      (dependencyTracking) => {
+        const generator = new Generator(schema, { dependencyTracking })
+
+        generator.add([
+          toDocument(
+            'fragment authorFields on Author { name }',
+            'fragment.author.graphql',
+          ),
+          toDocument(
+            'fragment articleFields on NodeArticle { title, author { ...authorFields } }',
+            'fragment.article.graphql',
+          ),
+        ])
+
+        const result = generator.build()
+        const names = (fragmentName: string): string[] =>
+          parse(
+            result.getFragmentDocumentWithFragments(fragmentName),
+          ).definitions.map((v) => ('name' in v ? (v.name?.value ?? '') : ''))
+
+        expect(names('articleFields')).toEqual([
+          'articleFields',
+          'authorFields',
+        ])
+        expect(names('authorFields')).toEqual(['authorFields'])
+      },
+    )
+
     it('includes shared fragments only once (diamond dependency)', () => {
       const generator = new Generator(schema)
 

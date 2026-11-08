@@ -395,9 +395,13 @@ export class GeneratorOutput {
       throw new Error(`Fragment "${fragmentName}" has no source.`)
     }
 
+    // A fragment depends on itself, but its source is already the first part
+    // of the document.
     const dependencyNames = this.collectAllFragmentDependencies(
       fragment.getGraphQLFragmentDependencies(),
+      new Set([fragmentName]),
     )
+    dependencyNames.delete(fragmentName)
 
     return this.buildDocumentWithFragments(fragment.source, dependencyNames)
   }
