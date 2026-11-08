@@ -980,6 +980,7 @@ describe('Generator Coverage Tests', () => {
 
       // Should produce empty or minimal output
       expect(source).not.toContain('Query')
+      expect(result.getCollectedOperations()).toEqual([])
     })
   })
 

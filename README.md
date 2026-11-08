@@ -33,6 +33,12 @@ that cover both basic queries and edge cases, I'm sure there are plenty that I
 missed. Feel free to report anything you find, ideally by creating a pull
 request that implements a test case that shows the buggy output.
 
+Fragment and operation names must be unique across all documents, because
+fragment spreads are resolved across documents and operations are looked up by
+name. `build()` throws a `DuplicateDefinitionError` otherwise. Anonymous
+operations (e.g. `{ isAvailable }`) are skipped, because the generated types are
+named after the operation.
+
 ## Usage
 
 ### Basic

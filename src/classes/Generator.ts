@@ -905,6 +905,8 @@ export class Generator {
     input: GeneratorInput,
   ): void {
     const opName = operation.name?.value
+    // The types are named after the operation, so there is no name to give
+    // them. Documented in add() and build().
     if (!opName) {
       this.logDebug('Skipping unnamed operation.')
       return
@@ -2493,6 +2495,9 @@ export class Generator {
    * The documents must not have been previously been added. This is determined
    * by the provided filePath.
    *
+   * Anonymous operations are skipped, because the generated types are named
+   * after the operation.
+   *
    * @param arg - The GeneratorInput or DocumentNode or an array of those.
    *
    * @returns Generator
@@ -2649,6 +2654,10 @@ export class Generator {
    * If any error happens during the build phase, the entire state (excluding
    * input documents) is reset, so that the state stays consistent. Any error
    * is rethrown.
+   *
+   * Fragment and operation names must be unique across all input documents.
+   * Anonymous operations are skipped, because the generated types are named
+   * after the operation.
    *
    * @returns The generator output.
    *
