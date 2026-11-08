@@ -158,6 +158,13 @@ export class Generator {
   private fragmentStack: string[] = []
 
   /**
+   * Fragment name => the dependency keys of the fragments it spreads, directly
+   * or through other fragments, and of itself last. Only used without
+   * dependency tracking, see getUntrackedDependencies().
+   */
+  private untrackedFragmentDependencies: Map<string, string[]> = new Map()
+
+  /**
    * Debug counts.
    */
   private debugCounts: Record<string, number> = {}
@@ -324,10 +331,13 @@ export class Generator {
 
     // The code belongs to the given file, or else to the current one.
     this.dependencyTracker?.start(filePath)
-    const codeFilePath = this.dependencyTracker?.getCurrentFile() || ''
+    const codeFilePath =
+      this.dependencyTracker?.getCurrentFile() || filePath || ''
     const result = cb()
     this.dependencyTracker?.add(generatedTypeType, result.typeName)
-    const dependencies = this.dependencyTracker?.end() || []
+    const dependencies = this.dependencyTracker
+      ? this.dependencyTracker.end()
+      : this.getUntrackedDependencies(result.context?.definition)
 
     let comment = ''
     if (result.context && this.options.output.typeComment) {
@@ -767,7 +777,9 @@ export class Generator {
         this.dependencyTracker?.addFragment(fragmentName)
         const ir = this.buildSelectionSet(type, item.node.selectionSet)
         const processedIR = this.postProcessIR(ir)
-        const dependencies = this.dependencyTracker?.end() || []
+        const dependencies = this.dependencyTracker
+          ? this.dependencyTracker.end()
+          : this.getUntrackedDependencies(item.node)
         this.fragmentIRs.set(item.node.name.value, {
           map: buildFragmentIRFields(processedIR),
           isObject: this.isObjectTypeIR(processedIR),
@@ -791,6 +803,80 @@ export class Generator {
       },
       item.filePath,
     )
+  }
+
+  /**
+   * Get the dependencies of a definition without dependency tracking.
+   *
+   * The operation documents need the fragments that an operation or fragment
+   * spreads, so these are collected from the AST: nested fragments first, and
+   * a fragment depends on itself, like the tracked ones. The tracked order
+   * follows the order of generation, so the order can differ.
+   *
+   * @param definition - The definition of an operation or fragment.
+   *
+   * @returns The dependency keys of the fragments.
+   */
+  private getUntrackedDependencies(
+    definition: DefinitionNode | null | undefined,
+  ): string[] {
+    if (definition?.kind === Kind.FRAGMENT_DEFINITION) {
+      return this.getUntrackedFragmentDependencies(definition.name.value)
+    } else if (definition?.kind === Kind.OPERATION_DEFINITION) {
+      const collected = new Set<string>()
+      this.collectUntrackedDependencies(definition.selectionSet, collected)
+      return [...collected]
+    }
+
+    return []
+  }
+
+  /**
+   * Get the dependency keys of the fragments a fragment spreads, directly or
+   * through other fragments, and of the fragment itself last.
+   *
+   * @param fragmentName - The name of the fragment.
+   *
+   * @returns The dependency keys.
+   */
+  private getUntrackedFragmentDependencies(fragmentName: string): string[] {
+    let dependencies = this.untrackedFragmentDependencies.get(fragmentName)
+    if (!dependencies) {
+      // Fragment cycles already threw while generating the fragment types.
+      const collected = new Set<string>()
+      const fragment = this.fragments.get(fragmentName)
+      if (fragment) {
+        this.collectUntrackedDependencies(fragment.node.selectionSet, collected)
+      }
+      collected.add(DependencyTracker.toKey('fragment-name', fragmentName))
+      dependencies = [...collected]
+      this.untrackedFragmentDependencies.set(fragmentName, dependencies)
+    }
+    return dependencies
+  }
+
+  /**
+   * Collect the dependency keys of the fragments spread in a selection set,
+   * directly or through other fragments.
+   *
+   * @param selectionSet - The selection set.
+   * @param collected - The collected dependency keys.
+   */
+  private collectUntrackedDependencies(
+    selectionSet: SelectionSetNode,
+    collected: Set<string>,
+  ): void {
+    for (const selection of selectionSet.selections) {
+      if (selection.kind === Kind.FRAGMENT_SPREAD) {
+        for (const key of this.getUntrackedFragmentDependencies(
+          selection.name.value,
+        )) {
+          collected.add(key)
+        }
+      } else if (selection.selectionSet) {
+        this.collectUntrackedDependencies(selection.selectionSet, collected)
+      }
+    }
   }
 
   /**
@@ -942,69 +1028,83 @@ export class Generator {
     )
 
     this.dependencyTracker?.start()
-    const filePath = this.dependencyTracker?.getCurrentFile() || NO_FILE_PATH
+    const filePath = input.filePath
 
-    this.generateCodeOnce('operation', opName + '-base', () => {
-      this.logDebug('Generating operation: ' + opName)
-      const inlined = this.inlineFragments(
-        operation.selectionSet,
-        rootType.name,
-      )
-      const merged = mergeSameFieldSelections(inlined)
-      const source = getAstSource(operation)
+    this.generateCodeOnce(
+      'operation',
+      opName + '-base',
+      () => {
+        this.logDebug('Generating operation: ' + opName)
+        const inlined = this.inlineFragments(
+          operation.selectionSet,
+          rootType.name,
+        )
+        const merged = mergeSameFieldSelections(inlined)
+        const source = getAstSource(operation)
 
-      return {
-        code: makeExport(
-          typeName,
-          this.IRToCode(
-            this.postProcessIR(this.buildSelectionSet(rootType, merged)),
+        return {
+          code: makeExport(
+            typeName,
+            this.IRToCode(
+              this.postProcessIR(this.buildSelectionSet(rootType, merged)),
+            ),
           ),
-        ),
-        context: { input, definition: operation },
-        typeName,
-        source,
-        graphqlName: opName,
-        identifier: operation.operation,
-      }
-    })
+          context: { input, definition: operation },
+          typeName,
+          source,
+          graphqlName: opName,
+          identifier: operation.operation,
+        }
+      },
+      filePath,
+    )
 
-    this.generateCodeOnce('operation-variables', opName + '-variables', () => {
-      const exact = this.getOrCreateTypeHelper('exact')
-      // A nullable variable can't be null where a non-null value is required.
-      const nonNullVariables = operation.variableDefinitions?.some(
-        (vd) => vd.type.kind !== Kind.NON_NULL_TYPE,
-      )
-        ? this.getNonNullVariables(operation)
-        : new Set<string>()
-      const typeCode = operation.variableDefinitions?.length
-        ? this.objectNodeToCode(
-            IR.OBJECT({
-              graphQLTypeName: '',
-              fields: operation.variableDefinitions.reduce<
-                Record<string, IRNode>
-              >((acc, vd) => {
-                acc[vd.variable.name.value] = this.buildInputFieldIR(
-                  this.schema.getTypeFromNode(vd.type),
-                  !!vd.defaultValue,
-                  undefined,
-                  nonNullVariables.has(vd.variable.name.value),
-                )
-                return acc
-              }, {}),
-            }),
-          )
-        : `{ [key: string]: never; }`
-      const code = makeExport(variablesTypeName, `${exact}<${typeCode}>`)
-      return {
-        code,
-        typeName: variablesTypeName,
-        context: { input },
-        source: null,
-        graphqlName: null,
-        identifier: null,
-      }
-    })
-    const dependencies = this.dependencyTracker?.end() || []
+    this.generateCodeOnce(
+      'operation-variables',
+      opName + '-variables',
+      () => {
+        const exact = this.getOrCreateTypeHelper('exact')
+        // A nullable variable can't be null where a non-null value is required.
+        const nonNullVariables = operation.variableDefinitions?.some(
+          (vd) => vd.type.kind !== Kind.NON_NULL_TYPE,
+        )
+          ? this.getNonNullVariables(operation)
+          : new Set<string>()
+        const typeCode = operation.variableDefinitions?.length
+          ? this.objectNodeToCode(
+              IR.OBJECT({
+                graphQLTypeName: '',
+                fields: operation.variableDefinitions.reduce<
+                  Record<string, IRNode>
+                >((acc, vd) => {
+                  acc[vd.variable.name.value] = this.buildInputFieldIR(
+                    this.schema.getTypeFromNode(vd.type),
+                    !!vd.defaultValue,
+                    undefined,
+                    nonNullVariables.has(vd.variable.name.value),
+                  )
+                  return acc
+                }, {}),
+              }),
+            )
+          : `{ [key: string]: never; }`
+        const code = makeExport(variablesTypeName, `${exact}<${typeCode}>`)
+        return {
+          code,
+          typeName: variablesTypeName,
+          context: { input },
+          source: null,
+          graphqlName: null,
+          identifier: null,
+        }
+      },
+      filePath,
+    )
+    // Without tracking, these are the fragments, which the code of the
+    // operation already has.
+    const dependencies = this.dependencyTracker
+      ? this.dependencyTracker.end()
+      : this.generatedCode.get(opName + '-base')?.dependencies || []
 
     if (this.operations.has(opName)) {
       return
@@ -2595,6 +2695,7 @@ export class Generator {
     this.cache.clear()
     this.fragmentIRs.clear()
     this.fragmentStack = []
+    this.untrackedFragmentDependencies.clear()
     this.dependencyTracker?.reset()
     return this
   }
@@ -2702,7 +2803,7 @@ export class Generator {
         this.dependencyTracker?.addFragment(node.name.value)
         this.fragments.set(node.name.value, {
           node,
-          filePath: this.dependencyTracker?.getCurrentFile() || '',
+          filePath: input.filePath,
           dependencies: [],
         })
       })

@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { fileURLToPath } from 'node:url'
-import { parse } from 'graphql'
+import { parse, print } from 'graphql'
 import fs from 'node:fs'
 import { Generator } from '../../../src/classes/Generator'
 import schemaContent from './schema.graphql?raw'
 import { generateCodegen } from './../../../helpers/generateCodegen'
 import type { GeneratorOptions } from '../../../src/types/options'
+import type { GeneratorOutput } from '../../../src/classes/GeneratorOutput'
 import { loadSchemaSync } from '@graphql-tools/load'
 
 const defaultSchema = loadSchemaSync(schemaContent, {
@@ -15,11 +16,11 @@ const defaultSchema = loadSchemaSync(schemaContent, {
 
 const isWatch = process.env.WATCH_MODE === 'true'
 
-function generate(
+function generateOutput(
   documents: string,
   customSchemaContents?: string | null,
   options?: GeneratorOptions,
-): string {
+): GeneratorOutput {
   const schema = customSchemaContents
     ? loadSchemaSync(customSchemaContents, { loaders: [] })
     : defaultSchema
@@ -31,8 +32,28 @@ function generate(
     documentNode,
     filePath: './test.graphql',
   })
-  const output = generator.build()
-  return output.getOperations('ts').getSource()
+  return generator.build()
+}
+
+function generate(
+  documents: string,
+  customSchemaContents?: string | null,
+  options?: GeneratorOptions,
+): string {
+  return generateOutput(documents, customSchemaContents, options)
+    .getOperations('ts')
+    .getSource()
+}
+
+/**
+ * The definitions of each operation document, sorted.
+ */
+function getOperationDocuments(output: GeneratorOutput): string[][] {
+  return output.getCollectedOperations().map((operation) =>
+    parse(output.getOperationDocumentWithFragments(operation.graphqlName))
+      .definitions.map((definition) => print(definition))
+      .sort(),
+  )
 }
 
 describe('Generator', () => {
@@ -82,10 +103,13 @@ describe('Generator', () => {
       }
 
       // First generate without cache.
-      const resultWithoutCaching = generate(query, customSchema, {
+      const outputWithoutCaching = generateOutput(query, customSchema, {
         ...baseOptions,
         useCache: false,
       })
+      const resultWithoutCaching = outputWithoutCaching
+        .getOperations('ts')
+        .getSource()
       await expect(resultWithoutCaching).toMatchFileSnapshot(fileSnapshotPath)
 
       // Now generate with cache.
@@ -99,6 +123,21 @@ describe('Generator', () => {
         resultWithCaching,
         'The cached and uncached output must be identical.',
       ).toEqual(resultWithoutCaching)
+
+      // Without dependency tracking, the types must be identical, and the
+      // operation documents must contain the same fragments. Their order can
+      // differ.
+      const outputWithoutTracking = generateOutput(query, customSchema, {
+        ...baseOptions,
+        dependencyTracking: false,
+      })
+      expect(
+        outputWithoutTracking.getOperations('ts').getSource(),
+        'The output without dependency tracking must be identical.',
+      ).toEqual(resultWithoutCaching)
+      expect(getOperationDocuments(outputWithoutTracking)).toEqual(
+        getOperationDocuments(outputWithoutCaching),
+      )
 
       // Only generate codegen comparison in watch mode
       if (isWatch) {

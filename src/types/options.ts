@@ -290,12 +290,14 @@ export type GeneratorOptions = {
    * document and their generated types.
    *
    * This allows incremental generation of types, for example when calling the
-   * `update()` method. It also allows you to determine all fragment spreads
-   * for a generated type.
+   * `update()` method. It also provides all dependencies of a generated type,
+   * see `getDependencies()`.
    *
    * If you don't plan to use incremental generation you can disable this
    * feature, which makes a build faster. `update()` and `remove()` then
-   * remove all generated code, so the next build is a full build.
+   * remove all generated code, so the next build is a full build. The
+   * dependencies then only contain the fragments that a type spreads, which
+   * the operation documents need.
    *
    * @experimental
    *

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { parse, buildSchema } from 'graphql'
 import schemaContent from './schema.graphql?raw'
 import { Generator } from '../../../src/classes/Generator'
+import type { GeneratorOutput } from '../../../src/classes/GeneratorOutput'
 import { loadSchemaSync } from '@graphql-tools/load'
 import { toDocument } from '../../helpers'
 import {
@@ -1078,6 +1079,48 @@ describe('Generator', () => {
       // Both should work without dependency tracking
       expect(result1.getOperations('ts').getSource()).toContain('Q1Query')
       expect(result2.getOperations('ts').getSource()).toContain('Q2Query')
+    })
+
+    describe('operation documents', () => {
+      const create = (): GeneratorOutput => {
+        const generator = new Generator(schema, { dependencyTracking: false })
+        generator.add([
+          toDocument(
+            'fragment page on NodePage { title ...entity } fragment entity on Entity { id }',
+            'fragments.graphql',
+          ),
+          toDocument(
+            'query getPage { getHomepage { ...page } }',
+            'query.graphql',
+          ),
+        ])
+        return generator.build()
+      }
+
+      it('contain the fragments of an operation', () => {
+        const output = create()
+        expect(output.getOperationDocumentWithFragments('getPage')).toEqual(
+          [
+            'query getPage { getHomepage { ...page } }',
+            'fragment entity on Entity { id }',
+            'fragment page on NodePage { title ...entity }',
+          ].join('\n\n'),
+        )
+        expect(output.getOperationsFile().getSource()).toContain(
+          "'getPage': String.raw`query getPage{getHomepage{...page}}` + a + b,",
+        )
+      })
+
+      it('know the file of operations and fragments', () => {
+        const output = create()
+        expect(output.getCollectedOperations()[0]?.filePath).toBe(
+          'query.graphql',
+        )
+        expect(output.getFragments().map((v) => v.filePath)).toEqual([
+          'fragments.graphql',
+          'fragments.graphql',
+        ])
+      })
     })
 
     describe.each([true, false])('with useCache %s', (useCache) => {
