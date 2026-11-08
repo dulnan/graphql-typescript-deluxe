@@ -403,10 +403,19 @@ export class Generator {
   /**
    * Removes everything originating from the given file path.
    *
+   * Without dependency tracking, all generated code is removed.
+   *
    * @param filePath - The file path.
    */
   private purgeFilePath(filePath: string): Generator {
     this.inputDocuments.delete(filePath)
+
+    // Without dependency tracking, it's unknown what depends on the file, so
+    // the next build is a full build.
+    if (!this.dependencyTracker) {
+      return this.resetCaches()
+    }
+
     this.purgeFromMap('fragments', this.fragments, filePath)
     this.purgeFromMap('generatedCode', this.generatedCode, filePath)
     this.purgeFromMap('cache', this.cache, filePath)
@@ -2532,6 +2541,9 @@ export class Generator {
   /**
    * Update on or more documents.
    *
+   * Without dependency tracking, all generated code is removed, so the next
+   * build is a full build.
+   *
    * @param arg - The GeneratorInput or DocumentNode or an array of those.
    *
    * @returns Generator
@@ -2558,6 +2570,9 @@ export class Generator {
 
   /**
    * Removes all generated code originating from the given file path.
+   *
+   * Without dependency tracking, all generated code is removed, so the next
+   * build is a full build.
    *
    * @param filePath - The file path.
    *

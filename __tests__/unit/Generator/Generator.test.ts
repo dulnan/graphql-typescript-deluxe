@@ -1080,6 +1080,66 @@ describe('Generator', () => {
       expect(result2.getOperations('ts').getSource()).toContain('Q2Query')
     })
 
+    describe.each([true, false])('with useCache %s', (useCache) => {
+      const create = (): Generator => {
+        const generator = new Generator(schema, {
+          dependencyTracking: false,
+          useCache,
+          output: { typeComment: false },
+        })
+        generator.add([
+          toDocument('fragment page on NodePage { title }', 'fragment.graphql'),
+          toDocument(
+            'query getPage { getHomepage { ...page } }',
+            'query.graphql',
+          ),
+          toDocument('query other { isAvailable }', 'other.graphql'),
+        ])
+        generator.build()
+        return generator
+      }
+
+      it('regenerates the types after update()', () => {
+        const generator = create()
+        generator.update(
+          toDocument('fragment page on NodePage { id }', 'fragment.graphql'),
+        )
+        generator.update(
+          toDocument('query renamed { isAvailable }', 'other.graphql'),
+        )
+
+        const result = generator.build()
+        const source = result.getOperations('ts').getSource()
+        expect(source).toContain(
+          'export type PageFragment = {\n  id: string;\n};',
+        )
+        expect(
+          result.getCollectedOperations().map((v) => v.graphqlName),
+        ).toEqual(['getPage', 'renamed'])
+      })
+
+      it('removes the types after remove()', () => {
+        const generator = create()
+        generator.remove('query.graphql')
+        expect(
+          generator
+            .build()
+            .getCollectedOperations()
+            .map((v) => v.graphqlName),
+        ).toEqual(['other'])
+
+        // The removed fragment no longer resolves.
+        generator.remove('fragment.graphql')
+        generator.add(
+          toDocument(
+            'query getPage { getHomepage { ...page } }',
+            'query.graphql',
+          ),
+        )
+        expect(() => generator.build()).toThrow(FragmentNotFoundError)
+      })
+    })
+
     it('should handle nested fragments without dependency tracking', () => {
       const generator = new Generator(schema, {
         dependencyTracking: false,

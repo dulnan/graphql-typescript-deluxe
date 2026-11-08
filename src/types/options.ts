@@ -294,7 +294,8 @@ export type GeneratorOptions = {
    * for a generated type.
    *
    * If you don't plan to use incremental generation you can disable this
-   * feature.
+   * feature, which makes a build faster. `update()` and `remove()` then
+   * remove all generated code, so the next build is a full build.
    *
    * @experimental
    *
