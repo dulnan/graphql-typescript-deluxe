@@ -19,6 +19,7 @@ export type { MappedDependency } from './classes/DependencyAware'
 export {
   DependencyTrackingError,
   DuplicateDefinitionError,
+  DuplicateIdentifierError,
   DuplicateInputDocumentError,
   FieldNotFoundError,
   FragmentCycleError,

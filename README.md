@@ -39,6 +39,13 @@ name. `build()` throws a `DuplicateDefinitionError` otherwise. Anonymous
 operations (e.g. `{ isAvailable }`) are skipped, because the generated types are
 named after the operation.
 
+The generated type names must be unique as well, for example an input type
+`SearchQuery` and the query `search` both generate `SearchQuery`. `build()`
+throws a `DuplicateIdentifierError` that names both and the option to change one
+of the names, such as `buildInputTypeName`. Names are never changed
+automatically, because such a name would change again when the other definition
+is removed.
+
 ## Usage
 
 ### Basic

@@ -53,6 +53,7 @@ import { toInputDocuments } from '../helpers/generator'
 import {
   DependencyTrackingError,
   DuplicateDefinitionError,
+  DuplicateIdentifierError,
   DuplicateInputDocumentError,
   FieldNotFoundError,
   FragmentCycleError,
@@ -2743,6 +2744,68 @@ export class Generator {
   }
 
   /**
+   * Describe where generated code comes from, for an error message, with the
+   * option that builds its name.
+   *
+   * @param code - The generated code.
+   *
+   * @returns The description.
+   */
+  private describeCodeSource(code: GeneratedCode): string {
+    const name = code.graphqlName || code.name
+    switch (code.type) {
+      case 'typename-object':
+        return `the object type "${name}"`
+      case 'typename-union':
+        return isInterfaceType(this.schema.getType(name))
+          ? `the interface "${name}"`
+          : `the union "${name}"`
+      case 'enum':
+        return `the enum "${name}" (buildEnumTypeName)`
+      case 'input':
+        return `the input type "${name}" (buildInputTypeName)`
+      case 'fragment':
+        return `the fragment "${name}" (buildFragmentTypeName)`
+      case 'operation':
+        return `the ${code.identifier} "${name}" (buildOperationTypeName)`
+      case 'operation-variables': {
+        const operation = [...this.operations.values()].find(
+          (v) => v.variablesTypeName === code.name,
+        )
+        return operation
+          ? `the variables of the ${operation.operationType} "${operation.graphqlName}" (buildOperationVariablesTypeName)`
+          : `the variables "${code.name}" (buildOperationVariablesTypeName)`
+      }
+      default:
+        return `the type helper "${code.name}"`
+    }
+  }
+
+  /**
+   * Throw if two generated types have the same name.
+   *
+   * Renaming one of them automatically would not be stable: The name would
+   * change when the other one is removed.
+   *
+   * @param code - The generated code of the output.
+   *
+   * @throws {@link DuplicateIdentifierError} if two generated types have the same name.
+   */
+  private assertUniqueIdentifiers(code: GeneratedCode[]): void {
+    const byName = new Map<string, GeneratedCode>()
+    for (const item of code) {
+      const existing = byName.get(item.name)
+      if (existing) {
+        throw new DuplicateIdentifierError(item.name, [
+          this.describeCodeSource(existing),
+          this.describeCodeSource(item),
+        ])
+      }
+      byName.set(item.name, item)
+    }
+  }
+
+  /**
    * Get the generated code that is part of the output.
    *
    * With skipUnusedFragments, only the code that the operations use is
@@ -2788,6 +2851,7 @@ export class Generator {
    * @throws {@link MissingRootTypeError} if the root type is unsupported.
    * @throws {@link DuplicateDefinitionError} if a fragment or operation name is defined more than once.
    * @throws {@link FragmentCycleError} if a fragment spreads itself, directly or through other fragments.
+   * @throws {@link DuplicateIdentifierError} if two generated types have the same name.
    * @throws {@link LogicError} if there is a logical error during building. This can hint at a bug in the Generator.
    */
   public build(): GeneratorOutput {
@@ -2867,8 +2931,13 @@ export class Generator {
         'Finished processing documents, but there is still a dependency tracker stack. This is likely due to a bug in the library. Set "dependencyTracking: false" to disable dependency tracking.',
       )
     }
+    // Code from additionalOutputCode() is not checked: Its name doesn't have
+    // to be the name of what it defines.
+    const code = this.getUsedCode()
+    this.assertUniqueIdentifiers(code)
+
     return new GeneratorOutput(
-      [...this.getUsedCode(), ...this.options.additionalOutputCode()],
+      [...code, ...this.options.additionalOutputCode()],
       [...this.operations.values()],
       [...this.fragments.values()],
     )

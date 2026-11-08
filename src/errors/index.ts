@@ -114,6 +114,25 @@ export class DuplicateDefinitionError extends Error {
 }
 
 /**
+ * Thrown when two generated types have the same name.
+ */
+export class DuplicateIdentifierError extends Error {
+  constructor(
+    public identifier: string,
+    public sources: string[],
+  ) {
+    const hint = sources.some((v) => v.includes('('))
+      ? ' Rename one of them, or change its generated name with the option in parentheses.'
+      : ''
+    super(
+      `The generated name "${identifier}" is used twice: by ${sources.join(' and by ')}.${hint}`,
+    )
+    this.name = 'DuplicateIdentifierError'
+    Object.setPrototypeOf(this, DuplicateIdentifierError.prototype)
+  }
+}
+
+/**
  * Thrown when a fragment spreads itself, directly or through other fragments.
  */
 export class FragmentCycleError extends Error {
