@@ -25,6 +25,7 @@ const DEFAULT_SORTING: GeneratedCodeType[] = [
   'typename-object',
   'typename-union',
   'fragment',
+  'fragment-subtype',
   'operation',
   'operation-variables',
   'input',

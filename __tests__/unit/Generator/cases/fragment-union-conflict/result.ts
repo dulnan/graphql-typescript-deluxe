@@ -69,7 +69,7 @@ export type ArticleAuthorWithNodeBodyFragment = {
     /** Email address of the author. */
     email?: string;
   };
-} & NodeBodyFragment;
+} & NodeBodyFragmentOnNodeArticle;
 
 /**
  * @see {@link file://./test.graphql}
@@ -130,6 +130,61 @@ export type NodeBodyFragment = ({
 
 
 // --------------------------------------------------------------------------------
+// Fragments by Type
+// --------------------------------------------------------------------------------
+
+/**
+ * @see {@link file://./test.graphql}
+ * 
+ * @example
+ * ```graphql
+ * fragment nodeAuthor on Node {
+ *   __typename
+ *   ... on NodeArticle {
+ *     tags
+ *     author {
+ *       email
+ *     }
+ *   }
+ *   ... on NodePage {
+ *     body
+ *   }
+ * }
+ * ```
+ */
+export type NodeAuthorFragmentOnNodeArticle = {
+  __typename: NodeArticle;
+  /** The author of the article. */
+  author: {
+    /** Email address of the author. */
+    email?: string;
+  };
+  /** The tags. */
+  tags?: (string | null)[];
+};
+
+/**
+ * @see {@link file://./test.graphql}
+ * 
+ * @example
+ * ```graphql
+ * fragment nodeBody on Node {
+ *   ... on NodeArticle {
+ *     tags
+ *   }
+ *   ... on NodePage {
+ *     body
+ *   }
+ * }
+ * ```
+ */
+export type NodeBodyFragmentOnNodeArticle = {
+  /** The tags. */
+  tags?: (string | null)[];
+};
+
+
+// --------------------------------------------------------------------------------
 // Operations
 // --------------------------------------------------------------------------------
 
@@ -160,7 +215,7 @@ export type ConditionalUnionFragmentQuery = {
       /** Name of the author. */
       name: string;
     };
-  } & Partial<DistributiveOmit<NodeAuthorFragment, "author">>) | object);
+  } & Partial<Omit<NodeAuthorFragmentOnNodeArticle, "author">>) | object);
 };
 
 /**
@@ -252,7 +307,7 @@ export type UnionFragmentQuery = {
     };
   } & {
     __typename: NodeArticle;
-  } & DistributiveOmit<NodeAuthorFragment, "author">) | object);
+  } & Omit<NodeAuthorFragmentOnNodeArticle, "author">) | object);
 };
 
 

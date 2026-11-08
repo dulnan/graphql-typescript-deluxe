@@ -1,0 +1,62 @@
+# Selects other fields for each type, so it's a union.
+fragment pageOrUser on Entity {
+  id
+  ... on NodePage {
+    body
+  }
+  ... on User {
+    name
+  }
+}
+
+# Spreads pageOrUser, which has fields for other types.
+fragment entityDetails on Entity {
+  ...pageOrUser
+}
+
+# The same fields for every type: Not a union, so no subtype is needed.
+fragment entityId on Entity {
+  id
+}
+
+# A page only has the fields of the fragment for pages.
+query homepage {
+  getHomepage {
+    title
+    ...pageOrUser
+  }
+}
+
+query homepageOnlySpread {
+  getHomepage {
+    ...pageOrUser
+  }
+}
+
+query homepageConditional($withDetails: Boolean!) {
+  getHomepage {
+    title
+    ...pageOrUser @include(if: $withDetails)
+  }
+}
+
+query homepageNested {
+  getHomepage {
+    title
+    ...entityDetails
+  }
+}
+
+query homepageEntityId {
+  getHomepage {
+    title
+    ...entityId
+  }
+}
+
+# On an interface field, the fragment type is used.
+query randomEntity {
+  getRandomEntity {
+    ...pageOrUser
+  }
+}

@@ -106,6 +106,58 @@ export type SearchResultInfoFragment = ({
 
 
 // --------------------------------------------------------------------------------
+// Fragments by Type
+// --------------------------------------------------------------------------------
+
+/**
+ * @see {@link file://./test.graphql}
+ * 
+ * @example
+ * ```graphql
+ * fragment entityInfo on Entity {
+ *   __typename
+ *   id
+ *   ... on NodePage {
+ *     body
+ *   }
+ *   ... on User {
+ *     name
+ *   }
+ * }
+ * ```
+ */
+export type EntityInfoFragmentOnNodePage = {
+  __typename: NodePage;
+  /** The body text. */
+  body?: string;
+  /** The ID of the page. */
+  id: string;
+};
+
+/**
+ * @see {@link file://./test.graphql}
+ * 
+ * @example
+ * ```graphql
+ * fragment searchResultInfo on SearchResult {
+ *   __typename
+ *   ... on NodeArticle {
+ *     body
+ *   }
+ *   ... on MediaVideo {
+ *     videoUrl
+ *   }
+ * }
+ * ```
+ */
+export type SearchResultInfoFragmentOnNodeArticle = {
+  __typename: NodeArticle;
+  /** The body text of the article. */
+  body?: string;
+};
+
+
+// --------------------------------------------------------------------------------
 // Operations
 // --------------------------------------------------------------------------------
 
@@ -128,7 +180,7 @@ export type InterfaceFragmentQuery = {
     __typename: NodePage;
     /** The title of the page. */
     title: string;
-  } & EntityInfoFragment;
+  } & EntityInfoFragmentOnNodePage;
 };
 
 /**
@@ -152,7 +204,7 @@ export type UnionFragmentQuery = {
     __typename: NodeArticle;
     /** The title of the article. */
     title: string;
-  } & SearchResultInfoFragment);
+  } & SearchResultInfoFragmentOnNodeArticle);
 };
 
 

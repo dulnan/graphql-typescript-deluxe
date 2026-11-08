@@ -58,6 +58,7 @@ export type GeneratedCodeIdentifier =
 export type GeneratedCodeType =
   | 'enum'
   | 'fragment'
+  | 'fragment-subtype'
   | 'helpers'
   | 'input'
   | 'operation'

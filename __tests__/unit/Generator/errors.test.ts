@@ -433,6 +433,24 @@ query foobar { entityById(id: "1", entityType: NODE) { ...b } }
       expect(source).toContain('export type U = OmitTypename | Other;')
     })
 
+    it('throws for a fragment and the subtype of another fragment', () => {
+      const generator = new Generator(schema, {
+        buildFragmentTypeName: (node): string =>
+          node.name.value.charAt(0).toUpperCase() + node.name.value.slice(1),
+      })
+      generator.add(
+        toDocument(`
+fragment pageOrUser on Entity { ... on NodePage { body } ... on User { name } }
+fragment pageOrUserOnNodePage on NodePage { title }
+query q { getHomepage { ...pageOrUser ...pageOrUserOnNodePage } }
+`),
+      )
+      expect(() => generator.build()).toThrow(
+        'The generated name "PageOrUserOnNodePage" is used twice: by the fragment "pageOrUserOnNodePage" (buildFragmentTypeName) and by the subtype "PageOrUserOnNodePage" of the fragment "pageOrUser" (buildFragmentTypeName).' +
+          hint,
+      )
+    })
+
     it('does not throw once one of the names is changed with an option', () => {
       const generator = new Generator(
         buildSchema(

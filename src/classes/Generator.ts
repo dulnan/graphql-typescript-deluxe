@@ -85,6 +85,7 @@ import { DependencyTracker } from '../classes/DependencyTracker'
 import type { DeepRequired } from '../helpers/type'
 import { NO_FILE_PATH, TYPENAME } from '../constants'
 import { formatCode } from '../helpers/format'
+import { pascalCase } from 'change-case'
 import { SchemaProvider } from './SchemaProvider'
 
 export class Generator {
@@ -1721,8 +1722,20 @@ export class Generator {
     if (fragments.length === 0) {
       return this.emptyObjectScalar()
     } else if (fragments.length === 1) {
+      const fragment = fragments[0]!
+      const fragmentTypeName = this.generateFragmentType(fragment.name.value)
       return IR.SCALAR({
-        tsType: this.generateFragmentType(fragments[0]!.name.value),
+        tsType:
+          typeNames.length === 1
+            ? this.getSpreadTypeName(
+                IR.FRAGMENT_SPREAD({
+                  name: fragment.name.value,
+                  fragmentTypeName,
+                  parentType: typeNames[0]!,
+                  fragmentTypeCondition: fragment.typeCondition.name.value,
+                }),
+              )
+            : fragmentTypeName,
       })
     }
 
@@ -1744,6 +1757,116 @@ export class Generator {
       )
     }
     return IR.OBJECT({ graphQLTypeName: parentTypeName, fields })
+  }
+
+  /**
+   * Get the TS type of a fragment spread.
+   *
+   * A fragment on an abstract type can be a union of the fields for each of
+   * its types. Spread in an object, only the fields for the type of the object
+   * apply, so the subtype of the fragment for that type is used.
+   *
+   * @param spread - The fragment spread.
+   *
+   * @returns The name of the TS type.
+   */
+  private getSpreadTypeName(spread: IRNodeFragmentSpread): string {
+    // Most fragments are spread on their own type.
+    if (spread.fragmentTypeCondition === spread.parentType) {
+      return spread.fragmentTypeName
+    }
+    const parentType = this.schema.getType(spread.parentType)
+    if (
+      !isObjectType(parentType) ||
+      !this.isTypeSpecificFragment(spread.name)
+    ) {
+      return spread.fragmentTypeName
+    }
+    // The fragment selects nothing on the type.
+    if (!this.fragmentSelectsFields(spread.name, parentType.name)) {
+      return this.options.output.emptyObject
+    }
+    return this.getOrCreateFragmentSubtype(spread.name, parentType)
+  }
+
+  /**
+   * Whether the fields that a fragment selects depend on the object type.
+   *
+   * That's the case if it has an inline fragment or a fragment spread on
+   * another type, also through the fragments on its own type that it spreads.
+   * A __typename doesn't count: The object it's spread in has its own
+   * __typename, which narrows it.
+   *
+   * @param fragmentName - The name of the fragment.
+   *
+   * @returns True if the fields depend on the object type.
+   */
+  private isTypeSpecificFragment(fragmentName: string): boolean {
+    return this.withCache('isTypeSpecificFragment', fragmentName, () => {
+      const fragment = this.getFragmentNode(fragmentName)
+      const typeConditionName = fragment.typeCondition.name.value
+      const check = (selectionSet: SelectionSetNode): boolean =>
+        selectionSet.selections.some((sel) => {
+          if (sel.kind === Kind.FIELD) {
+            return false
+          } else if (sel.kind === Kind.INLINE_FRAGMENT) {
+            return (
+              (sel.typeCondition?.name.value ?? typeConditionName) !==
+                typeConditionName || check(sel.selectionSet)
+            )
+          }
+          const spread = this.getFragmentNode(sel.name.value)
+          return (
+            spread.typeCondition.name.value !== typeConditionName ||
+            this.isTypeSpecificFragment(sel.name.value)
+          )
+        })
+      return check(fragment.selectionSet)
+    })
+  }
+
+  /**
+   * Generate the subtype of a fragment on an abstract type, with the fields it
+   * selects on one of its object types.
+   *
+   * @param fragmentName - The name of the fragment.
+   * @param objectType - The object type.
+   *
+   * @returns The name of the TS type.
+   */
+  private getOrCreateFragmentSubtype(
+    fragmentName: string,
+    objectType: GraphQLObjectType,
+  ): string {
+    const item = this.fragments.get(fragmentName)!
+    return this.generateCodeOnce(
+      'fragment-subtype',
+      fragmentName + '-fragment-on-' + objectType.name,
+      () => {
+        const typeName =
+          this.options.buildFragmentTypeName(item.node) +
+          'On' +
+          pascalCase(objectType.name)
+        const fields = this.getFragmentIRFieldsForType(
+          fragmentName,
+          objectType.name,
+        )
+        return {
+          code: makeExport(
+            typeName,
+            this.IRToCode(
+              IR.OBJECT({ graphQLTypeName: objectType.name, fields }),
+            ),
+          ),
+          typeName,
+          context: { filePath: item.filePath, definition: item.node },
+          source: null,
+          graphqlName: fragmentName,
+          identifier: 'type',
+        }
+      },
+      item.filePath,
+    )
   }
 
   /**
@@ -2482,16 +2605,18 @@ export class Generator {
       }
 
       // Start with the fragment name.
-      let replacedType = spread.fragmentTypeName
+      let replacedType = this.getSpreadTypeName(spread)
 
       // Apply Omit for conflicting fields. If the fragment type may be a union,
       // a distributive Omit is needed to keep the fields of all types.
       if (conflictsForThisFrag.length > 0) {
         const omitFields = conflictsForThisFrag.map((f) => `"${f}"`).join(' | ')
-        const omit = this.isObjectFragment(spread.name)
-          ? 'Omit'
-          : this.getOrCreateTypeHelper('distributiveOmit')
-        replacedType = `${omit}<${spread.fragmentTypeName}, ${omitFields}>`
+        const omit =
+          replacedType !== spread.fragmentTypeName ||
+          this.isObjectFragment(spread.name)
+            ? 'Omit'
+            : this.getOrCreateTypeHelper('distributiveOmit')
+        replacedType = `${omit}<${replacedType}, ${omitFields}>`
       }
 
       // The fields of a conditional spread may be missing.
@@ -2656,9 +2781,8 @@ export class Generator {
       case 'FRAGMENT_SPREAD': {
         // Merges as an intersection into the parent's object. The fields of a
         // conditional spread may be missing.
-        return ir.optional
-          ? `Partial<${ir.fragmentTypeName}>`
-          : ir.fragmentTypeName
+        const typeName = this.getSpreadTypeName(ir)
+        return ir.optional ? `Partial<${typeName}>` : typeName
       }
     }
   }
@@ -2870,6 +2994,8 @@ export class Generator {
         return `the input type "${name}" (buildInputTypeName)`
       case 'fragment':
         return `the fragment "${name}" (buildFragmentTypeName)`
+      case 'fragment-subtype':
+        return `the subtype "${code.name}" of the fragment "${name}" (buildFragmentTypeName)`
       case 'operation':
         return `the ${code.identifier} "${name}" (buildOperationTypeName)`
       case 'operation-variables': {

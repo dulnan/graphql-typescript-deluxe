@@ -104,7 +104,10 @@ Default test schema is at `__tests__/unit/Generator/schema.graphql`.
 ## Key Design Decisions
 
 - Fragment types are always generated and reused in operations via intersection
-  (`&`)
+  (`&`). A fragment on an abstract type whose fields depend on the type (it has
+  inline fragments or spreads on other types) is referenced by a per-type
+  subtype (`<FragmentType>On<TypeName>`, code type `fragment-subtype`) when
+  spread on an object type, generated on first use
 - When field conflicts occur between fragments,
   `Omit<FragmentType, 'conflictField'>` is used
 - `__typename` fields use `Exclude<UnionType, SpecificType>` to reduce type size

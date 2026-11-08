@@ -212,6 +212,48 @@ export type EntityFragment = {
 }
 ```
 
+A fragment on an interface or union can select other fields for each type. Its
+type is then a union. When it's spread on an object type, only the fields for
+that type apply, so a subtype of the fragment is generated for it and used
+instead:
+
+```graphql
+query homepage {
+  getHomepage {
+    title
+    ...pageOrUser
+  }
+}
+
+fragment pageOrUser on Entity {
+  id
+  ... on NodePage {
+    body
+  }
+  ... on User {
+    name
+  }
+}
+```
+
+```typescript
+export type HomepageQuery = {
+  getHomepage?: {
+    title: string
+  } & PageOrUserFragmentOnNodePage
+}
+
+export type PageOrUserFragment =
+  | { body?: string; id: string }
+  | { id: string; name?: string }
+  | { id: string }
+
+export type PageOrUserFragmentOnNodePage = {
+  body?: string
+  id: string
+}
+```
+
 ### Inlined Fragment Fields
 
 Sometimes it's not possible to use fragment types in an intersection:

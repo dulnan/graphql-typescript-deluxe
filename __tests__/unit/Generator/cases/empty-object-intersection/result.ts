@@ -91,7 +91,7 @@ export type PageTitleFragment = {
  * }
  * ```
  */
-export type PageUserNameFragment = UserNameFragment;
+export type PageUserNameFragment = Record<string, never>;
 
 /**
  * @see {@link file://./test.graphql}
@@ -120,7 +120,7 @@ export type UserNameFragment = (Record<string, never> | {
  * }
  * ```
  */
-export type UserWithNameFragment = UserNameFragment;
+export type UserWithNameFragment = UserNameFragmentOnUser;
 
 /**
  * @see {@link file://./test.graphql}
@@ -138,6 +138,48 @@ export type VideoFragment = {
   id: string;
   /** The URL of the video (external). */
   videoUrl: string | null;
+};
+
+
+// --------------------------------------------------------------------------------
+// Fragments by Type
+// --------------------------------------------------------------------------------
+
+/**
+ * @see {@link file://./test.graphql}
+ * 
+ * @example
+ * ```graphql
+ * fragment pageOrUser on Entity {
+ *   ... on NodePage {
+ *     body
+ *   }
+ *   ... on User {
+ *     name
+ *   }
+ * }
+ * ```
+ */
+export type PageOrUserFragmentOnNodePage = {
+  /** The body text. */
+  body: string | null;
+};
+
+/**
+ * @see {@link file://./test.graphql}
+ * 
+ * @example
+ * ```graphql
+ * fragment userName on Entity {
+ *   ... on User {
+ *     name
+ *   }
+ * }
+ * ```
+ */
+export type UserNameFragmentOnUser = {
+  /** The name of the user. */
+  name: string | null;
 };
 
 
@@ -286,7 +328,7 @@ export type SelectsOnTypeQuery = {
   getHomepage: {
     /** The title of the page. */
     title: string;
-  } & PageOrUserFragment | null;
+  } & PageOrUserFragmentOnNodePage | null;
 };
 
 /**
