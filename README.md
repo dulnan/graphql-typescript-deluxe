@@ -355,8 +355,8 @@ const entityById:
 
 ### `__typename`
 
-By default a string literal type is generated for every type and an additional
-union of these for every GraphQL interface or union type.
+A string literal type is generated for every object type that the output uses,
+and a union of these for every interface or union type that it uses.
 
 ```graphqls
 interface Entity {
@@ -396,7 +396,7 @@ type Document implements Entity {
 union SearchResult = NodeArticle | Document
 ```
 
-This will generate the following:
+If the output uses all of them, these types are generated:
 
 ```typescript
 // Types
