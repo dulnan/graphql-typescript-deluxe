@@ -137,6 +137,8 @@ export function buildOptions(
     buildEnumTypeName: options?.buildEnumTypeName ?? buildEnumTypeName,
     buildEnumCode: options?.buildEnumCode ?? buildEnumCode,
     buildInputTypeName: options?.buildInputTypeName ?? buildInputTypeName,
+    buildTypenameTypeName:
+      options?.buildTypenameTypeName ?? ((type): string => type.name),
     buildScalarType: (type: GraphQLScalarType): string | null | undefined => {
       // Generate custom.
       if (options?.buildScalarType) {

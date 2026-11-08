@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { fileURLToPath } from 'node:url'
-import { parse } from 'graphql'
+import {
+  isInterfaceType,
+  isObjectType,
+  isUnionType,
+  parse,
+  type GraphQLSchema,
+} from 'graphql'
 import fs from 'node:fs'
 import { Generator } from '../../../src/classes/Generator'
 import schemaContent from './schema.graphql?raw'
@@ -16,14 +22,18 @@ const defaultSchema = loadSchemaSync(schemaContent, {
 
 const isWatch = process.env.WATCH_MODE === 'true'
 
+function getSchema(customSchemaContents?: string | null): GraphQLSchema {
+  return customSchemaContents
+    ? loadSchemaSync(customSchemaContents, { loaders: [] })
+    : defaultSchema
+}
+
 function generateOutput(
   documents: string,
   customSchemaContents?: string | null,
   options?: GeneratorOptions,
 ): GeneratorOutput {
-  const schema = customSchemaContents
-    ? loadSchemaSync(customSchemaContents, { loaders: [] })
-    : defaultSchema
+  const schema = getSchema(customSchemaContents)
   const generator = new Generator(schema, options)
   const documentNode = parse(documents, {
     noLocation: false,
@@ -43,6 +53,22 @@ function generate(
   return generateOutput(documents, customSchemaContents, options)
     .getOperations('ts')
     .getSource()
+}
+
+/**
+ * Find the names of object, interface and union types that are used as an
+ * identifier in the code, outside of comments and strings.
+ */
+function findSchemaTypeNames(code: string, schema: GraphQLSchema): string[] {
+  const stripped = code
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/\/\/.*$/gm, '')
+    .replace(/'[^']*'|"[^"]*"/g, "''")
+  const identifiers = new Set(stripped.match(/[A-Za-z_$][\w$]*/g))
+  return Object.values(schema.getTypeMap())
+    .filter((v) => isObjectType(v) || isInterfaceType(v) || isUnionType(v))
+    .map((v) => v.name)
+    .filter((name) => identifiers.has(name))
 }
 
 /**
@@ -140,6 +166,20 @@ describe('Generator', () => {
       expect(getDocuments(outputWithoutTracking)).toEqual(
         getDocuments(outputWithoutCaching),
       )
+
+      // The names of the typename types come from buildTypenameTypeName, so
+      // no schema type name may be used directly.
+      const resultWithRenamedTypenames = generate(query, customSchema, {
+        ...baseOptions,
+        buildTypenameTypeName: (type): string => type.name + 'Typename',
+      })
+      expect(
+        findSchemaTypeNames(
+          resultWithRenamedTypenames,
+          getSchema(customSchema),
+        ),
+        'Schema type names used directly instead of buildTypenameTypeName.',
+      ).toEqual([])
 
       // Only generate codegen comparison in watch mode
       if (isWatch) {

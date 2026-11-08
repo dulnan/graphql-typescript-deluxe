@@ -7,6 +7,7 @@ import {
   isListType,
   isNonNullType,
   isObjectType,
+  isUnionType,
   type DefinitionNode,
   type FieldNode,
   type FragmentDefinitionNode,
@@ -159,6 +160,12 @@ export class Generator {
   private fragmentStack: string[] = []
 
   /**
+   * The names of the TypeScript types that the output uses, such as Omit. A
+   * generated type with the same name would replace them.
+   */
+  private globalTypeNames: Set<string>
+
+  /**
    * Fragment name => the dependency keys of the fragments it spreads, directly
    * or through other fragments, and of itself last. Only used without
    * dependency tracking, see getUntrackedDependencies().
@@ -193,6 +200,23 @@ export class Generator {
       options?.output?.typeComment,
     )
     this.schema = new SchemaProvider(schema)
+
+    // The output can use these in any build. They are always reserved, so
+    // that an unrelated operation can't make the build throw.
+    this.globalTypeNames = new Set([
+      'Exclude',
+      'Omit',
+      'Partial',
+      'PropertyKey',
+    ])
+    const { arrayShape, emptyObject } = this.options.output
+    for (const value of [arrayShape, emptyObject]) {
+      for (const match of value
+        .replaceAll('$T$', '')
+        .matchAll(/[A-Za-z_]\w*/g)) {
+        this.globalTypeNames.add(match[0])
+      }
+    }
   }
 
   /**
@@ -1166,15 +1190,30 @@ export class Generator {
       }
       /* v8 ignore stop */
 
+      const typeName = this.options.buildTypenameTypeName(type)
       return {
-        code: `type ${name} = '${name}';`,
-        typeName: name,
+        code: `type ${typeName} = '${name}';`,
+        typeName,
         context: { type },
         source: null,
         graphqlName: type.name,
         identifier: 'type',
       }
     })
+  }
+
+  /**
+   * Get the TS type of the __typename of an object, interface or union type.
+   *
+   * @param name - The name of the type.
+   *
+   * @returns The name of the generated TS type.
+   */
+  private getOrCreateTypenameType(name: string): string {
+    const type = this.schema.getType(name)
+    return isInterfaceType(type) || isUnionType(type)
+      ? this.getOrCreateUnionTypenameType(type)
+      : this.getOrCreateObjectTypeName(name)
   }
 
   /**
@@ -1195,7 +1234,8 @@ export class Generator {
           .sort()
           .join(' | ') || 'never'
 
-      const totalLength = `export type ${type.name} =`.length + union.length
+      const typeName = this.options.buildTypenameTypeName(type)
+      const totalLength = `export type ${typeName} =`.length + union.length
 
       // If we exceed 80 chars, switch to a union where each type is on a new line.
       if (totalLength > 80) {
@@ -1208,8 +1248,8 @@ export class Generator {
       }
 
       return {
-        code: makeExport(type.name, union),
-        typeName: type.name,
+        code: makeExport(typeName, union),
+        typeName,
         context: {
           type,
         },
@@ -2091,6 +2131,8 @@ export class Generator {
       (key) => baseFields[key]!.kind === 'TYPENAME',
     )
     let unionIrNode: IRNodeTypename | null = null
+    // The __typename of the types without fragments, the same for each.
+    let withoutFragmentsIrNode: IRNodeTypename | null = null
 
     for (const objectTypeName of possibleTypes) {
       // Clone the base fields.
@@ -2136,7 +2178,12 @@ export class Generator {
             )
           }
 
-          branchTypename = unionIrNode ?? IR.TYPENAME(typesWithoutFragments)
+          withoutFragmentsIrNode ??= IR.TYPENAME(
+            typesWithoutFragments.map((name) =>
+              this.getOrCreateObjectTypeName(name),
+            ),
+          )
+          branchTypename = unionIrNode ?? withoutFragmentsIrNode
         }
       }
 
@@ -2320,7 +2367,7 @@ export class Generator {
           parts.push(spread.fragmentTypeName)
         } else {
           parts.push(
-            `(${this.IRToCode(spread)} & { __typename: ${spread.fragmentTypeCondition} })`,
+            `(${this.IRToCode(spread)} & { __typename: ${this.getOrCreateTypenameType(spread.fragmentTypeCondition)} })`,
           )
         }
       }
@@ -2329,7 +2376,7 @@ export class Generator {
       /* v8 ignore start -- @preserve */
       if (typenameNode.excludeType) {
         const excludedTypes = spreads
-          .map((s) => s.fragmentTypeCondition)
+          .map((s) => this.getOrCreateTypenameType(s.fragmentTypeCondition))
           .join(' | ')
         parts.push(
           `{ __typename: Exclude<${typenameNode.excludeType}, ${excludedTypes}> }`,
@@ -2755,11 +2802,11 @@ export class Generator {
     const name = code.graphqlName || code.name
     switch (code.type) {
       case 'typename-object':
-        return `the object type "${name}"`
+        return `the object type "${name}" (buildTypenameTypeName)`
       case 'typename-union':
         return isInterfaceType(this.schema.getType(name))
-          ? `the interface "${name}"`
-          : `the union "${name}"`
+          ? `the interface "${name}" (buildTypenameTypeName)`
+          : `the union "${name}" (buildTypenameTypeName)`
       case 'enum':
         return `the enum "${name}" (buildEnumTypeName)`
       case 'input':
@@ -2782,7 +2829,8 @@ export class Generator {
   }
 
   /**
-   * Throw if two generated types have the same name.
+   * Throw if two generated types have the same name, or if a generated type
+   * has the name of a TypeScript type that the output uses.
    *
    * Renaming one of them automatically would not be stable: The name would
    * change when the other one is removed.
@@ -2794,6 +2842,12 @@ export class Generator {
   private assertUniqueIdentifiers(code: GeneratedCode[]): void {
     const byName = new Map<string, GeneratedCode>()
     for (const item of code) {
+      if (this.globalTypeNames.has(item.name)) {
+        throw new DuplicateIdentifierError(item.name, [
+          this.describeCodeSource(item),
+          `the TypeScript type "${item.name}", which the output uses`,
+        ])
+      }
       const existing = byName.get(item.name)
       if (existing) {
         throw new DuplicateIdentifierError(item.name, [

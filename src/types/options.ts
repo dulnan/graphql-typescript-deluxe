@@ -2,8 +2,11 @@ import type {
   FragmentDefinitionNode,
   GraphQLEnumType,
   GraphQLInputObjectType,
+  GraphQLInterfaceType,
   GraphQLNamedType,
+  GraphQLObjectType,
   GraphQLScalarType,
+  GraphQLUnionType,
   OperationDefinitionNode,
 } from 'graphql'
 import type { GeneratedCode, GeneratedCodeByOutputType } from '.'
@@ -404,6 +407,30 @@ export type GeneratorOptions = {
    * generates: "ContactMethod"
    */
   buildEnumTypeName?: (type: GraphQLEnumType) => string
+
+  /**
+   * Build the TS type name for the `__typename` of a schema type.
+   *
+   * For an object type, this is the string literal type of its typename. For
+   * an interface or union, it's the union of the typenames of its types.
+   *
+   * Use this to rename a schema type whose name is already taken, for example
+   * by a TypeScript type that the output uses, such as `Omit`.
+   *
+   * @param type - The object, interface or union type from the schema.
+   *
+   * @example Defaults to the name of the type, e.g.:
+   * ```graphqls
+   * type User {
+   *   id: ID!
+   * }
+   * ```
+   *
+   * generates: `type User = 'User';`
+   */
+  buildTypenameTypeName?: (
+    type: GraphQLObjectType | GraphQLInterfaceType | GraphQLUnionType,
+  ) => string
 
   /**
    * Build the full TS code for an enum.

@@ -333,14 +333,14 @@ query foobar { entityById(id: "1", entityType: NODE) { ...b } }
         'an object type and a mutation',
         'type CreateUserMutation { ok: Boolean } type Mutation { createUser: CreateUserMutation } type Query { a: String }',
         'mutation createUser { createUser { __typename ok } }',
-        'The generated name "CreateUserMutation" is used twice: by the object type "CreateUserMutation" and by the mutation "createUser" (buildOperationTypeName).' +
+        'The generated name "CreateUserMutation" is used twice: by the object type "CreateUserMutation" (buildTypenameTypeName) and by the mutation "createUser" (buildOperationTypeName).' +
           hint,
       ],
       [
         'an enum and an object type',
         'enum user_status { ACTIVE } type UserStatus { s: user_status } type Query { u: UserStatus }',
         'query q { u { __typename s } }',
-        'The generated name "UserStatus" is used twice: by the object type "UserStatus" and by the enum "user_status" (buildEnumTypeName).' +
+        'The generated name "UserStatus" is used twice: by the object type "UserStatus" (buildTypenameTypeName) and by the enum "user_status" (buildEnumTypeName).' +
           hint,
       ],
       [
@@ -361,7 +361,7 @@ query foobar { entityById(id: "1", entityType: NODE) { ...b } }
         'an interface and a fragment',
         'interface UserFragment { id: ID } type User implements UserFragment { id: ID } type Query { u: UserFragment }',
         'fragment user on User { id } query q { u { __typename ...user } }',
-        'The generated name "UserFragment" is used twice: by the fragment "user" (buildFragmentTypeName) and by the interface "UserFragment".' +
+        'The generated name "UserFragment" is used twice: by the fragment "user" (buildFragmentTypeName) and by the interface "UserFragment" (buildTypenameTypeName).' +
           hint,
       ],
     ])('throws for %s', (_, sdl, content, message) => {
@@ -369,6 +369,68 @@ query foobar { entityById(id: "1", entityType: NODE) { ...b } }
       generator.add(toDocument(content))
       expect(() => generator.build()).toThrow(DuplicateIdentifierError)
       expect(() => generator.build()).toThrow(message)
+    })
+
+    it.each([
+      [
+        'an object type and a TypeScript type the output uses',
+        'type Omit { id: ID } type Other { id: ID } union U = Omit | Other type Query { u: U }',
+        'query q { u { __typename } }',
+        {},
+        'The generated name "Omit" is used twice: by the object type "Omit" (buildTypenameTypeName) and by the TypeScript type "Omit", which the output uses.',
+      ],
+      [
+        'an enum and a TypeScript type the output uses',
+        'enum Partial { A } type Query { p: Partial }',
+        'query q { p }',
+        {},
+        'The generated name "Partial" is used twice: by the enum "Partial" (buildEnumTypeName) and by the TypeScript type "Partial", which the output uses.',
+      ],
+      [
+        'an object type and a TypeScript type in the arrayShape option',
+        'type Array { id: ID } type Query { a: [Array] }',
+        'query q { a { __typename } }',
+        { output: { arrayShape: 'Array<$T$>' } },
+        'The generated name "Array" is used twice: by the object type "Array" (buildTypenameTypeName) and by the TypeScript type "Array", which the output uses.',
+      ],
+      [
+        'an object type and a type helper',
+        'type Maybe { id: ID } union U = Maybe type Query { u: U, s: String }',
+        'query q { u { __typename } s }',
+        { output: { nullableField: 'maybe' } },
+        'The generated name "Maybe" is used twice: by the object type "Maybe" (buildTypenameTypeName) and by the type helper "Maybe".',
+      ],
+    ] as const)('throws for %s', (_, sdl, content, options, message) => {
+      const generator = new Generator(buildSchema(sdl), options)
+      generator.add(toDocument(content))
+      expect(() => generator.build()).toThrow(message + hint)
+    })
+
+    it('does not throw for a TypeScript type the output does not use', () => {
+      const generator = new Generator(
+        buildSchema('type Array { id: ID } type Query { a: [Array] }'),
+      )
+      generator.add(toDocument('query q { a { __typename } }'))
+      expect(generator.build().getOperations('ts').getSource()).toContain(
+        "type Array = 'Array';",
+      )
+    })
+
+    it('does not throw once the typename type is renamed', () => {
+      const generator = new Generator(
+        buildSchema(
+          'type Omit { id: ID } type Other { id: ID } union U = Omit | Other type Query { u: U }',
+        ),
+        {
+          buildTypenameTypeName: (type): string =>
+            type.name === 'Omit' ? 'OmitTypename' : type.name,
+          output: { typeComment: false },
+        },
+      )
+      generator.add(toDocument('query q { u { __typename } }'))
+      const source = generator.build().getOperations('ts').getSource()
+      expect(source).toContain("type OmitTypename = 'Omit';")
+      expect(source).toContain('export type U = OmitTypename | Other;')
     })
 
     it('does not throw once one of the names is changed with an option', () => {

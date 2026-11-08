@@ -44,7 +44,9 @@ The generated type names must be unique as well, for example an input type
 throws a `DuplicateIdentifierError` that names both and the option to change one
 of the names, such as `buildInputTypeName`. Names are never changed
 automatically, because such a name would change again when the other definition
-is removed.
+is removed. This includes the TypeScript types that the output uses, such as
+`Omit`: the `__typename` type of a schema type named `Omit` can be renamed with
+`buildTypenameTypeName`.
 
 ## Usage
 
