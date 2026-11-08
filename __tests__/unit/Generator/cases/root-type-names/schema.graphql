@@ -1,0 +1,13 @@
+# Root types with other names than Query and Mutation, as in Hasura.
+schema {
+  query: query_root
+  mutation: mutation_root
+}
+
+type query_root {
+  thing(id: ID!): String
+}
+
+type mutation_root {
+  doIt: Boolean
+}

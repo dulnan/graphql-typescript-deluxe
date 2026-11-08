@@ -1,0 +1,7 @@
+query getThing($id: ID!) {
+  thing(id: $id)
+}
+
+mutation doIt {
+  doIt
+}

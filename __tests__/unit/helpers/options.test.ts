@@ -14,42 +14,82 @@ import {
   GraphQLObjectType,
   GraphQLScalarType,
   GraphQLInputObjectType,
+  parse,
+  type OperationDefinitionNode,
 } from 'graphql'
 
 describe('Generator Options', () => {
+  // The operation definition of the given document.
+  const toOperation = (source: string): OperationDefinitionNode =>
+    parse(source).definitions[0] as OperationDefinitionNode
+
   describe('buildOperationTypeName', () => {
-    it('should convert operation name to PascalCase and append root type name', () => {
+    it('should convert operation name to PascalCase and append the operation kind', () => {
       const rootType = new GraphQLObjectType({
         name: 'Query',
         fields: {},
       })
 
-      expect(buildOperationTypeName('get_user', rootType)).toBe('GetUserQuery')
-      expect(buildOperationTypeName('createPost', rootType)).toBe(
-        'CreatePostQuery',
-      )
-      expect(buildOperationTypeName('UPDATE_SETTINGS', rootType)).toBe(
-        'UpdateSettingsQuery',
-      )
+      expect(
+        buildOperationTypeName(
+          'get_user',
+          rootType,
+          toOperation('query get_user { a }'),
+        ),
+      ).toBe('GetUserQuery')
+      expect(
+        buildOperationTypeName(
+          'createPost',
+          rootType,
+          toOperation('query createPost { a }'),
+        ),
+      ).toBe('CreatePostQuery')
+      expect(
+        buildOperationTypeName(
+          'UPDATE_SETTINGS',
+          rootType,
+          toOperation('query UPDATE_SETTINGS { a }'),
+        ),
+      ).toBe('UpdateSettingsQuery')
+    })
+
+    it('should not use the name of the root type', () => {
+      const rootType = new GraphQLObjectType({
+        name: 'query_root',
+        fields: {},
+      })
+
+      expect(
+        buildOperationTypeName(
+          'getThing',
+          rootType,
+          toOperation('query getThing { a }'),
+        ),
+      ).toBe('GetThingQuery')
     })
   })
 
   describe('buildOperationVariablesTypeName', () => {
     it('should build variables type name based on operation name', () => {
       const rootType = new GraphQLObjectType({
-        name: 'Mutation',
+        name: 'mutation_root',
         fields: {},
       })
 
-      expect(buildOperationVariablesTypeName('create_user', rootType)).toBe(
-        'CreateUserMutationVariables',
-      )
-      expect(buildOperationVariablesTypeName('updatePost', rootType)).toBe(
-        'UpdatePostMutationVariables',
-      )
-      expect(buildOperationVariablesTypeName('DELETE_COMMENT', rootType)).toBe(
-        'DeleteCommentMutationVariables',
-      )
+      expect(
+        buildOperationVariablesTypeName(
+          'create_user',
+          rootType,
+          toOperation('mutation create_user { a }'),
+        ),
+      ).toBe('CreateUserMutationVariables')
+      expect(
+        buildOperationVariablesTypeName(
+          'DELETE_COMMENT',
+          rootType,
+          toOperation('mutation DELETE_COMMENT { a }'),
+        ),
+      ).toBe('DeleteCommentMutationVariables')
     })
   })
 

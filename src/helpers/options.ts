@@ -4,6 +4,7 @@ import type {
   GraphQLScalarType,
   FragmentDefinitionNode,
   GraphQLNamedType,
+  OperationDefinitionNode,
 } from 'graphql'
 import type { GeneratorOptions, TypeCommentOptions } from '../types/options'
 import { makeComment } from './string'
@@ -14,16 +15,20 @@ import type { GeneratedCode, GeneratedCodeByOutputType } from '../types'
 
 export function buildOperationTypeName(
   operationName: string,
-  rootType: GraphQLNamedType,
+  _rootType: GraphQLNamedType,
+  node: OperationDefinitionNode,
 ): string {
-  return pascalCase(operationName) + rootType.name
+  // The kind of the operation, not the name of the root type: The root type
+  // can have another name, such as query_root.
+  return pascalCase(operationName) + pascalCase(node.operation)
 }
 
 export function buildOperationVariablesTypeName(
   operationName: string,
   rootType: GraphQLNamedType,
+  node: OperationDefinitionNode,
 ): string {
-  return buildOperationTypeName(operationName, rootType) + 'Variables'
+  return buildOperationTypeName(operationName, rootType, node) + 'Variables'
 }
 
 export function buildFragmentTypeName(node: FragmentDefinitionNode): string {
