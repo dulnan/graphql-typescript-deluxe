@@ -6,7 +6,7 @@ import { Generator } from '../../../src/classes/Generator'
 import schemaContent from './schema.graphql?raw'
 import { OPTION_SETS } from './optionSets'
 import { TEST_CASES } from './testCases'
-import { buildChecks } from './soundness/responses'
+import { buildChecks, buildFragmentChecks } from './soundness/responses'
 import { typecheck } from './soundness/typecheck'
 
 /**
@@ -77,6 +77,15 @@ function checkCases(
         optionSet.output,
         SAMPLES,
       )
+      const fragmentChecks = buildFragmentChecks(
+        schema,
+        document,
+        output,
+        optionSet.output,
+        SAMPLES,
+      )
+      checks.responses.push(...fragmentChecks.responses)
+      checks.errors.push(...fragmentChecks.errors)
       caseErrors.push(...checks.errors)
       files.set(`${dir}/result.ts`, output.getOperations('ts').getSource())
       for (const [name, lines] of [
@@ -135,7 +144,8 @@ function checkCases(
 
 /**
  * The generated types must fit real responses: Every operation of a case is
- * executed with random responses and variables, which are assigned to the
+ * executed with random responses and variables, and every fragment is spread
+ * in a field of its type condition. The responses are assigned to the
  * generated types and type-checked.
  */
 describe('Soundness', () => {

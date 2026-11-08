@@ -2,6 +2,7 @@ import {
   assertInputType,
   assertScalarType,
   executeSync,
+  extendSchema,
   isAbstractType,
   isEnumType,
   isInputObjectType,
@@ -9,11 +10,15 @@ import {
   isNonNullType,
   isObjectType,
   Kind,
+  parse,
   typeFromAST,
+  TypeInfo,
+  ValidationContext,
   visit,
   type DocumentNode,
   type ExecutionResult,
   type FieldNode,
+  type FragmentDefinitionNode,
   type GraphQLInputField,
   type GraphQLInputType,
   type GraphQLOutputType,
@@ -226,9 +231,31 @@ function shapeResponse(value: unknown, options: TypeOptions): unknown {
   return value
 }
 
+/**
+ * Execute an operation with the random values.
+ */
+function executeWithValues(
+  schema: GraphQLSchema,
+  document: DocumentNode,
+  operationName: string,
+  variableValues: Record<string, unknown>,
+  values: RandomValues,
+): ExecutionResult {
+  return executeSync({
+    schema,
+    document,
+    operationName,
+    rootValue: {},
+    variableValues,
+    fieldResolver: (_source, _args, _context, info) =>
+      values.output(info.returnType),
+    typeResolver: (value) => (value as { type: string }).type,
+  })
+}
+
 type Checks = {
   /**
-   * Assignments of real responses to the operation types.
+   * Assignments of real responses to the operation or fragment types.
    */
   responses: string[]
 
@@ -271,16 +298,13 @@ export function buildChecks(
       variableValues: Record<string, unknown>,
       values: RandomValues,
     ): ExecutionResult =>
-      executeSync({
+      executeWithValues(
         schema,
-        document: executedDocument,
-        operationName: operation.graphqlName,
-        rootValue: {},
+        executedDocument,
+        operation.graphqlName,
         variableValues,
-        fieldResolver: (_source, _args, _context, info) =>
-          values.output(info.returnType),
-        typeResolver: (value) => (value as { type: string }).type,
-      })
+        values,
+      )
 
     /**
      * Whether the execution rejects the null variables: It fails with them and
@@ -356,6 +380,134 @@ export function buildChecks(
         )
         checks.variables.push(
           `export const ${name}: T.${operation.variablesTypeName} = ${variablesLiteral}`,
+        )
+      }
+    }
+  }
+
+  return checks
+}
+
+/**
+ * Spread every fragment in a field of its type condition and build the code
+ * that assigns the field's value to the fragment type. The fields are added to
+ * the query type for the execution only.
+ *
+ * @param schema - The schema.
+ * @param document - The document with all operations and fragments.
+ * @param output - The generated output.
+ * @param options - The output options of the output.
+ * @param samples - How many values are created per fragment.
+ */
+export function buildFragmentChecks(
+  schema: GraphQLSchema,
+  document: DocumentNode,
+  output: GeneratorOutput,
+  options: TypeOptions,
+  samples: number,
+): Checks {
+  const checks: Checks = { responses: [], variables: [], errors: [] }
+  const queryType = schema.getQueryType()
+  const fragments = document.definitions.filter(
+    (v): v is FragmentDefinitionNode => v.kind === Kind.FRAGMENT_DEFINITION,
+  )
+  // The fields of introspection types resolve real types, not random values.
+  // Operations check them through __schema and __type.
+  const checkedFragments = fragments.filter(
+    (v) => !v.typeCondition.name.value.startsWith('__'),
+  )
+  if (!queryType || !checkedFragments.length) {
+    return checks
+  }
+
+  const typeNames = new Map(
+    output
+      .getGeneratedCode()
+      .filter((v) => v.type === 'fragment')
+      .map((v) => [v.graphqlName, v.name]),
+  )
+  const getFieldName = (typeName: string): string => `soundness${typeName}`
+  const fields = [
+    ...new Set(checkedFragments.map((v) => v.typeCondition.name.value)),
+  ]
+    .map((v) => `${getFieldName(v)}: ${v}!`)
+    .join(' ')
+  const extendedSchema = extendSchema(
+    schema,
+    parse(`extend type ${queryType.name} { ${fields} }`),
+  )
+
+  for (const fragment of checkedFragments) {
+    const name = fragment.name.value
+    const typeName = typeNames.get(name)
+    if (!typeName) {
+      checks.errors.push(`The fragment "${name}" has no type.`)
+      continue
+    }
+    const fieldName = getFieldName(fragment.typeCondition.name.value)
+    const buildOperation = (variables: string): OperationDefinitionNode =>
+      parse(`query soundness${variables} { ${fieldName} { ...${name} } }`)
+        .definitions[0] as OperationDefinitionNode
+
+    // The variables that the fragment uses, typed by where they are used.
+    const variableTypes = new Map<string, string>()
+    const context = new ValidationContext(
+      extendedSchema,
+      { kind: Kind.DOCUMENT, definitions: fragments },
+      new TypeInfo(extendedSchema),
+      () => {},
+    )
+    for (const usage of context.getRecursiveVariableUsages(
+      buildOperation(''),
+    )) {
+      const variableName = usage.node.name.value
+      if (
+        usage.type &&
+        (!variableTypes.has(variableName) || isNonNullType(usage.type))
+      ) {
+        variableTypes.set(variableName, String(usage.type))
+      }
+    }
+    const definitions = [...variableTypes]
+      .map(([variableName, type]) => `$${variableName}: ${type}`)
+      .join(', ')
+    const operation = buildOperation(definitions ? `(${definitions})` : '')
+    const fragmentDocument: DocumentNode = {
+      kind: Kind.DOCUMENT,
+      definitions: [operation, ...fragments],
+    }
+    const executedDocument = options.nonOptionalTypename
+      ? addTypenames(fragmentDocument)
+      : fragmentDocument
+
+    const seen = new Set<string>()
+    for (let i = 0; i < samples; i++) {
+      const seed = i * 7919 + name.length
+      const variables = new RandomValues(
+        extendedSchema,
+        seed,
+        NULL_PROBABILITY,
+      ).variables(operation)
+      const result = executeWithValues(
+        extendedSchema,
+        executedDocument,
+        'soundness',
+        variables,
+        new RandomValues(extendedSchema, seed + 1, NULL_PROBABILITY),
+      )
+      if (result.errors?.length) {
+        checks.errors.push(...result.errors.map((v) => `${name}: ${v.message}`))
+        continue
+      }
+      const value = JSON.stringify(
+        shapeResponse(result.data?.[fieldName], options),
+        null,
+        2,
+      )
+      if (!seen.has(value)) {
+        seen.add(value)
+        checks.responses.push(
+          `export const fragment_${name}_${i}: T.${typeName} = ${value}`,
         )
       }
     }

@@ -105,7 +105,9 @@ checks are repeated with each set of output options in `optionSets.ts`.
 `soundness.test.ts` checks that the generated types fit real responses: under
 each option set, it executes every operation of every case with seeded random
 responses and variables (graphql-js with mock resolvers), assigns them to the
-generated types, and type-checks them in memory.
+generated types, and type-checks them in memory. Every fragment is also checked
+on its own, spread in a field of its type condition that is added to the schema
+for the execution only.
 
 Default test schema is at `__tests__/unit/Generator/schema.graphql`.
 
