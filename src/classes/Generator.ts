@@ -1689,7 +1689,7 @@ export class Generator {
         }
 
         // A __typename in the inline fragment is the name of this type.
-        const getTypename = () =>
+        const getTypename = (): IRNodeTypename =>
           IR.TYPENAME(this.getOrCreateObjectTypeName(objectType))
         const spreadType = this.schema.getType(typeConditionName)
         const ir = this.buildSelectionSet(spreadType, sel.selectionSet, true)
