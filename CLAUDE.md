@@ -97,7 +97,15 @@ __tests__/unit/Generator/cases/
 ```
 
 The test runner generates output with both caching enabled and disabled,
-verifying they produce identical results.
+verifying they produce identical results. It also checks that the schema, the
+case document and every generated document are valid GraphQL, so a case must be
+valid (fragment-only cases may leave fragments unused). The cache and tracking
+checks are repeated with each set of output options in `optionSets.ts`.
+
+`soundness.test.ts` checks that the generated types fit real responses: under
+each option set, it executes every operation of every case with seeded random
+responses and variables (graphql-js with mock resolvers), assigns them to the
+generated types, and type-checks them in memory.
 
 Default test schema is at `__tests__/unit/Generator/schema.graphql`.
 
