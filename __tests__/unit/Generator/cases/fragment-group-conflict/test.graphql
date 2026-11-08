@@ -1,0 +1,47 @@
+# Both fragments apply to every type of SearchResult, but only an article has
+# an author.
+fragment authorName on Entity {
+  id
+  ... on NodeArticle {
+    author {
+      name
+    }
+  }
+}
+
+fragment authorEmail on Entity {
+  entityType
+  ... on NodeArticle {
+    author {
+      email
+    }
+  }
+}
+
+# The author fields of both fragments conflict. An article has the author with
+# both fields, a video has no author.
+query conflict {
+  search {
+    ...authorName
+    ...authorEmail
+  }
+}
+
+fragment articleAuthor on NodeArticle {
+  author {
+    name
+  }
+}
+
+# The same, with the author from a fragment that the fragment spreads.
+fragment authorNameNested on Entity {
+  id
+  ...articleAuthor
+}
+
+query conflictNested {
+  search {
+    ...authorNameNested
+    ...authorEmail
+  }
+}

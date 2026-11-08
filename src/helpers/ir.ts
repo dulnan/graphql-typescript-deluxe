@@ -82,6 +82,12 @@ export type IRNodeFragmentSpread = {
    * The type of the field in which the fragment is spread.
    */
   parentType: string
+
+  /**
+   * The object types to which the spread applies, if it's spread in several
+   * types of the abstract parent type at once.
+   */
+  parentTypes?: string[]
 }
 
 /**
@@ -1052,32 +1058,51 @@ export function buildFragmentIRFields(
     return ir.fields
   }
 
-  // If it's a UNION, unify all OBJECT branches. Only one of them applies to
-  // an object, so a field is only present if all branches select it.
+  // If it's a UNION, unify all OBJECT branches.
   if (ir.kind === 'UNION') {
-    const branches = ir.types.filter((v) => v.kind === 'OBJECT')
-    let merged: Record<string, IRNode> | null = null
-    for (const branch of branches) {
-      merged = merged
-        ? mergeObjectFields(merged, branch.fields, true, true)
-        : { ...branch.fields }
-    }
-    if (!merged) {
-      return {}
-    }
-
-    // The branches are of different types, so only the descriptions they
-    // share are kept.
-    for (const [key, field] of Object.entries(merged)) {
-      merged[key] = withSharedDescriptions(
-        field,
-        branches.flatMap((v) => v.fields[key] ?? []),
-        nullableIsOptional,
-      )
-    }
-    return merged
+    return mergeTypeFields(
+      ir.types.flatMap((v) => (v.kind === 'OBJECT' ? [v.fields] : [])),
+      nullableIsOptional,
+    )
   }
 
   // There are no fields.
   return {}
+}
+
+/**
+ * Merge the fields of several object types, of which only one applies to an
+ * object.
+ *
+ * So a field is only required if all types select it, and it only keeps the
+ * descriptions that all types share.
+ *
+ * @param types - The fields of each type.
+ * @param nullableIsOptional - Whether nullable fields are generated as
+ * optional fields.
+ *
+ * @returns The merged fields.
+ */
+export function mergeTypeFields(
+  types: Record<string, IRNode>[],
+  nullableIsOptional: boolean,
+): Record<string, IRNode> {
+  let merged: Record<string, IRNode> | null = null
+  for (const fields of types) {
+    merged = merged
+      ? mergeObjectFields(merged, fields, true, true)
+      : { ...fields }
+  }
+  if (!merged) {
+    return {}
+  }
+
+  for (const [key, field] of Object.entries(merged)) {
+    merged[key] = withSharedDescriptions(
+      field,
+      types.flatMap((v) => v[key] ?? []),
+      nullableIsOptional,
+    )
+  }
+  return merged
 }

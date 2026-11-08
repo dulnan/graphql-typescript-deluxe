@@ -74,6 +74,7 @@ import {
   mergeFragmentSpread,
   mergeIR,
   mergeObjectFields,
+  mergeTypeFields,
   postProcessIR,
   setTypename,
   typenameToCode,
@@ -1502,6 +1503,38 @@ export class Generator {
   }
 
   /**
+   * Get the fields that a fragment selects where it's spread, with the fields
+   * of the fragments it spreads in place of these spreads.
+   *
+   * A spread in several types of an abstract type at once has the fields
+   * that the fragment selects on these types.
+   *
+   * @param spread - The fragment spread.
+   *
+   * @returns The map, where the key is the name of the field and the value is the IR node.
+   */
+  private getFragmentFieldsForSpread(
+    spread: IRNodeFragmentSpread,
+  ): Record<string, IRNode> {
+    const parentTypes = spread.parentTypes
+    if (!parentTypes) {
+      return this.getFragmentFieldsWithNested(spread.name, spread.parentType)
+    }
+
+    return this.withCache(
+      'getFragmentFieldsForSpread',
+      spread.name + ' ' + parentTypes.join(' '),
+      () =>
+        mergeTypeFields(
+          parentTypes.map((typeName) =>
+            this.getFragmentFieldsWithNested(spread.name, typeName),
+          ),
+          this.options.output.nullableField === 'optional',
+        ),
+    )
+  }
+
+  /**
    * Whether a fragment selects anything on the given type.
    *
    * A fragment on an abstract type may only select fields for some of its
@@ -1927,6 +1960,7 @@ export class Generator {
           name: fragment.name.value,
           fragmentTypeName: this.generateFragmentType(fragment.name.value),
           parentType: parentTypeName,
+          parentTypes: typeNames.length > 1 ? typeNames : undefined,
           fragmentTypeCondition: fragment.typeCondition.name.value,
         }),
       )
@@ -2588,12 +2622,8 @@ export class Generator {
     const fragmentFieldMaps: Record<string, Record<string, IRNode>> = {}
 
     for (const spread of spreads) {
-      // A field can also come from a fragment that the fragment spreads.
-      const fragmentFields = this.getFragmentFieldsWithNested(
-        spread.name,
-        spread.parentType,
-      )
-      fragmentFieldMaps[spread.fragmentTypeName] = fragmentFields
+      fragmentFieldMaps[spread.fragmentTypeName] =
+        this.getFragmentFieldsForSpread(spread)
     }
 
     // Gather a union of all field names from all fragments and direct fields.
@@ -2660,6 +2690,42 @@ export class Generator {
         fieldName !== TYPENAME
       ) {
         conflictFields.set(fieldName, merged)
+      }
+    }
+
+    // A spread in several types at once may select a field only on some of
+    // them. So the conflict fields are merged for each type and then across
+    // the types, which keeps the nested fields required that a type selects.
+    const parentTypes = spreads[0]?.parentTypes
+    if (parentTypes && conflictFields.size) {
+      const typeFields = parentTypes.map((typeName) => {
+        const spreadFields = spreads.map((spread) =>
+          this.getFragmentFieldsWithNested(spread.name, typeName),
+        )
+        const result: Record<string, IRNode> = {}
+        for (const fieldName of conflictFields.keys()) {
+          let merged = fields.get(fieldName) ?? null
+          for (let i = 0; i < spreads.length; i++) {
+            const node = spreadFields[i]![fieldName]
+            if (node) {
+              const value = spreads[i]!.optional
+                ? { ...node, optional: true }
+                : node
+              merged = merged ? mergeIR(merged, value) : value
+            }
+          }
+          if (merged) {
+            result[fieldName] = merged
+          }
+        }
+        return result
+      })
+      const merged = mergeTypeFields(
+        typeFields,
+        this.options.output.nullableField === 'optional',
+      )
+      for (const fieldName of conflictFields.keys()) {
+        conflictFields.set(fieldName, merged[fieldName]!)
       }
     }
 

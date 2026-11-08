@@ -129,11 +129,11 @@ export type DifferentDescriptionsQuery = {
  */
 export type FragmentConflictQuery = {
   result?: ({
-    author?: {
+    author: {
       /** The email address of the person. */
-      email?: string;
+      email: string;
       /** The name of the person. */
-      name?: string;
+      name: string;
     };
   } & DistributiveOmit<AuthorNameFragment, "author">);
 };
