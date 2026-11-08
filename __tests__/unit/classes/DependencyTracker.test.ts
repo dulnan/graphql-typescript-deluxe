@@ -79,6 +79,18 @@ describe('DependencyTracker', () => {
       expect(dependencies).toContain(data.dependencies[1])
     })
 
+    it('should pass merged dependencies to every parent stack when they end', () => {
+      const dependency = DependencyTracker.toKey('enum', 'Status')
+      tracker.start('one.graphql')
+      tracker.start('two.graphql')
+      tracker.start('three.graphql')
+      tracker.merge({ dependencies: [dependency] })
+
+      expect(tracker.end()).toContain(dependency)
+      expect(tracker.end()).toContain(dependency)
+      expect(tracker.end()).toContain(dependency)
+    })
+
     it('should throw a LogicError when trying to merge without starting a stack', () => {
       const data = {
         filePath: 'path/to/file.ts',
@@ -249,10 +261,10 @@ describe('DependencyTracker', () => {
       expect(dependencies.filter((v) => v.includes('fragment-name')))
         .toMatchInlineSnapshot(`
           [
-            "fragment-name####four",
-            "fragment-name#####three",
-            "fragment-name#####two",
             "fragment-name#####one",
+            "fragment-name####four",
+            "fragment-name#####two",
+            "fragment-name#####three",
           ]
         `)
     })

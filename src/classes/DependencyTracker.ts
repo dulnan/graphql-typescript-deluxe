@@ -51,18 +51,19 @@ export class DependencyTracker {
 
   /**
    * Merge the given dependency data with the current stack.
+   *
+   * The parent stacks get the dependencies when the current one ends, so they
+   * are only added to the current one.
    */
   public merge(data: { dependencies?: string[]; filePath?: string }): void {
     if (data.filePath) {
       this.addFileDependency(data.filePath)
     }
 
-    // Also bubble the dependencies to all upper stacks.
-    if (data.dependencies) {
-      for (const item of this.stack) {
-        for (const dependency of data.dependencies) {
-          item.dependencies.add(dependency)
-        }
+    const current = this.stack.at(-1)
+    if (current && data.dependencies) {
+      for (const dependency of data.dependencies) {
+        current.dependencies.add(dependency)
       }
     }
   }

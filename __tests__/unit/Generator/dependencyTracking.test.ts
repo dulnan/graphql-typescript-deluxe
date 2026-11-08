@@ -86,12 +86,12 @@ query foobar {
                 "value": "fragment.entity.graphql",
               },
               {
-                "type": "enum",
-                "value": "EntityType",
-              },
-              {
                 "type": "fragment-name",
                 "value": "entity",
+              },
+              {
+                "type": "enum",
+                "value": "EntityType",
               },
               {
                 "type": "fragment",
@@ -125,12 +125,12 @@ query foobar {
                 "value": "fragment.entity.graphql",
               },
               {
-                "type": "enum",
-                "value": "EntityType",
-              },
-              {
                 "type": "fragment-name",
                 "value": "entity",
+              },
+              {
+                "type": "enum",
+                "value": "EntityType",
               },
               {
                 "type": "fragment",
@@ -237,12 +237,12 @@ fragment mediaImage on MediaImage {
                 "value": "fragment.entity.graphql",
               },
               {
-                "type": "enum",
-                "value": "EntityType",
-              },
-              {
                 "type": "fragment-name",
                 "value": "entity",
+              },
+              {
+                "type": "enum",
+                "value": "EntityType",
               },
               {
                 "type": "fragment",
@@ -276,12 +276,12 @@ fragment mediaImage on MediaImage {
                 "value": "fragment.entity.graphql",
               },
               {
-                "type": "enum",
-                "value": "EntityType",
-              },
-              {
                 "type": "fragment-name",
                 "value": "entity",
+              },
+              {
+                "type": "enum",
+                "value": "EntityType",
               },
               {
                 "type": "fragment",
