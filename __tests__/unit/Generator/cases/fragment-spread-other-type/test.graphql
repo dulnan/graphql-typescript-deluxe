@@ -1,0 +1,41 @@
+fragment articleAuthor on NodeArticle {
+  author {
+    name
+  }
+}
+
+# Spreads a fragment on NodeArticle, which only applies to articles.
+fragment entityWithAuthor on Entity {
+  id
+  ...articleAuthor
+}
+
+# On a page, the fragment on NodeArticle selects nothing.
+query page {
+  getHomepage {
+    ...entityWithAuthor
+  }
+}
+
+query pageWithField {
+  getHomepage {
+    title
+    ...entityWithAuthor
+  }
+}
+
+query searchVideo {
+  search {
+    ... on MediaVideo {
+      ...entityWithAuthor
+    }
+  }
+}
+
+query searchArticle {
+  search {
+    ... on NodeArticle {
+      ...entityWithAuthor
+    }
+  }
+}

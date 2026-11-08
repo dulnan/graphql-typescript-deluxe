@@ -1414,11 +1414,15 @@ export class Generator {
   ): Record<string, IRNode> {
     const fragment = this.getFragmentNode(fragmentName)
     const parentType = this.schema.getType(parentTypeName)
-    if (
-      !isObjectType(parentType) ||
-      fragment.typeCondition.name.value === parentTypeName
-    ) {
+    const typeConditionName = fragment.typeCondition.name.value
+    if (!isObjectType(parentType) || typeConditionName === parentTypeName) {
       return this.getFragmentIRFields(fragmentName)
+    }
+
+    // A fragment can spread a fragment on a type that doesn't overlap with
+    // this type. It selects nothing on this type.
+    if (!this.schema.objectImplements(parentTypeName, typeConditionName)) {
+      return {}
     }
 
     return this.withCache(
