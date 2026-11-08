@@ -1,0 +1,17 @@
+# A fragment with the name of an object type.
+fragment NodePage on NodePage {
+  __typename
+  title
+}
+
+# A fragment with the name of a type helper.
+fragment maybe on NodePage {
+  body
+}
+
+query codeKeyCollisions {
+  getHomepage {
+    ...NodePage
+    ...maybe
+  }
+}

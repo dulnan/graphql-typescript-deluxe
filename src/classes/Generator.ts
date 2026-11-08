@@ -123,7 +123,7 @@ export class Generator {
   private operations: Map<string, CollectedOperation> = new Map()
 
   /**
-   * The generated code.
+   * The generated code, by key, see generateCodeOnce().
    */
   private generatedCode: Map<string, GeneratedCode> = new Map()
 
@@ -305,7 +305,7 @@ export class Generator {
    * Generates the code only once.
    *
    * @param generatedTypeType - The code type.
-   * @param key - The unique key.
+   * @param key - The key, unique across all code types: Code for a schema type uses the name of the type, any other key contains a "-", which GraphQL names can't contain. A fragment can have the name of a schema type.
    * @param cb - The callback.
    *
    * @returns The name of the generated TS type.
@@ -494,7 +494,7 @@ export class Generator {
     type: 'exact' | 'maybe' | 'distributiveOmit' | 'oneOf',
   ): string {
     if (type === 'exact') {
-      return this.generateCodeOnce('type-helpers', type, () => {
+      return this.generateCodeOnce('type-helpers', 'helper-exact', () => {
         return {
           typeName: 'Exact',
           code: `type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };`,
@@ -503,15 +503,19 @@ export class Generator {
     } else if (type === 'distributiveOmit') {
       // Omit<> is not distributive: For a union, it only keeps the keys that
       // all types of the union have.
-      return this.generateCodeOnce('type-helpers', type, () => {
-        return {
-          typeName: 'DistributiveOmit',
-          code: `type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;`,
-        }
-      })
+      return this.generateCodeOnce(
+        'type-helpers',
+        'helper-distributiveOmit',
+        () => {
+          return {
+            typeName: 'DistributiveOmit',
+            code: `type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;`,
+          }
+        },
+      )
     } else if (type === 'oneOf') {
       // Exactly one of the keys, the others must be left out.
-      return this.generateCodeOnce('type-helpers', type, () => {
+      return this.generateCodeOnce('type-helpers', 'helper-oneOf', () => {
         return {
           typeName: 'OneOf',
           code: `type OneOf<T> = { [K in keyof T]: { [P in K]: T[P] } & { [P in Exclude<keyof T, K>]?: never } }[keyof T];`,
@@ -519,7 +523,7 @@ export class Generator {
       })
     }
 
-    return this.generateCodeOnce('type-helpers', type, () => {
+    return this.generateCodeOnce('type-helpers', 'helper-maybe', () => {
       return {
         typeName: 'Maybe',
         code: `type Maybe<T> = T | null;`,
@@ -754,7 +758,7 @@ export class Generator {
 
     return this.generateCodeOnce(
       'fragment',
-      fragmentName,
+      fragmentName + '-fragment',
       () => {
         // Reached again while generating its own type: The fragment spreads
         // itself. On errors, the stack is cleared by resetCaches().
