@@ -22,6 +22,38 @@ export const interfaceFieldWithSpread: Equal<
 
 export const unionField: Equal<T.UnionFieldQuery, T.UnionFieldTypedQuery> = true
 
+// An inline fragment on the parent type is the same as selecting its fields
+// directly, so __typename narrows to each type.
+export const unionFieldDirect: Equal<
+  T.UnionFieldTypedQuery,
+  T.UnionFieldDirectQuery
+> = true
+
+export const interfaceTypename: Equal<
+  T.InterfaceTypenameQuery,
+  T.InterfaceTypenameTypedQuery
+> = true
+
+export const interfaceTypenameDirect: Equal<
+  T.InterfaceTypenameTypedQuery,
+  T.InterfaceTypenameDirectQuery
+> = true
+
+type SearchResult = NonNullable<T.UnionFieldTypedQuery['search']>[number]
+export const articleBody = (result: SearchResult): string | undefined =>
+  result.__typename === 'NodeArticle' ? result.body : undefined
+export const videoWithBody: SearchResult = {
+  __typename: 'MediaVideo',
+  // @ts-expect-error Only an article has a body.
+  body: '',
+}
+
+type Entity = NonNullable<T.InterfaceTypenameTypedQuery['getRandomEntity']>
+export const pageTitle = (entity: Entity): string | undefined =>
+  entity.__typename === 'NodePage' ? entity.title : undefined
+// @ts-expect-error Only a page has a title.
+export const userWithTitle: Entity = { __typename: 'User', title: '' }
+
 export const rootType: Equal<T.RootTypeQuery, T.RootTypeTypedQuery> = true
 
 export const fragment: Equal<T.EntityIdFragment, T.EntityIdTypedFragment> = true

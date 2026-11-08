@@ -1760,7 +1760,8 @@ export class Generator {
    * the same type as their parent inline fragment.
    *
    * This removes "useless" fragment spreads inside inline fragment spreads
-   * that target the exact same type.
+   * that target the exact same type. An inline fragment on the parent type
+   * without directives is replaced by its selections.
    *
    * @param selections - The selections to process
    * @param parentTypeName - The name of the type the selections are on, if known.
@@ -1813,7 +1814,12 @@ export class Generator {
             otherSelections,
             typeConditionName,
           )
-          if (processedInnerSelections.length > 0) {
+          if (typeConditionName === parentTypeName && !sel.directives?.length) {
+            // On the parent type and without directives, the inline fragment
+            // only groups its selections: They are the same as selections on
+            // the parent. As such, a __typename gets the type of each branch.
+            result.push(...processedInnerSelections)
+          } else if (processedInnerSelections.length > 0) {
             result.push({
               ...sel,
               selectionSet: {

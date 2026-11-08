@@ -88,6 +88,50 @@ query unionFieldTyped {
   }
 }
 
+# The same with __typename selected directly, which the inline fragments
+# must match: Each type gets its own __typename.
+query unionFieldDirect {
+  search {
+    __typename
+    ... on NodeArticle {
+      body
+    }
+  }
+}
+
+# On an interface field, __typename next to an inline fragment on a concrete
+# type.
+query interfaceTypename {
+  getRandomEntity {
+    ... {
+      __typename
+    }
+    ... on NodePage {
+      title
+    }
+  }
+}
+
+query interfaceTypenameTyped {
+  getRandomEntity {
+    ... on Entity {
+      __typename
+    }
+    ... on NodePage {
+      title
+    }
+  }
+}
+
+query interfaceTypenameDirect {
+  getRandomEntity {
+    __typename
+    ... on NodePage {
+      title
+    }
+  }
+}
+
 # On the root type, nested.
 query rootType {
   ... {

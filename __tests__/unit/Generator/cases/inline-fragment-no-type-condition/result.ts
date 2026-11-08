@@ -38,14 +38,31 @@ export type EntityType = 'NODE' | 'MEDIA';
 // Object Types
 // --------------------------------------------------------------------------------
 
+/** A comment by an external user. */
+type Comment = 'Comment';
+/** A domain. */
+type Domain = 'Domain';
+type MediaImage = 'MediaImage';
 type MediaVideo = 'MediaVideo';
 /** A blog post. */
 type NodeArticle = 'NodeArticle';
+type NodePage = 'NodePage';
+/** A user. */
+type User = 'User';
 
 
 // --------------------------------------------------------------------------------
 // Interfaces & Unions
 // --------------------------------------------------------------------------------
+
+export type Entity = 
+  | Comment
+  | Domain
+  | MediaImage
+  | MediaVideo
+  | NodeArticle
+  | NodePage
+  | User;
 
 /** A possble search result item. */
 export type SearchResult = MediaVideo | NodeArticle;
@@ -234,6 +251,88 @@ export type InterfaceFieldWithSpreadTypedQuery = {
  * 
  * @example
  * ```graphql
+ * query interfaceTypenameDirect {
+ *   getRandomEntity {
+ *     __typename
+ *     ... on NodePage {
+ *       title
+ *     }
+ *   }
+ * }
+ * ```
+ */
+export type InterfaceTypenameDirectQuery = {
+  /** Get random entity. */
+  getRandomEntity?: ({
+    __typename: Exclude<Entity, NodePage>;
+  } | {
+    __typename: NodePage;
+    /** The title of the page. */
+    title: string;
+  });
+};
+
+/**
+ * @see {@link file://./test.graphql}
+ * 
+ * @example
+ * ```graphql
+ * query interfaceTypename {
+ *   getRandomEntity {
+ *     ... {
+ *       __typename
+ *     }
+ *     ... on NodePage {
+ *       title
+ *     }
+ *   }
+ * }
+ * ```
+ */
+export type InterfaceTypenameQuery = {
+  /** Get random entity. */
+  getRandomEntity?: ({
+    __typename: Exclude<Entity, NodePage>;
+  } | {
+    __typename: NodePage;
+    /** The title of the page. */
+    title: string;
+  });
+};
+
+/**
+ * @see {@link file://./test.graphql}
+ * 
+ * @example
+ * ```graphql
+ * query interfaceTypenameTyped {
+ *   getRandomEntity {
+ *     ... on Entity {
+ *       __typename
+ *     }
+ *     ... on NodePage {
+ *       title
+ *     }
+ *   }
+ * }
+ * ```
+ */
+export type InterfaceTypenameTypedQuery = {
+  /** Get random entity. */
+  getRandomEntity?: ({
+    __typename: Exclude<Entity, NodePage>;
+  } | {
+    __typename: NodePage;
+    /** The title of the page. */
+    title: string;
+  });
+};
+
+/**
+ * @see {@link file://./test.graphql}
+ * 
+ * @example
+ * ```graphql
  * query objectField {
  *   getHomepage {
  *     id
@@ -350,6 +449,32 @@ export type RootTypeTypedQuery = {
  * 
  * @example
  * ```graphql
+ * query unionFieldDirect {
+ *   search {
+ *     __typename
+ *     ... on NodeArticle {
+ *       body
+ *     }
+ *   }
+ * }
+ * ```
+ */
+export type UnionFieldDirectQuery = {
+  /** Perform a search. */
+  search?: (({
+    __typename: MediaVideo;
+  } | {
+    __typename: NodeArticle;
+    /** The body text of the article. */
+    body?: string;
+  }))[];
+};
+
+/**
+ * @see {@link file://./test.graphql}
+ * 
+ * @example
+ * ```graphql
  * query unionField {
  *   search {
  *     ... {
@@ -365,11 +490,11 @@ export type RootTypeTypedQuery = {
 export type UnionFieldQuery = {
   /** Perform a search. */
   search?: (({
-    __typename: SearchResult;
+    __typename: MediaVideo;
+  } | {
+    __typename: NodeArticle;
     /** The body text of the article. */
     body?: string;
-  } | {
-    __typename: SearchResult;
   }))[];
 };
 
@@ -393,11 +518,11 @@ export type UnionFieldQuery = {
 export type UnionFieldTypedQuery = {
   /** Perform a search. */
   search?: (({
-    __typename: SearchResult;
+    __typename: MediaVideo;
+  } | {
+    __typename: NodeArticle;
     /** The body text of the article. */
     body?: string;
-  } | {
-    __typename: SearchResult;
   }))[];
 };
 
@@ -419,6 +544,15 @@ export type InterfaceFieldWithSpreadQueryVariables = Exact<{ [key: string]: neve
 export type InterfaceFieldWithSpreadTypedQueryVariables = Exact<{ [key: string]: never; }>;
 
 /** @see {@link file://./test.graphql} */
+export type InterfaceTypenameDirectQueryVariables = Exact<{ [key: string]: never; }>;
+
+/** @see {@link file://./test.graphql} */
+export type InterfaceTypenameQueryVariables = Exact<{ [key: string]: never; }>;
+
+/** @see {@link file://./test.graphql} */
+export type InterfaceTypenameTypedQueryVariables = Exact<{ [key: string]: never; }>;
+
+/** @see {@link file://./test.graphql} */
 export type ObjectFieldQueryVariables = Exact<{ [key: string]: never; }>;
 
 /** @see {@link file://./test.graphql} */
@@ -429,6 +563,9 @@ export type RootTypeQueryVariables = Exact<{ [key: string]: never; }>;
 
 /** @see {@link file://./test.graphql} */
 export type RootTypeTypedQueryVariables = Exact<{ [key: string]: never; }>;
+
+/** @see {@link file://./test.graphql} */
+export type UnionFieldDirectQueryVariables = Exact<{ [key: string]: never; }>;
 
 /** @see {@link file://./test.graphql} */
 export type UnionFieldQueryVariables = Exact<{ [key: string]: never; }>;
