@@ -65,15 +65,19 @@ import {
 import {
   IR,
   buildFragmentIRFields,
+  hasAnyTypenameField,
   hasNestedSelections,
   hasRequiredTypenameField,
   hasTypenameField,
+  haveSameFields,
   isIdenticalIR,
   mergeFragmentSpread,
   mergeIR,
   mergeObjectFields,
   postProcessIR,
+  setTypename,
   typenameToCode,
+  withTypename,
   type IRNode,
   type IRNodeFragmentSpread,
   type IRNodeObject,
@@ -1647,10 +1651,18 @@ export class Generator {
           continue
         }
 
+        // A __typename in the inline fragment is the name of this type.
+        const getTypename = () =>
+          IR.TYPENAME(this.getOrCreateObjectTypeName(objectType))
         const spreadType = this.schema.getType(typeConditionName)
         const ir = this.buildSelectionSet(spreadType, sel.selectionSet, true)
         if (ir.kind === 'OBJECT') {
-          mergeObjectFields(fields, ir.fields, false, isConditional)
+          mergeObjectFields(
+            fields,
+            withTypename(ir.fields, getTypename),
+            false,
+            isConditional,
+          )
         } else if (ir.kind === 'UNION') {
           // Find the branch matching this object type (not the type condition)
           for (const branch of ir.types) {
@@ -1658,7 +1670,12 @@ export class Generator {
               branch.kind === 'OBJECT' &&
               branch.graphQLTypeName === objectType.name
             ) {
-              mergeObjectFields(fields, branch.fields, false, isConditional)
+              mergeObjectFields(
+                fields,
+                withTypename(branch.fields, getTypename),
+                false,
+                isConditional,
+              )
             }
           }
         }
@@ -1706,6 +1723,157 @@ export class Generator {
     }
 
     return code
+  }
+
+  /**
+   * Get the __typename of each branch of an abstract type.
+   *
+   * Each branch is for one object type, so its __typename is that type. But
+   * branches that have the same fields are merged later, see postProcessIR().
+   * So these branches get a __typename that names all of their types: the
+   * abstract type, a type condition with the same types, an Exclude<> of the
+   * other types or a union of the types.
+   *
+   * @param abstractType - The abstract type.
+   * @param selections - The selections on the abstract type.
+   * @param branchFields - The fields of the branch for each possible type.
+   * @param withBranches - Whether the branches are merged into the branches of another selection, which sets their __typename.
+   *
+   * @returns The __typename for each type whose branch selects it.
+   */
+  private getBranchTypenames(
+    abstractType: GraphQLAbstractType,
+    selections: readonly SelectionNode[],
+    branchFields: Map<string, Record<string, IRNode>>,
+    withBranches: boolean,
+  ): Map<string, IRNodeTypename> {
+    const result = new Map<string, IRNodeTypename>()
+    const typesWithTypename = [...branchFields.keys()].filter((name) =>
+      hasAnyTypenameField(branchFields.get(name)!),
+    )
+
+    // The __typename is set again by the other selection, so the type is not
+    // generated here.
+    if (withBranches) {
+      for (const name of typesWithTypename) {
+        result.set(name, this.getTypenamePlaceholder(name))
+      }
+      return result
+    }
+
+    if (!this.options.output.mergeTypenames) {
+      for (const name of typesWithTypename) {
+        result.set(name, IR.TYPENAME(this.getOrCreateObjectTypeName(name)))
+      }
+      return result
+    }
+
+    const nullableIsOptional = this.options.output.nullableField === 'optional'
+    const groups: { fields: Record<string, IRNode>; types: string[] }[] = []
+    for (const name of typesWithTypename) {
+      const fields = branchFields.get(name)!
+      const group = groups.find((v) =>
+        haveSameFields(v.fields, fields, nullableIsOptional),
+      )
+      if (group) {
+        group.types.push(name)
+      } else {
+        groups.push({ fields, types: [name] })
+      }
+    }
+
+    const possibleTypes = [...branchFields.keys()]
+    for (const { types } of groups) {
+      const typename = this.getGroupTypename(
+        abstractType,
+        selections,
+        types,
+        possibleTypes,
+      )
+      for (const name of types) {
+        result.set(name, typename)
+      }
+    }
+    return result
+  }
+
+  /**
+   * Get the __typename IR node for a type, without generating the type.
+   *
+   * Used for a __typename whose type is set later, when the branches of an
+   * abstract type are built. See getBranchTypenames().
+   *
+   * @param type - The type, or the name of an object type.
+   *
+   * @returns The IR node.
+   */
+  private getTypenamePlaceholder(
+    type: string | GraphQLAbstractType,
+  ): IRNodeTypename {
+    const namedType =
+      typeof type === 'string'
+        ? (this.schema.getType(type) as GraphQLObjectType)
+        : type
+    return IR.TYPENAME(this.options.buildTypenameTypeName(namedType))
+  }
+
+  /**
+   * Get a name for the __typename of several types of an abstract type.
+   *
+   * @param abstractType - The abstract type.
+   * @param selections - The selections on the abstract type.
+   * @param types - The names of the types.
+   * @param possibleTypes - The names of all possible types of the abstract type.
+   *
+   * @returns The __typename.
+   */
+  private getGroupTypename(
+    abstractType: GraphQLAbstractType,
+    selections: readonly SelectionNode[],
+    types: string[],
+    possibleTypes: string[],
+  ): IRNodeTypename {
+    if (types.length === possibleTypes.length) {
+      return IR.TYPENAME(this.getOrCreateUnionTypenameType(abstractType))
+    } else if (types.length === 1) {
+      return IR.TYPENAME(this.getOrCreateObjectTypeName(types[0]!))
+    }
+
+    // A type condition of the selections with exactly these types.
+    for (const sel of selections) {
+      const typeConditionName =
+        sel.kind === Kind.INLINE_FRAGMENT
+          ? sel.typeCondition?.name.value
+          : sel.kind === Kind.FRAGMENT_SPREAD
+            ? this.getFragmentNode(sel.name.value).typeCondition.name.value
+            : undefined
+      const type = typeConditionName
+        ? this.schema.getType(typeConditionName)
+        : null
+      if (isAbstractType(type)) {
+        const typeConditionTypes = this.schema.getPossibleObjectTypeNames(
+          type.name,
+        )
+        if (
+          typeConditionTypes.length === types.length &&
+          typeConditionTypes.every((name) => types.includes(name))
+        ) {
+          return IR.TYPENAME(this.getOrCreateUnionTypenameType(type))
+        }
+      }
+    }
+
+    // Exclude<> is only used if it's shorter than the union of the types.
+    const otherTypes = possibleTypes.filter((name) => !types.includes(name))
+    if (types.length > otherTypes.length && types.length > 2) {
+      return IR.TYPENAME(
+        otherTypes.map((name) => this.getOrCreateObjectTypeName(name)),
+        this.getOrCreateUnionTypenameType(abstractType),
+      )
+    }
+    return IR.TYPENAME(
+      types.map((name) => this.getOrCreateObjectTypeName(name)),
+    )
   }
 
   /**
@@ -2044,11 +2212,10 @@ export class Generator {
 
     const inlineFragmentsForAbstract: InlineFragmentNode[] = []
 
-    // Always __typename field if option is set.
+    // Always __typename field if option is set. Its type is set for each
+    // branch, see getBranchTypenames().
     if (this.options.output.nonOptionalTypename) {
-      baseFields[TYPENAME] = IR.TYPENAME(
-        this.getOrCreateUnionTypenameType(abstractType),
-      )
+      baseFields[TYPENAME] = this.getTypenamePlaceholder(abstractType)
     }
 
     for (const sel of selections) {
@@ -2059,7 +2226,7 @@ export class Generator {
           // It may already be there because of the nonOptionalTypename option,
           // or because it is selected more than once.
           const typename: IRNodeTypename = {
-            ...IR.TYPENAME(this.getOrCreateUnionTypenameType(abstractType)),
+            ...this.getTypenamePlaceholder(abstractType),
             optional: hasConditionalDirective(sel),
           }
           const current = baseFields[aliasName]
@@ -2320,22 +2487,8 @@ export class Generator {
       }
     }
 
-    const branches: IRNode[] = []
-    const typesWithFragments = new Set(objectTypeMap.keys())
-    const typesWithoutFragments = possibleTypes.filter(
-      (v) => !typesWithFragments.has(v),
-    )
-    const excludedTypeCount = typesWithFragments.size
-    const remainingCount = possibleTypes.length - excludedTypeCount
-    // The keys of the __typename selections on the abstract type: __typename
-    // and its aliases.
-    const typenameKeys = Object.keys(baseFields).filter(
-      (key) => baseFields[key]!.kind === 'TYPENAME',
-    )
-    let unionIrNode: IRNodeTypename | null = null
-    // The __typename of the types without fragments, the same for each.
-    let withoutFragmentsIrNode: IRNodeTypename | null = null
-
+    // The fields of the branch for each possible type.
+    const branchFields = new Map<string, Record<string, IRNode>>()
     for (const objectTypeName of possibleTypes) {
       // Clone the base fields.
       const mergedFields = { ...baseFields }
@@ -2345,64 +2498,26 @@ export class Generator {
       if (subtypeFields) {
         mergeObjectFields(mergedFields, subtypeFields)
       }
+      branchFields.set(objectTypeName, mergedFields)
+    }
 
-      // The __typename of this branch, if it differs from the one of the
-      // abstract type.
-      let branchTypename: IRNodeTypename | null = null
+    const typenames = this.getBranchTypenames(
+      abstractType,
+      selections,
+      branchFields,
+      withBranches,
+    )
 
-      if (typenameKeys.length) {
-        if (
-          typesWithFragments.has(objectTypeName) ||
-          !this.options.output.mergeTypenames
-        ) {
-          // If this type has fragments, its __typename should be the name of the object type.
-          branchTypename = IR.TYPENAME(
-            this.getOrCreateObjectTypeName(objectTypeName),
-          )
-        } else if (typesWithFragments.size > 0) {
-          // Only use the Exclude<> for __typename when we have enough remaining types.
-          // Else we would be creating an exclude argument that is longer than the actual
-          // remaining types.
-          // Also cache the created node so we don't call it for every type iteration.
-          if (
-            unionIrNode === null &&
-            remainingCount > excludedTypeCount &&
-            remainingCount > 2
-          ) {
-            // This is a fallback type (no inline fragments), and some types have fragments.
-            // We can use Exclude<Interface, TypesWithFragments> to
-            const excludedTypes = Array.from(typesWithFragments).map((name) =>
-              this.getOrCreateObjectTypeName(name),
-            )
-            unionIrNode = IR.TYPENAME(
-              excludedTypes,
-              this.getOrCreateUnionTypenameType(abstractType),
-            )
-          }
-
-          withoutFragmentsIrNode ??= IR.TYPENAME(
-            typesWithoutFragments.map((name) =>
-              this.getOrCreateObjectTypeName(name),
-            ),
-          )
-          branchTypename = unionIrNode ?? withoutFragmentsIrNode
-        }
+    const branches: IRNode[] = []
+    for (const [objectTypeName, fields] of branchFields) {
+      const typename = typenames.get(objectTypeName)
+      if (typename) {
+        setTypename(fields, typename)
       }
-
-      if (branchTypename) {
-        for (const key of typenameKeys) {
-          // A conditional __typename may be missing, unless an inline
-          // fragment for this type also selects it.
-          mergedFields[key] = mergedFields[key]!.optional
-            ? { ...branchTypename, optional: true }
-            : branchTypename
-        }
-      }
-
       branches.push(
         IR.OBJECT({
           graphQLTypeName: objectTypeName,
-          fields: mergedFields,
+          fields,
         }),
       )
     }

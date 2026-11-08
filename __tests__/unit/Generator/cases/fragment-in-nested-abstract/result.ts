@@ -321,13 +321,13 @@ export type ObjectInlineInterfaceQuery = {
  */
 export type WrapperFragmentQuery = {
   /** Perform a search. */
-  search?: ({
-    __typename: MediaVideo | NodeArticle;
+  search?: {
+    __typename: SearchResult;
     /** The EntityType enum. */
     entityType: EntityType;
     /** The ID. */
     id: string;
-  })[];
+  }[];
 };
 
 

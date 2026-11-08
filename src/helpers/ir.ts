@@ -765,12 +765,7 @@ function buildFieldsKey(
 ): string {
   let key = '{'
   for (const [name, child] of Object.entries(fields)) {
-    key += name
-    if (nullableIsOptional) {
-      key += child.nullable || child.optional ? '?:' : ':'
-    } else {
-      key += (child.optional ? '?:' : ':') + (child.nullable ? 'null|' : '')
-    }
+    key += name + buildFlagsKey(child, nullableIsOptional)
     key +=
       withoutTypename && child.kind === 'TYPENAME'
         ? 'T'
@@ -778,6 +773,114 @@ function buildFieldsKey(
     key += ','
   }
   return key + '}'
+}
+
+/**
+ * Create a key from whether a field is optional or nullable, the way it's
+ * generated.
+ *
+ * @param field - The field.
+ * @param nullableIsOptional - Whether nullable fields are generated as
+ * optional fields.
+ */
+function buildFlagsKey(field: IRNode, nullableIsOptional: boolean): string {
+  if (nullableIsOptional) {
+    return field.nullable || field.optional ? '?:' : ':'
+  }
+  return (field.optional ? '?:' : ':') + (field.nullable ? 'null|' : '')
+}
+
+/**
+ * Set the __typename fields, including aliased ones.
+ *
+ * @param fields - The fields. Modified in place.
+ * @param typename - The __typename. A conditional __typename stays optional.
+ */
+export function setTypename(
+  fields: Record<string, IRNode>,
+  typename: IRNodeTypename,
+): void {
+  for (const key in fields) {
+    const field = fields[key]!
+    if (field.kind === 'TYPENAME') {
+      fields[key] = field.optional ? { ...typename, optional: true } : typename
+    }
+  }
+}
+
+/**
+ * Get a copy of the fields with the given __typename, see setTypename().
+ *
+ * @param fields - The fields.
+ * @param getTypename - Returns the __typename. Only called if there is a __typename field, as it may generate its type.
+ *
+ * @returns A copy of the fields, or the same fields if they have no __typename.
+ */
+export function withTypename(
+  fields: Record<string, IRNode>,
+  getTypename: () => IRNodeTypename,
+): Record<string, IRNode> {
+  if (!hasAnyTypenameField(fields)) {
+    return fields
+  }
+  const result = { ...fields }
+  setTypename(result, getTypename())
+  return result
+}
+
+/**
+ * Whether two branches of an abstract type generate the same type, apart from
+ * the types of their __typename fields. Such branches are merged into one, see
+ * postProcessIR().
+ *
+ * This is the same as comparing their keys, but the keys are only created for
+ * fields that are not the same node.
+ *
+ * @param a - The fields of one branch.
+ * @param b - The fields of the other branch.
+ * @param nullableIsOptional - Whether nullable fields are generated as
+ * optional fields.
+ *
+ * @returns True if the branches generate the same type.
+ */
+export function haveSameFields(
+  a: Record<string, IRNode>,
+  b: Record<string, IRNode>,
+  nullableIsOptional: boolean,
+): boolean {
+  const keysA = Object.keys(a)
+  const keysB = Object.keys(b)
+  if (keysA.length !== keysB.length) {
+    return false
+  }
+  for (let i = 0; i < keysA.length; i++) {
+    const key = keysA[i]!
+    if (key !== keysB[i]) {
+      return false
+    }
+    const fieldA = a[key]!
+    const fieldB = b[key]!
+    if (fieldA === fieldB) {
+      continue
+    }
+    if (
+      buildFlagsKey(fieldA, nullableIsOptional) !==
+      buildFlagsKey(fieldB, nullableIsOptional)
+    ) {
+      return false
+    }
+    // The type of a __typename doesn't count.
+    if (fieldA.kind === 'TYPENAME' && fieldB.kind === 'TYPENAME') {
+      continue
+    }
+    if (
+      buildNodeKey(fieldA, nullableIsOptional) !==
+      buildNodeKey(fieldB, nullableIsOptional)
+    ) {
+      return false
+    }
+  }
+  return true
 }
 
 /**
@@ -906,6 +1009,18 @@ export function hasNestedSelections(ir: IRNode): boolean {
  */
 export function hasTypenameField(fields: Record<string, IRNode>): boolean {
   return fields[TYPENAME] !== undefined
+}
+
+/**
+ * Whether the fields have a __typename field, including aliased ones.
+ */
+export function hasAnyTypenameField(fields: Record<string, IRNode>): boolean {
+  for (const key in fields) {
+    if (fields[key]!.kind === 'TYPENAME') {
+      return true
+    }
+  }
+  return false
 }
 
 /**

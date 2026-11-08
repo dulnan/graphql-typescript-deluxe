@@ -26,14 +26,7 @@ type User = 'User';
 // Interfaces & Unions
 // --------------------------------------------------------------------------------
 
-export type Entity = 
-  | Comment
-  | Domain
-  | MediaImage
-  | MediaVideo
-  | NodeArticle
-  | NodePage
-  | User;
+export type Media = MediaImage | MediaVideo;
 
 
 // --------------------------------------------------------------------------------
@@ -98,7 +91,7 @@ export type FragmentUnionQuery = {
   getNonNullEntity: ({
     __typename: Comment | Domain | User;
   } | {
-    __typename: MediaImage | MediaVideo;
+    __typename: Media;
     /** The media provider. */
     provider?: string;
   } | {

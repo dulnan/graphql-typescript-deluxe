@@ -30,13 +30,7 @@ type Video = 'Video';
 
 export type BlockContent = EmbedBlock | MediaBlock | NestedBlock | TextBlock;
 
-export type Content = Article | Page;
-
-export type Linkable = Article | Category | Page | Product;
-
 export type MediaItem = AudioClip | Document | Image | Video;
-
-export type SearchResult = Article | Page | Person | Product;
 
 
 // --------------------------------------------------------------------------------

@@ -570,7 +570,7 @@ export type RootSpreadQuery = {
 export type SpreadAbstractOnAbstractQuery = {
   /** Always get an entity. */
   getNonNullEntity: {
-    __typename: Comment | Domain | MediaImage | MediaVideo | NodeArticle | NodePage | User;
+    __typename: Entity;
     /** The EntityType enum. */
     entityType?: EntityType;
   };

@@ -18,7 +18,7 @@ type DefaultUrl = 'DefaultUrl';
 // Interfaces & Unions
 // --------------------------------------------------------------------------------
 
-export type Url = DefaultEntityUrl | DefaultInternalUrl | DefaultUrl;
+export type InternalUrl = DefaultEntityUrl | DefaultInternalUrl;
 
 
 // --------------------------------------------------------------------------------
@@ -43,12 +43,12 @@ export type Url = DefaultEntityUrl | DefaultInternalUrl | DefaultUrl;
  */
 export type RouteFragment = {
   route?: ({
-    __typename: DefaultEntityUrl | DefaultInternalUrl;
-    foobar?: string;
-    path: string;
-  } | {
     __typename: DefaultUrl;
     foobar?: string;
+  } | {
+    __typename: InternalUrl;
+    foobar?: string;
+    path: string;
   });
 };
 

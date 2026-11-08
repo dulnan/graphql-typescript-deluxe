@@ -65,10 +65,6 @@ type VideoEmbed = 'VideoEmbed';
 // Interfaces & Unions
 // --------------------------------------------------------------------------------
 
-export type Content = Article | Page;
-
-export type MediaItem = Document | Image | Video;
-
 export type SectionContent = CodeBlock | ImageGallery | TextBlock | VideoEmbed;
 
 

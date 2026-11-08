@@ -36,9 +36,6 @@ export type Entity =
   | NodePage
   | User;
 
-/** A possble search result item. */
-export type SearchResult = MediaVideo | NodeArticle;
-
 
 // --------------------------------------------------------------------------------
 // Fragments

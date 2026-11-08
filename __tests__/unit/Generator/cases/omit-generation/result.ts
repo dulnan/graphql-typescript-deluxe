@@ -20,8 +20,6 @@ type Product = 'Product';
 
 export type Content = Article | Page;
 
-export type SearchResult = Article | Page | Product;
-
 
 // --------------------------------------------------------------------------------
 // Fragments
@@ -1366,7 +1364,7 @@ export type AllContentMixedCoverageQuery = {
  */
 export type AllContentOverlapQuery = {
   allContent: ({
-    __typename: Article | Page;
+    __typename: Content;
     comments?: ({
       id: string | number;
       text: string;
@@ -1572,7 +1570,7 @@ export type InterfaceFragmentPlusConcreteOverlapQuery = {
  */
 export type InterfaceFragmentsOverlapQuery = {
   content?: {
-    __typename: Article | Page;
+    __typename: Content;
     id: string | number;
     tags?: ({
       description?: string;
@@ -2122,7 +2120,7 @@ export type UnionPartialCoverageQuery = {
  */
 export type UnionWithInterfaceFragmentQuery = {
   search: (({
-    __typename: Article | Page;
+    __typename: Content;
     id: string | number;
     tags?: ({
       id: string | number;

@@ -1,0 +1,86 @@
+# The __typename of a conditional inline fragment on the parent type is the
+# type of each branch, like a conditional __typename selected directly.
+query conditionalOnParent($withTypename: Boolean!) {
+  search {
+    ... on SearchResult @include(if: $withTypename) {
+      __typename
+    }
+    ... on NodeArticle {
+      body
+    }
+  }
+}
+
+query conditionalDirect($withTypename: Boolean!) {
+  search {
+    __typename @include(if: $withTypename)
+    ... on NodeArticle {
+      body
+    }
+  }
+}
+
+# Entity has more types than SearchResult, but each branch only has its own.
+query onOtherInterface {
+  search {
+    ... on Entity {
+      __typename
+    }
+    ... on NodeArticle {
+      body
+    }
+  }
+}
+
+query direct {
+  search {
+    __typename
+    ... on NodeArticle {
+      body
+    }
+  }
+}
+
+fragment entityTypename on Entity {
+  __typename
+}
+
+query fragmentOnOtherInterface {
+  search {
+    ...entityTypename
+    ... on NodeArticle {
+      body
+    }
+  }
+}
+
+# Only an image has the image field, so its __typename is MediaImage.
+query onInterfaceWithSubtype {
+  getRandomEntity {
+    ... on Media {
+      __typename
+    }
+    ... on MediaImage {
+      image
+    }
+  }
+}
+
+# Both types of Media have the same fields, so their __typename is Media.
+query onInterfaceGroup {
+  getRandomEntity {
+    __typename
+    ... on Media {
+      provider
+    }
+  }
+}
+
+# In an object, the __typename is the type of the object.
+query objectWithInterface {
+  getHomepage {
+    ... on Entity {
+      __typename
+    }
+  }
+}
