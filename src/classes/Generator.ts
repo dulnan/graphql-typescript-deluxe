@@ -7,7 +7,6 @@ import {
   isListType,
   isNonNullType,
   isObjectType,
-  isUnionType,
   type DefinitionNode,
   type FieldNode,
   type FragmentDefinitionNode,
@@ -1216,20 +1215,6 @@ export class Generator {
   }
 
   /**
-   * Get the TS type of the __typename of an object, interface or union type.
-   *
-   * @param name - The name of the type.
-   *
-   * @returns The name of the generated TS type.
-   */
-  private getOrCreateTypenameType(name: string): string {
-    const type = this.schema.getType(name)
-    return isInterfaceType(type) || isUnionType(type)
-      ? this.getOrCreateUnionTypenameType(type)
-      : this.getOrCreateObjectTypeName(name)
-  }
-
-  /**
    * Generates the string literal union type for an abstract type.
    *
    * @param type - The abstract type.
@@ -2365,43 +2350,23 @@ export class Generator {
       fields.size === 1
     const hasConflicts = !!conflictFields.size
 
-    // Special case: Only __typename field and multiple fragment spreads:
-    // We need to create a union of each fragment type with its corresponding __typename.
-    // @TODO: Should never end up in here but instead be handled when building the selection set.
+    // Only __typename and fragment spreads: All spreads apply to the type of
+    // this object, so it's the intersection of the fragments, with the
+    // __typename of this object. It's left out if a fragment has it already.
     if (hasOnlyTypename && spreads.length > 0 && !hasConflicts) {
       const typenameNode = fields.get(TYPENAME) as IRNodeTypename
-
-      // Create a union of fragments, each paired with the correct __typename.
-      const parts: string[] = []
-
-      for (const spread of spreads) {
-        const fragmentFields = this.getFragmentIRFieldsForType(
-          spread.name,
-          spread.parentType,
-        )
-        if (hasRequiredTypenameField(fragmentFields) && !spread.optional) {
-          // Fragment already has __typename, we can use as is.
-          parts.push(spread.fragmentTypeName)
-        } else {
-          parts.push(
-            `(${this.IRToCode(spread)} & { __typename: ${this.getOrCreateTypenameType(spread.fragmentTypeCondition)} })`,
-          )
-        }
+      const parts = spreads.map((spread) => this.IRToCode(spread))
+      const hasTypenameFromSpread = spreads.some(
+        (spread) =>
+          !spread.optional &&
+          hasRequiredTypenameField(
+            this.getFragmentIRFieldsForType(spread.name, spread.parentType),
+          ),
+      )
+      if (!hasTypenameFromSpread) {
+        parts.push(`{ __typename: ${this.IRToCode(typenameNode)} }`)
       }
-
-      // Fallback.
-      /* v8 ignore start -- @preserve */
-      if (typenameNode.excludeType) {
-        const excludedTypes = spreads
-          .map((s) => this.getOrCreateTypenameType(s.fragmentTypeCondition))
-          .join(' | ')
-        parts.push(
-          `{ __typename: Exclude<${typenameNode.excludeType}, ${excludedTypes}> }`,
-        )
-      }
-      /* v8 ignore stop */
-
-      return parts.join(' | ')
+      return parts.length > 1 ? `(${parts.join(' & ')})` : parts[0]!
     }
 
     // When there are no conflicts found: Return a simple intersection.

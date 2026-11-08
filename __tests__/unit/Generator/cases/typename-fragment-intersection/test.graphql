@@ -1,0 +1,46 @@
+fragment pageTitle on NodePage {
+  title
+}
+
+fragment pageBody on NodePage {
+  body
+}
+
+fragment entityId on Entity {
+  id
+}
+
+# Both fragments apply to the object, so it's an intersection.
+query objectTwoFragments {
+  getHomepage {
+    __typename
+    ...pageTitle
+    ...pageBody
+  }
+}
+
+# A fragment on an interface of the object and one on the object.
+query objectInterfaceFragment {
+  getHomepage {
+    __typename
+    ...entityId
+    ...pageTitle
+  }
+}
+
+query objectConditionalFragment($withTitle: Boolean!) {
+  getHomepage {
+    __typename
+    ...pageTitle @include(if: $withTitle)
+    ...pageBody
+  }
+}
+
+# Two fragments on one of the types of an interface.
+query abstractTwoFragments {
+  getRandomEntity {
+    __typename
+    ...pageTitle
+    ...pageBody
+  }
+}
