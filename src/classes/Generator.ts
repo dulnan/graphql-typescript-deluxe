@@ -675,6 +675,9 @@ export class Generator {
    * Get the variables of an operation that are used where a non-null value is
    * required, also in the fragments it spreads.
    *
+   * Only the files of the fragments are dependencies: Their types are not
+   * needed, and generating them would merge all their dependencies.
+   *
    * @param operation - The operation definition.
    *
    * @returns The names of the variables.
@@ -690,9 +693,12 @@ export class Generator {
         continue
       }
       visited.add(fragmentName)
-      const usages = this.withCache('getVariableUsages', fragmentName, () =>
-        this.schema.getVariableUsages(this.getFragmentNode(fragmentName)),
-      )
+      const fragment = this.fragments.get(fragmentName)
+      if (!fragment) {
+        throw new FragmentNotFoundError(fragmentName, this.getErrorContext())
+      }
+      this.dependencyTracker?.addFileDependency(fragment.filePath)
+      const usages = this.schema.getVariableUsages(fragment.node)
       usages.nonNull.forEach((name) => result.add(name))
       queue.push(...usages.fragments)
     }

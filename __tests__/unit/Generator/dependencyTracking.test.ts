@@ -741,6 +741,43 @@ query foobar {
     )
   })
 
+  it('updates the variables type when a fragment uses a variable differently', () => {
+    const generator = new Generator(schema, {
+      output: {
+        typeComment: false,
+      },
+    })
+
+    generator.add([
+      toDocument(
+        'fragment pageBody on NodePage { body }',
+        'fragment.pageBody.graphql',
+      ),
+      toDocument(
+        'query homepage($withBody: Boolean = false) { getHomepage { ...pageBody } }',
+        'query.homepage.graphql',
+      ),
+    ])
+    const getVariablesType = (): string | undefined =>
+      generator
+        .build()
+        .getOperations('ts')
+        .getSource()
+        .match(/export type HomepageQueryVariables = Exact<\{\n(.*)\n/)?.[1]
+        ?.trim()
+
+    expect(getVariablesType()).toEqual('withBody?: boolean | null;')
+
+    // Now the variable is used where a non-null value is required.
+    generator.update(
+      toDocument(
+        'fragment pageBody on NodePage { body @include(if: $withBody) }',
+        'fragment.pageBody.graphql',
+      ),
+    )
+    expect(getVariablesType()).toEqual('withBody?: boolean;')
+  })
+
   describe('a fragment generated while generating another file', () => {
     const documents = [
       toDocument('fragment page on NodePage { title }', 'fragments.graphql'),

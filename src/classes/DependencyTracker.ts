@@ -45,7 +45,7 @@ export class DependencyTracker {
   /**
    * Add a file dependency.
    */
-  private addFileDependency(filePath: string): void {
+  public addFileDependency(filePath: string): void {
     this.addToCurrent(DependencyTracker.toKey('file', filePath))
   }
 

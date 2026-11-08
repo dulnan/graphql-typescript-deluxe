@@ -32,6 +32,16 @@ export class SchemaProvider {
    */
   private schemaPossibleTypes: Map<string, string[]> = new Map()
 
+  /**
+   * The variable usages of each operation or fragment node. An updated
+   * document has new nodes, so the entries of the old ones are dropped with
+   * them.
+   */
+  private variableUsages: WeakMap<
+    OperationDefinitionNode | FragmentDefinitionNode,
+    { nonNull: string[]; fragments: string[] }
+  > = new WeakMap()
+
   constructor(private schema: GraphQLSchema) {
     this.buildSchemaCache()
   }
@@ -202,6 +212,9 @@ export class SchemaProvider {
    * Such a variable can't be null, even if its type is nullable. GraphQL
    * allows this if the variable or the argument has a default value.
    *
+   * The result is computed once per node, because every operation that
+   * spreads a fragment needs the usages of the fragment.
+   *
    * @param node - The operation or fragment definition.
    *
    * @returns The names of the variables and of the spread fragments.
@@ -209,6 +222,11 @@ export class SchemaProvider {
   public getVariableUsages(
     node: OperationDefinitionNode | FragmentDefinitionNode,
   ): { nonNull: string[]; fragments: string[] } {
+    const cached = this.variableUsages.get(node)
+    if (cached) {
+      return cached
+    }
+
     const typeInfo = new TypeInfo(this.schema)
     const nonNull = new Set<string>()
     const fragments = new Set<string>()
@@ -228,7 +246,9 @@ export class SchemaProvider {
         },
       }),
     )
-    return { nonNull: [...nonNull], fragments: [...fragments] }
+    const usages = { nonNull: [...nonNull], fragments: [...fragments] }
+    this.variableUsages.set(node, usages)
+    return usages
   }
 
   /**

@@ -13,6 +13,7 @@ import {
   TypeMetaFieldDef,
   parse,
   parseType,
+  type FragmentDefinitionNode,
   type OperationDefinitionNode,
   GraphQLInterfaceType,
   GraphQLUnionType,
@@ -251,6 +252,14 @@ describe('SchemaProvider', () => {
       )
       expect(usages.nonNull.sort()).toEqual(['a', 'c', 'd'])
       expect(usages.fragments).toEqual(['f'])
+    })
+
+    it('computes the usages of a node only once', () => {
+      const fragment = parse('fragment f on Query { search(limit: $limit) }')
+        .definitions[0] as FragmentDefinitionNode
+      expect(provider.getVariableUsages(fragment)).toBe(
+        provider.getVariableUsages(fragment),
+      )
     })
   })
 
