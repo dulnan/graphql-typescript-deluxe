@@ -2,12 +2,12 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import path from 'node:path'
 import { parse, type GraphQLSchema } from 'graphql'
 import { loadSchemaSync } from '@graphql-tools/load'
-import { Generator } from '../../../src/classes/Generator'
-import schemaContent from './schema.graphql?raw'
-import { OPTION_SETS } from './optionSets'
-import { TEST_CASES } from './testCases'
-import { buildChecks, buildFragmentChecks } from './soundness/responses'
-import { typecheck } from './soundness/typecheck'
+import { Generator } from '../../../../src/classes/Generator'
+import schemaContent from '../schema.graphql?raw'
+import { OPTION_SETS } from '../optionSets'
+import { TEST_CASES } from '../testCases'
+import { buildChecks, buildFragmentChecks } from './responses'
+import { typecheck } from './typecheck'
 
 /**
  * How many responses are created per operation. With more, the cases find the
@@ -143,18 +143,28 @@ function checkCases(
 }
 
 /**
- * The generated types must fit real responses: Every operation of a case is
- * executed with random responses and variables, and every fragment is spread
- * in a field of its type condition. The responses are assigned to the
- * generated types and type-checked.
+ * Check that the generated types fit real responses, with one option set:
+ * Every operation of a case is executed with random responses and variables,
+ * and every fragment is spread in a field of its type condition. The
+ * responses are assigned to the generated types and type-checked.
+ *
+ * Each option set has its own test file, because vitest only runs files in
+ * parallel.
+ *
+ * @param setNumber - The number of the option set, starting at 1.
  */
-describe('Soundness', () => {
-  OPTION_SETS.forEach((optionSet, index) => {
+export function describeSoundness(setNumber: number): void {
+  const optionSet = OPTION_SETS[setNumber - 1]
+  if (!optionSet) {
+    throw new Error(`There is no option set ${setNumber}.`)
+  }
+
+  describe('Soundness', () => {
     describe(optionSet.label, () => {
       let errors = new Map<string, string[]>()
 
       beforeAll(() => {
-        errors = checkCases(optionSet, `/soundness/${index}`)
+        errors = checkCases(optionSet, `/soundness/set${setNumber}`)
       })
 
       it.each(TEST_CASES.map((v) => v.name))('%s', (name) => {
@@ -166,4 +176,4 @@ describe('Soundness', () => {
       })
     })
   })
-})
+}
