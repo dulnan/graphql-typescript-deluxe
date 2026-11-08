@@ -391,6 +391,47 @@ fragment mediaImage on MediaImage {
     },
   )
 
+  it.each([
+    [
+      'the nested fragment',
+      'fragment.nested.graphql',
+      'fragment nested on NodeArticle { categories { label related { id } } }',
+    ],
+    [
+      'the outer fragment',
+      'fragment.outer.graphql',
+      'fragment outer on NodeArticle { ...nested categories { related { id } } }',
+    ],
+  ])(
+    'updates a conflict with a field of a nested spread when %s changes',
+    (_, filePath, updated) => {
+      const files: Record<string, string> = {
+        'fragment.nested.graphql':
+          'fragment nested on NodeArticle { categories { label } }',
+        'fragment.outer.graphql': 'fragment outer on NodeArticle { ...nested }',
+        'query.graphql': `query foobar {
+  getRandomEntity {
+    ... on NodeArticle { ...outer categories { url } }
+  }
+}`,
+      }
+      const generator = new Generator(schema, { useCache: true })
+      generator.add(Object.entries(files).map(([k, v]) => toDocument(v, k)))
+      generator.build()
+      generator.update(toDocument(updated, filePath))
+
+      const fresh = new Generator(schema, { useCache: true })
+      fresh.add(
+        Object.entries({ ...files, [filePath]: updated }).map(([k, v]) =>
+          toDocument(v, k),
+        ),
+      )
+      const source = generator.build().getOperations('ts').getSource()
+      expect(source).toEqual(fresh.build().getOperations('ts').getSource())
+      expect(source).toContain('related?:')
+    },
+  )
+
   it('names the fragments of the operations file the same after an update', () => {
     const author = 'fragment author on Author { name }'
     const category = 'fragment category on Category { label }'

@@ -1,0 +1,62 @@
+fragment articleTagIds on Article {
+  tags {
+    id
+  }
+}
+
+# Selects tags only through a nested spread.
+fragment articleTags on Article {
+  ...articleTagIds
+}
+
+fragment articleWithTitle on Article {
+  title
+  ...articleTagIds
+}
+
+fragment conditionalTagIds on Article {
+  ...articleTagIds @include(if: $withIds)
+}
+
+fragment tagLabels on Article {
+  tags {
+    label
+  }
+}
+
+# A field of a nested spread and a direct field.
+query nestedSpread {
+  article {
+    ...articleTags
+    tags {
+      label
+    }
+  }
+}
+
+# A field of a nested spread and a field of another fragment.
+query nestedSpreadAndFragment {
+  article {
+    ...articleTags
+    ...tagLabels
+  }
+}
+
+# The fragment still provides its other fields.
+query nestedSpreadWithOtherFields {
+  article {
+    ...articleWithTitle
+    tags {
+      label
+    }
+  }
+}
+
+query conditionalNestedSpread($withIds: Boolean!) {
+  article {
+    ...conditionalTagIds
+    tags {
+      label
+    }
+  }
+}

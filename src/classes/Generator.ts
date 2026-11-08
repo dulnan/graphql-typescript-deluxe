@@ -1432,6 +1432,64 @@ export class Generator {
   }
 
   /**
+   * Get the fields that a fragment selects on a type, with the fields of the
+   * fragments it spreads in place of these spreads.
+   *
+   * @param fragmentName - The name of the fragment.
+   * @param parentTypeName - The name of the type in which it's spread.
+   *
+   * @returns The map, where the key is the name of the field and the value is the IR node.
+   */
+  private getFragmentFieldsWithNested(
+    fragmentName: string,
+    parentTypeName: string,
+  ): Record<string, IRNode> {
+    const fields = this.getFragmentIRFieldsForType(fragmentName, parentTypeName)
+    let hasNestedSpread = false
+    for (const key in fields) {
+      if (fields[key]!.kind === 'FRAGMENT_SPREAD') {
+        hasNestedSpread = true
+        break
+      }
+    }
+    if (!hasNestedSpread) {
+      return fields
+    }
+
+    return this.withCache(
+      'getFragmentFieldsWithNested',
+      fragmentName + ' ' + parentTypeName,
+      () => {
+        // Read again, so that the cached result depends on the fragment.
+        const fragmentFields = this.getFragmentIRFieldsForType(
+          fragmentName,
+          parentTypeName,
+        )
+        const result: Record<string, IRNode> = {}
+        const nestedSpreads: IRNodeFragmentSpread[] = []
+        for (const [key, field] of Object.entries(fragmentFields)) {
+          if (field.kind === 'FRAGMENT_SPREAD') {
+            nestedSpreads.push(field)
+          } else {
+            result[key] = field
+          }
+        }
+
+        // The fields of a conditional spread may be missing.
+        for (const spread of nestedSpreads) {
+          mergeObjectFields(
+            result,
+            this.getFragmentFieldsWithNested(spread.name, parentTypeName),
+            false,
+            !!spread.optional,
+          )
+        }
+        return result
+      },
+    )
+  }
+
+  /**
    * Whether a fragment selects anything on the given type.
    *
    * A fragment on an abstract type may only select fields for some of its
@@ -2279,7 +2337,8 @@ export class Generator {
     const fragmentFieldMaps: Record<string, Record<string, IRNode>> = {}
 
     for (const spread of spreads) {
-      const fragmentFields = this.getFragmentIRFieldsForType(
+      // A field can also come from a fragment that the fragment spreads.
+      const fragmentFields = this.getFragmentFieldsWithNested(
         spread.name,
         spread.parentType,
       )
