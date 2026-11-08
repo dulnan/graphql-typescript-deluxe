@@ -1,4 +1,5 @@
 import {
+  type ArgumentNode,
   type DirectiveNode,
   type FieldNode,
   type FragmentDefinitionNode,
@@ -7,6 +8,7 @@ import {
   Kind,
   type OperationDefinitionNode,
   type SelectionSetNode,
+  type ValueNode,
   print,
 } from 'graphql'
 
@@ -128,6 +130,70 @@ export function mergeSameFieldSelections(
     ...selectionSet,
     selections: [...mergedFieldNodes, ...otherSelections],
   }
+}
+
+/**
+ * Whether the value is a variable or contains one, in a list or an input
+ * object.
+ */
+function containsVariable(value: ValueNode): boolean {
+  switch (value.kind) {
+    case Kind.VARIABLE:
+      return true
+    case Kind.LIST:
+      return !!value.values?.some(containsVariable)
+    case Kind.OBJECT:
+      return !!value.fields?.some((field) => containsVariable(field.value))
+    default:
+      return false
+  }
+}
+
+function hasVariableArgument(node: {
+  readonly arguments?: readonly ArgumentNode[]
+}): boolean {
+  return !!node.arguments?.some((argument) => containsVariable(argument.value))
+}
+
+function hasVariableInDirectives(node: NodeWithDirectives): boolean {
+  return !!node.directives?.some(hasVariableArgument)
+}
+
+/**
+ * Get the names of the fragments that an operation or fragment spreads, and
+ * whether it uses a variable, in an argument or a directive. The variable
+ * definitions of an operation are not usages.
+ *
+ * It only follows the selections, so it's much faster than visit().
+ *
+ * @param node - The operation or fragment definition.
+ *
+ * @returns The names of the spread fragments and whether a variable is used.
+ */
+export function scanSelections(
+  node: OperationDefinitionNode | FragmentDefinitionNode,
+): { fragments: string[]; usesVariables: boolean } {
+  const fragments = new Set<string>()
+  let usesVariables = hasVariableInDirectives(node)
+
+  const scan = (selectionSet: SelectionSetNode): void => {
+    for (const selection of selectionSet.selections) {
+      usesVariables ||= hasVariableInDirectives(selection)
+      if (selection.kind === Kind.FRAGMENT_SPREAD) {
+        fragments.add(selection.name.value)
+        continue
+      }
+      if (selection.kind === Kind.FIELD) {
+        usesVariables ||= hasVariableArgument(selection)
+      }
+      if (selection.selectionSet) {
+        scan(selection.selectionSet)
+      }
+    }
+  }
+  scan(node.selectionSet)
+
+  return { fragments: [...fragments], usesVariables }
 }
 
 export function getAstSource(

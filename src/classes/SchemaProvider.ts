@@ -20,6 +20,7 @@ import {
   type TypeNode,
 } from 'graphql'
 import { TypeNotFoundError } from '../errors'
+import { scanSelections } from '../helpers/ast'
 
 export class SchemaProvider {
   /**
@@ -227,9 +228,28 @@ export class SchemaProvider {
       return cached
     }
 
+    // Most fragments use no variable, so their types aren't needed.
+    const { fragments, usesVariables } = scanSelections(node)
+    const usages = {
+      nonNull: usesVariables ? this.getNonNullVariableUsages(node) : [],
+      fragments,
+    }
+    this.variableUsages.set(node, usages)
+    return usages
+  }
+
+  /**
+   * Get the variables that are used where a non-null value is required.
+   *
+   * @param node - The operation or fragment definition.
+   *
+   * @returns The names of the variables.
+   */
+  private getNonNullVariableUsages(
+    node: OperationDefinitionNode | FragmentDefinitionNode,
+  ): string[] {
     const typeInfo = new TypeInfo(this.schema)
     const nonNull = new Set<string>()
-    const fragments = new Set<string>()
     visit(
       node,
       visitWithTypeInfo(typeInfo, {
@@ -241,14 +261,9 @@ export class SchemaProvider {
             nonNull.add(variable.name.value)
           }
         },
-        FragmentSpread: (spread) => {
-          fragments.add(spread.name.value)
-        },
       }),
     )
-    const usages = { nonNull: [...nonNull], fragments: [...fragments] }
-    this.variableUsages.set(node, usages)
-    return usages
+    return [...nonNull]
   }
 
   /**

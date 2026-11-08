@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { Kind, parse } from 'graphql'
-import type { FieldNode, SelectionSetNode } from 'graphql'
+import type {
+  FieldNode,
+  FragmentDefinitionNode,
+  OperationDefinitionNode,
+  SelectionSetNode,
+} from 'graphql'
 import {
   hasConditionalDirective,
   mergeSameFieldSelections,
   getAstSource,
+  scanSelections,
 } from '../../../src/helpers/ast'
 
 describe('ast helpers', () => {
@@ -162,6 +168,49 @@ describe('ast helpers', () => {
       const source = getAstSource(node)
 
       expect(source).toBe(null)
+    })
+  })
+
+  describe('scanSelections', () => {
+    const scan = (source: string): ReturnType<typeof scanSelections> =>
+      scanSelections(
+        parse(source).definitions[0] as
+          | OperationDefinitionNode
+          | FragmentDefinitionNode,
+      )
+
+    it('collects the spread fragments, also nested ones, once each', () => {
+      expect(
+        scan(`fragment f on Query {
+          ...a
+          page { ...b ... on Page { ...c ...a } }
+          ... { ...d }
+        }`),
+      ).toEqual({ fragments: ['a', 'b', 'c', 'd'], usesVariables: false })
+    })
+
+    it('does not count variable definitions as usages', () => {
+      expect(scan('query q($a: Int = 1) { search(limit: 1) }')).toEqual({
+        fragments: [],
+        usesVariables: false,
+      })
+    })
+
+    it.each([
+      ['an argument', 'query q { search(limit: $a) }'],
+      ['a nested field', 'query q { page { search(limit: $a) } }'],
+      ['a list', 'query q { search(tags: ["x", $a]) }'],
+      ['an input object', 'query q { search(filter: { a: { b: $a } }) }'],
+      ['a field directive', 'query q { search @include(if: $a) }'],
+      ['a spread directive', 'query q { ...f @skip(if: $a) }'],
+      [
+        'an inline fragment directive',
+        'query q { ... on Query @include(if: $a) { search } }',
+      ],
+      ['an operation directive', 'query q @cached(ttl: $a) { search }'],
+      ['a fragment directive', 'fragment f on Query @cached(ttl: $a) { a }'],
+    ])('finds a variable in %s', (_, source) => {
+      expect(scan(source).usesVariables).toBe(true)
     })
   })
 })
