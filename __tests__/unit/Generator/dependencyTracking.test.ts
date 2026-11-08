@@ -353,6 +353,37 @@ fragment mediaImage on MediaImage {
       `)
   })
 
+  it('names the fragments of the operations file the same after an update', () => {
+    const author = 'fragment author on Author { name }'
+    const category = 'fragment category on Category { label }'
+    const query = `query foobar {
+  getRandomEntity {
+    ... on NodeArticle { author { ...author } categories { ...category } }
+  }
+}`
+    const generator = new Generator(schema)
+    generator.add([
+      toDocument(author, 'fragment.author.graphql'),
+      toDocument(category, 'fragment.category.graphql'),
+      toDocument(query, 'query.graphql'),
+    ])
+    generator.build()
+
+    // The updated fragment is now generated after the other one.
+    const updated = 'fragment author on Author { name email }'
+    generator.update(toDocument(updated, 'fragment.author.graphql'))
+
+    const fresh = new Generator(schema)
+    fresh.add([
+      toDocument(updated, 'fragment.author.graphql'),
+      toDocument(category, 'fragment.category.graphql'),
+      toDocument(query, 'query.graphql'),
+    ])
+    expect(generator.build().getOperationsFile().getSource()).toEqual(
+      fresh.build().getOperationsFile().getSource(),
+    )
+  })
+
   it('tracks fragment references', async () => {
     const generator = new Generator(schema)
 
@@ -387,9 +418,9 @@ query foobar {
       GeneratorOutputFile {
         "dependencyStrings": [],
         "mappedDependencies": null,
-        "source": "const b = String.raw\`fragment category on Category{related{...relatedEntity}}\`;
-      const c = String.raw\`fragment nodeArticle on NodeArticle{categories{...category}}\`;
-      const a = String.raw\`fragment relatedEntity on Entity{id}\`;
+        "source": "const a = String.raw\`fragment category on Category{related{...relatedEntity}}\`;
+      const b = String.raw\`fragment nodeArticle on NodeArticle{categories{...category}}\`;
+      const c = String.raw\`fragment relatedEntity on Entity{id}\`;
 
       export const operations = {
         query: {

@@ -2,7 +2,7 @@ import type { GeneratorOutputCode } from '../../classes/GeneratorOutputCode'
 import { GeneratorOutputFile } from '../../classes/GeneratorOutputFile'
 import { MinifyVariableName } from '../../classes/MinifyVariableName'
 import { LogicError, NodeLocMissingError } from '../../errors'
-import { graphqlToString } from './../string'
+import { compareNames, graphqlToString } from './../string'
 import { notNullish } from './../type'
 
 export type GenerateOperationsFileOptions = {
@@ -16,13 +16,13 @@ export function generateOperationsFile(
 ): GeneratorOutputFile {
   const shouldMinify = options?.minify ?? true
   const exportName = options?.exportName ?? 'operations'
-  const declarations: { name: string; value: string }[] = []
   const query: string[] = []
   const mutation: string[] = []
   const subscription: string[] = []
 
   const variableMinifier = new MinifyVariableName(shouldMinify)
 
+  const fragments: { name: string; source: string }[] = []
   for (const code of codes) {
     if (code.type === 'fragment') {
       if (!notNullish(code.source)) {
@@ -31,15 +31,29 @@ export function generateOperationsFile(
       if (!code.graphqlName) {
         throw new LogicError('Missing graphqlName for fragment.')
       }
-      const varName = variableMinifier.getVarName(code.graphqlName)
-      declarations.push({ name: varName, value: code.source })
-    } else if (code.type === 'operation') {
+      fragments.push({ name: code.graphqlName, source: code.source })
+    }
+  }
+
+  // Sorted by name, so that the minified names and their order don't depend
+  // on the order in which the code was generated.
+  fragments.sort((a, b) => compareNames(a.name, b.name))
+  const declarations = fragments
+    .map(
+      (fragment) =>
+        `const ${variableMinifier.getVarName(fragment.name)} = ${graphqlToString(fragment.source, shouldMinify)};`,
+    )
+    .join('\n')
+
+  for (const code of codes) {
+    if (code.type === 'operation') {
       if (!notNullish(code.source)) {
         throw new NodeLocMissingError(code.graphqlName || code.name)
       }
 
       const fragmentDependencies = code
         .getGraphQLFragmentDependencies()
+        .sort(compareNames)
         .map((v) => variableMinifier.getVarName(v))
 
       let parts = [
@@ -60,12 +74,7 @@ export function generateOperationsFile(
     }
   }
 
-  const sortedDeclarations = declarations
-    .sort((a, b) => a.value.localeCompare(b.value))
-    .map((v) => `const ${v.name} = ${graphqlToString(v.value, shouldMinify)};`)
-    .join('\n')
-
-  const source = `${sortedDeclarations}
+  const source = `${declarations}
 
 export const ${exportName} = {
   query: {

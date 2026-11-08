@@ -68,6 +68,19 @@ export function makeExport(name: string, type: string): string {
 }
 
 /**
+ * Compare two names by their code units, so that the order is the same in
+ * every locale.
+ *
+ * @param a - The first name.
+ * @param b - The second name.
+ *
+ * @returns A negative number if a comes first, a positive number if b comes first, else 0.
+ */
+export function compareNames(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0
+}
+
+/**
  * Transforms the given GraphQl source to a full JavaScript string.
  */
 export function graphqlToString(str: string, minify = false): string {

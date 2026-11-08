@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { fileURLToPath } from 'node:url'
-import { parse, print } from 'graphql'
+import { parse } from 'graphql'
 import fs from 'node:fs'
 import { Generator } from '../../../src/classes/Generator'
 import schemaContent from './schema.graphql?raw'
@@ -46,14 +46,18 @@ function generate(
 }
 
 /**
- * The definitions of each operation document, sorted.
+ * The operations file and the documents of all operations and fragments.
  */
-function getOperationDocuments(output: GeneratorOutput): string[][] {
-  return output.getCollectedOperations().map((operation) =>
-    parse(output.getOperationDocumentWithFragments(operation.graphqlName))
-      .definitions.map((definition) => print(definition))
-      .sort(),
-  )
+function getDocuments(output: GeneratorOutput): string[] {
+  return [
+    output.getOperationsFile().getSource(),
+    ...output
+      .getCollectedOperations()
+      .map((v) => output.getOperationDocumentWithFragments(v.graphqlName)),
+    ...output
+      .getFragments()
+      .map((v) => output.getFragmentDocumentWithFragments(v.node.name.value)),
+  ]
 }
 
 describe('Generator', () => {
@@ -124,9 +128,7 @@ describe('Generator', () => {
         'The cached and uncached output must be identical.',
       ).toEqual(resultWithoutCaching)
 
-      // Without dependency tracking, the types must be identical, and the
-      // operation documents must contain the same fragments. Their order can
-      // differ.
+      // Without dependency tracking, the output must be identical.
       const outputWithoutTracking = generateOutput(query, customSchema, {
         ...baseOptions,
         dependencyTracking: false,
@@ -135,8 +137,8 @@ describe('Generator', () => {
         outputWithoutTracking.getOperations('ts').getSource(),
         'The output without dependency tracking must be identical.',
       ).toEqual(resultWithoutCaching)
-      expect(getOperationDocuments(outputWithoutTracking)).toEqual(
-        getOperationDocuments(outputWithoutCaching),
+      expect(getDocuments(outputWithoutTracking)).toEqual(
+        getDocuments(outputWithoutCaching),
       )
 
       // Only generate codegen comparison in watch mode

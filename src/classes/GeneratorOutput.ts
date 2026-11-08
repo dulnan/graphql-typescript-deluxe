@@ -9,7 +9,7 @@ import type {
 } from '../types/index'
 import { GeneratorOutputCode } from './GeneratorOutputCode'
 import { GeneratorOutputOperation } from './GeneratorOutputOperation'
-import { generateHeaderComment } from '../helpers/string'
+import { compareNames, generateHeaderComment } from '../helpers/string'
 import { GeneratorOutputFile } from './GeneratorOutputFile'
 import {
   generateOperationsFile,
@@ -114,7 +114,9 @@ export class GeneratorOutput {
     const fragmentMap = this.getFragmentCodeMap()
     const parts = [source]
 
-    for (const name of fragmentNames) {
+    // Sorted by name, so that the order doesn't depend on the order in which
+    // the code was generated.
+    for (const name of [...fragmentNames].sort(compareNames)) {
       const fragment = fragmentMap.get(name)
       if (fragment?.source) {
         parts.push(fragment.source)
