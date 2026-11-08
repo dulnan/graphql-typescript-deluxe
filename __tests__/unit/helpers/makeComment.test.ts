@@ -57,6 +57,12 @@ describe('makeComment', () => {
     expect(result).toMatchInlineSnapshot(`"/** *\\/ */"`)
   })
 
+  it('should split lines with any line ending', () => {
+    expect(makeComment('a\r\nb\rc')).toEqual(
+      ['/**', ' * a', ' * b', ' * c', ' */'].join('\n'),
+    )
+  })
+
   it('should handle multiline strings', () => {
     const input = 'Line 1\nLine 2 */\nLine 3'
     const result = makeComment(input)
@@ -125,6 +131,28 @@ describe('makeTypeDoc', () => {
       allOptionsEnabled,
     )
     expect(result).toContain('@see {@link file:///path/to/file.graphql}')
+  })
+
+  it.each([
+    ['LF', '\n'],
+    ['CRLF', '\r\n'],
+    ['CR', '\r'],
+  ])('should split a multi-line description into lines (%s)', (_, eol) => {
+    const type = new GraphQLObjectType({
+      name: 'TestType',
+      description: ['First line.', '', 'Second */ line.'].join(eol),
+      fields: { id: { type: GraphQLString } },
+    })
+
+    const result = makeTypeDoc(
+      { type, filePath: undefined, definition: undefined },
+      allOptionsEnabled,
+    )
+    expect(result).toEqual(
+      ['/**', ' * First line.', ' * ', ' * Second *\\/ line.', ' */'].join(
+        '\n',
+      ),
+    )
   })
 
   it('should add empty line between description and link', () => {

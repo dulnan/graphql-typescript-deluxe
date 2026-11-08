@@ -17,13 +17,17 @@ function toTSComment(lines: string[]): string {
 }
 
 /**
+ * Split a text into lines, for any line ending.
+ */
+function splitLines(input: string): string[] {
+  return input.split(/\r\n|\r|\n/)
+}
+
+/**
  * Creates a comment from a string, escaping any characters that might close the comment.
  */
 export function makeComment(input: string): string {
-  if (input.includes('\n')) {
-    return toTSComment(input.split('\n'))
-  }
-  return `/** ${escapeStringForComment(input)} */`
+  return toTSComment(splitLines(input))
 }
 
 export function makeTypeDoc(
@@ -34,7 +38,7 @@ export function makeTypeDoc(
   const filePath = context.filePath
   const description = (context.type?.description || '').trim()
   if (description && options.typeDescription) {
-    lines.push(description)
+    lines.push(...splitLines(description))
   }
   if (filePath && filePath !== NO_FILE_PATH && options.link) {
     if (lines.length) {
