@@ -115,7 +115,7 @@ export type Address = {
  * input SubmitContactForm {
  *   firstName: String!
  *   lastName: String!
- *   contactMethod: ContactMethod = "PHONE"
+ *   contactMethod: ContactMethod = PHONE
  *   address: Address!
  * }
  * ```

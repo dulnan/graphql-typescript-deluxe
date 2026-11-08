@@ -4,7 +4,11 @@ import {
   isInterfaceType,
   isObjectType,
   isUnionType,
+  NoUnusedFragmentsRule,
   parse,
+  specifiedRules,
+  validate,
+  validateSchema,
   type GraphQLSchema,
 } from 'graphql'
 import fs from 'node:fs'
@@ -69,6 +73,58 @@ function findSchemaTypeNames(code: string, schema: GraphQLSchema): string[] {
     .filter((v) => isObjectType(v) || isInterfaceType(v) || isUnionType(v))
     .map((v) => v.name)
     .filter((name) => identifiers.has(name))
+}
+
+/**
+ * A document of fragments without an operation leaves them all unused.
+ */
+const fragmentRules = specifiedRules.filter((v) => v !== NoUnusedFragmentsRule)
+
+/**
+ * Validate a document and return each error message, followed by the document.
+ */
+function getValidationErrors(
+  schema: GraphQLSchema,
+  document: string,
+  rules = specifiedRules,
+): string[] {
+  return validate(schema, parse(document), rules).map(
+    (v) => `${v.message}\n\n${document}`,
+  )
+}
+
+/**
+ * The documents in the operations file.
+ */
+function getOperationsFileDocuments(output: GeneratorOutput): string[] {
+  const file = output.getOperationsFile().getSource()
+  const operations = new Function(
+    file.replace('export const operations =', 'return'),
+  )() as Record<string, Record<string, string>>
+  return Object.values(operations).flatMap((v) => Object.values(v))
+}
+
+/**
+ * Validate the documents in the operations file and the documents of all
+ * operations and fragments.
+ */
+function getDocumentErrors(
+  schema: GraphQLSchema,
+  output: GeneratorOutput,
+): string[] {
+  const operations = [
+    ...getOperationsFileDocuments(output),
+    ...output
+      .getCollectedOperations()
+      .map((v) => output.getOperationDocumentWithFragments(v.graphqlName)),
+  ]
+  const fragments = output
+    .getFragments()
+    .map((v) => output.getFragmentDocumentWithFragments(v.node.name.value))
+  return [
+    ...operations.flatMap((v) => getValidationErrors(schema, v)),
+    ...fragments.flatMap((v) => getValidationErrors(schema, v, fragmentRules)),
+  ]
 }
 
 /**
@@ -141,6 +197,13 @@ describe('Generator', () => {
         .getOperations('ts')
         .getSource()
       await expect(resultWithoutCaching).toMatchFileSnapshot(fileSnapshotPath)
+
+      // The schema, the case document and every generated document must be
+      // valid.
+      const schema = getSchema(customSchema)
+      expect(validateSchema(schema).map((v) => v.message)).toEqual([])
+      expect(getValidationErrors(schema, query, fragmentRules)).toEqual([])
+      expect(getDocumentErrors(schema, outputWithoutCaching)).toEqual([])
 
       // Now generate with cache.
       const resultWithCaching = generate(query, customSchema, {
