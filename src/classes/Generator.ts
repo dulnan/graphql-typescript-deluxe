@@ -1380,6 +1380,10 @@ export class Generator {
         )
       }
       /* v8 ignore stop */
+
+      // The fields come from the file of the fragment and of the fragments it
+      // spreads, so the cached result is purged when one of them changes.
+      this.dependencyTracker?.merge(item)
       return item.map
     })
   }
@@ -1413,6 +1417,12 @@ export class Generator {
       'getFragmentIRFieldsForType',
       fragmentName + ' ' + parentTypeName,
       () => {
+        // The fields come from the file of the fragment and of the fragments
+        // it spreads, so the cached result is purged when one of them changes.
+        const item = this.fragmentIRs.get(fragmentName)
+        if (item) {
+          this.dependencyTracker?.merge(item)
+        }
         const ir = this.postProcessIR(
           this.buildObjectSelectionSet(parentType, fragment.selectionSet),
         )

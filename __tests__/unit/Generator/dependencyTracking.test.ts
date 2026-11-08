@@ -353,6 +353,44 @@ fragment mediaImage on MediaImage {
       `)
   })
 
+  it.each([
+    [
+      'on its type',
+      'fragment page on NodeArticle { categories { label } }',
+      'fragment page on NodeArticle { categories { label related { id } } }',
+    ],
+    [
+      'on an interface',
+      'fragment page on Entity { ... on NodeArticle { categories { label } } }',
+      'fragment page on Entity { ... on NodeArticle { categories { label related { id } } } }',
+    ],
+  ])(
+    'updates a field merged with a fragment %s after the fragment changes, with useCache',
+    (_, fragment, updated) => {
+      const query = `query foobar {
+  getRandomEntity {
+    ... on NodeArticle { ...page categories { url } }
+  }
+}`
+      const generator = new Generator(schema, { useCache: true })
+      generator.add([
+        toDocument(fragment, 'fragment.graphql'),
+        toDocument(query, 'query.graphql'),
+      ])
+      generator.build()
+      generator.update(toDocument(updated, 'fragment.graphql'))
+
+      const fresh = new Generator(schema, { useCache: true })
+      fresh.add([
+        toDocument(updated, 'fragment.graphql'),
+        toDocument(query, 'query.graphql'),
+      ])
+      const source = generator.build().getOperations('ts').getSource()
+      expect(source).toEqual(fresh.build().getOperations('ts').getSource())
+      expect(source).toContain('related?:')
+    },
+  )
+
   it('names the fragments of the operations file the same after an update', () => {
     const author = 'fragment author on Author { name }'
     const category = 'fragment category on Category { label }'
