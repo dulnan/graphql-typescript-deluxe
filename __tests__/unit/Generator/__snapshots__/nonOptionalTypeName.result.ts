@@ -18,7 +18,6 @@ type MediaVideo = 'MediaVideo'
 /** A blog post. */
 type NodeArticle = 'NodeArticle'
 type NodePage = 'NodePage'
-type Query = 'Query'
 /** A user. */
 type User = 'User'
 
@@ -78,7 +77,6 @@ export type UserFragment = {
  * ```
  */
 export type FoobarQuery = {
-  __typename: Query
   /** Get random entity. */
   page?:
     | {

@@ -1,0 +1,30 @@
+fragment rootFields on Query {
+  isAvailable
+}
+
+# Apollo and urql don't add __typename to the root selection set.
+query rootWithoutTypename {
+  isAvailable
+}
+
+query rootWithTypename {
+  __typename
+  isAvailable
+}
+
+# The fragment definition has its own selection set, which gets __typename.
+query rootWithFragment {
+  ...rootFields
+}
+
+query rootWithConditionalFragment($withFields: Boolean!) {
+  isAvailable
+  ...rootFields @include(if: $withFields)
+}
+
+# An inline fragment has its own selection set too.
+query rootWithInlineFragment {
+  ... on Query {
+    isAvailable
+  }
+}

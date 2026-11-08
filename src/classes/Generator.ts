@@ -1071,11 +1071,24 @@ export class Generator {
         const merged = mergeSameFieldSelections(inlined)
         const source = getAstSource(operation)
 
+        // Like Apollo's addTypenameToDocument and urql's formatDocument add
+        // it, __typename is forced on every selection set except the root one
+        // of an operation. A fragment spread there still adds it: The
+        // fragment definition has its own selection set.
+        const forceTypename =
+          this.options.output.nonOptionalTypename &&
+          operation.selectionSet.selections.some(
+            (v) =>
+              v.kind === Kind.FRAGMENT_SPREAD && !hasConditionalDirective(v),
+          )
+
         return {
           code: makeExport(
             typeName,
             this.IRToCode(
-              this.postProcessIR(this.buildSelectionSet(rootType, merged)),
+              this.postProcessIR(
+                this.buildSelectionSet(rootType, merged, false, forceTypename),
+              ),
             ),
           ),
           context: { input, definition: operation },
@@ -1321,6 +1334,7 @@ export class Generator {
    * @param type - The GraphQL type.
    * @param selectionSet - The selection set node.
    * @param withBranches - For abstract types: Always return an object node for each possible type (as a union), instead of a shorter type such as a fragment type. Needed when the caller merges the fields of the object nodes.
+   * @param forceTypename - For object types: Whether to add a __typename field. Defaults to the nonOptionalTypename option.
    *
    * @returns The IR node for the selection.
    *
@@ -1330,9 +1344,10 @@ export class Generator {
     type: GraphQLNamedType,
     selectionSet: SelectionSetNode,
     withBranches = false,
+    forceTypename = this.options.output.nonOptionalTypename,
   ): IRNode {
     if (isObjectType(type)) {
-      return this.buildObjectSelectionSet(type, selectionSet)
+      return this.buildObjectSelectionSet(type, selectionSet, forceTypename)
     } else if (isAbstractType(type)) {
       return this.buildAbstractSelectionSet(type, selectionSet, withBranches)
     }
@@ -1467,6 +1482,7 @@ export class Generator {
    *
    * @param objectType - The object type.
    * @param selectionSet - The selection set node.
+   * @param forceTypename - Whether to add a __typename field. Defaults to the nonOptionalTypename option.
    *
    * @returns The IR for the selections.
    *
@@ -1476,6 +1492,7 @@ export class Generator {
   private buildObjectSelectionSet(
     objectType: GraphQLObjectType,
     selectionSet: SelectionSetNode,
+    forceTypename = this.options.output.nonOptionalTypename,
   ): IRNode {
     const fields: Record<string, IRNode> = {}
     let hasTypenameFromSpread = false
@@ -1592,7 +1609,7 @@ export class Generator {
     }
 
     const typenameField = fields[TYPENAME]
-    if (this.options.output.nonOptionalTypename) {
+    if (forceTypename) {
       // Always add __typename field if option is set. It may already be there
       // as an optional field, from a conditional selection.
       if (!typenameField || typenameField.optional) {

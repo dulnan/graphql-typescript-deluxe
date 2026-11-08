@@ -83,6 +83,12 @@ export type GeneratorOptionsOutput = {
   /**
    * Force a __typename field on every type.
    *
+   * Use this with a client that adds `__typename` to every selection set,
+   * such as Apollo Client (`addTypenameToDocument`) or urql
+   * (`formatDocument`). Like these clients, the root selection set of an
+   * operation is left out, unless it spreads a fragment: The fragment has its
+   * own selection set, which the clients add it to.
+   *
    * Note that this will significantly increase the size of the file.
    * Ideally this should be used together with the mergeTypenames option to merge
    * identical object shapes that only differ by __typename.
