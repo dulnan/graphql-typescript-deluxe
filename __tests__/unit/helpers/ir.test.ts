@@ -942,6 +942,24 @@ describe('postProcessIR', () => {
     expect(typename.types).toContain('Dog')
   })
 
+  it('keeps the flags of the first branch when merging branches', () => {
+    // The flags of a branch aren't part of its type, so a merged branch has
+    // the same flags as a branch that isn't merged.
+    const branch = (typeName: string): IRNodeObject =>
+      IR.OBJECT({
+        graphQLTypeName: typeName,
+        nullable: false,
+        fields: {
+          __typename: IR.TYPENAME([typeName]),
+          name: IR.SCALAR({ tsType: 'string' }),
+        },
+      })
+    const union = IR.UNION({ types: [branch('Cat'), branch('Dog')] })
+    const result = postProcessIR(union) as IRNodeUnion
+    expect(result.types).toHaveLength(1)
+    expect(result.types[0]!.nullable).toBe(false)
+  })
+
   it('keeps different shaped objects separate', () => {
     const union = IR.UNION({
       types: [

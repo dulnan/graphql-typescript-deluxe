@@ -674,7 +674,8 @@ function unifyObjectsIgnoringTypename(
   //    union of types or an Exclude<> type.
   // 3) Everything else generates the same type. The objects can be of
   //    different types, so only the descriptions they share are kept.
-  // 4) Mark `nonNull: true` if any object is nonNull (OR them together)
+  // 4) The nullable and optional flags of a branch aren't part of its type,
+  //    so the first object's are kept, like for a branch that isn't merged.
   // Note: This function is only called with 2+ objects (single objects are
   // handled by the caller in mergeUnionBranchesIgnoringTypename)
 
@@ -689,11 +690,6 @@ function unifyObjectsIgnoringTypename(
             objects.map((obj) => obj.fields[key]!),
             nullableIsOptional,
           )
-  }
-
-  let anyNullable = base.nullable
-  for (const obj of objects) {
-    anyNullable = !anyNullable || !obj.nullable
   }
 
   // Merge the __typename fields, including aliased ones.
@@ -718,7 +714,6 @@ function unifyObjectsIgnoringTypename(
   return IR.OBJECT({
     ...base,
     fields: mergedFields,
-    nullable: !!anyNullable,
   })
 }
 
